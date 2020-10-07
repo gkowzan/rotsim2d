@@ -1,0 +1,13 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+*.py[cod]
+*.egg
+build
+htmlcov
+
+docs/_autosummary
+docs/_build
+examples/hitran.csv
