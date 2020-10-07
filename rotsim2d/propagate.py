@@ -202,7 +202,7 @@ class Propagator(CrossSectionMixin):
                     nu = 0.0
                     gam = 0.0
 
-            resp *= 1.0j/C.hbar*kb.parent.side*mu*np.exp(-2.0j*np.pi*nu*times[i-1])*np.exp(-2*np.pi*gam*times[i-1])
+            resp *= 1.0j/C.hbar*kb.parent.side*mu*np.exp(-2.0*np.pi*times[i-1]*(1.0j*nu+gam))
 
         return resp
 

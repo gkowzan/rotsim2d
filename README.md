@@ -8,6 +8,7 @@ Package to simulate 2D rovibrational spectra of gas-phase samples.
 + Transform the problem into n-dimensional array calculations.
 + Parallelize the code. Orders of magnitude improvement is needed, this won't be fast enough on its own.
 + Translate the code to C++. *Profile first.*
++ Calculate only for initial ket excitation.
 
 ## Functionality
 
