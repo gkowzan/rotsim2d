@@ -7,17 +7,18 @@ TODO:
 - add selection of k
 - generate 2D spectra
 """
+import logging
 from typing import List
 import numpy as np
 import scipy.constants as C
 import pyfftw.interfaces.scipy_fftpack as fftp
 from rotsim2d import pathways as pw
-from spectroscopy import happier
-import shed.units as u
 
 e2i = C.epsilon_0*C.c/2         #: Electric field to intensity
 xs2cm = 1e2/C.c                 #: Cross section in m^2 Hz to cm^2 cm^{-1}
+ignore_missing = False          #: silently ignore dynamics of missing lines
 
+log = logging.getLogger(__name__)
 
 class CrossSectionMixin:
     def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex:
@@ -30,6 +31,7 @@ class CrossSectionMixin:
             nu = self.sys_params['line_params'][pair]['nu']
         except KeyError:
             try:
+                # this should always work 
                 nu = self.sys_params['line_params'][(pair[1], pair[0])]['nu']
             except KeyError as e:
                 print(list(leaf.ancestors) + [leaf])
@@ -76,7 +78,7 @@ class Spectrum(CrossSectionMixin):
         'line_params': {((nupp, jpp), (nup, jp)): {'mu': dipole element, 'gam':  dephasing,
         'nu': position}}}.
     """
-    def __init__(self, sys_params: dict, freq_shift: float=0.0, filter=None):
+    def __init__(self, sys_params: dict, freq_shift: List[float]=None, filter=None):
         self.sys_params = sys_params
         if filter is None:
             self.filter = lambda x: True
@@ -86,6 +88,11 @@ class Spectrum(CrossSectionMixin):
 
     def leaf_response(self, leaf: pw.KetBra, freqs: List[float]) -> np.complex:
         r"""Return single pathway response spectrum."""
+        if self.freq_shift is None:
+            freq_shift = [0.0]*len(freqs)
+        else:
+            freq_shift = self.freq_shift
+
         resp = np.complex(1.0)
         kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
         for i in range(1, len(kb_series)):
@@ -105,19 +112,29 @@ class Spectrum(CrossSectionMixin):
                 resp *= mu*kb.root.pop
                 break
 
+            # if None, integrate over frequencies
+            if freqs[i-1] is None:
+                resp = resp*1.0j/C.hbar*kb.parent.side*mu
+                continue
+
             # nu and gam
             # pairs in line_params have lower nu first
             pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
             try:
-                nu = self.sys_params['line_params'][pair]['nu'] - self.freq_shift
+                nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
                 gam = self.sys_params['line_params'][pair]['gam']
             except KeyError:
                 try:
-                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + self.freq_shift
+                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + freq_shift[i-1]
                     gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
-                except KeyError:
-                    resp *= 1.0j/C.hbar*kb.parent.side*mu
-                    continue
+                except KeyError as e:
+                    if ignore_missing:
+                        # resp *= 1.0j/C.hbar*kb.parent.side*mu
+                        resp *= 0.0
+                        log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
+                        continue
+                    else:
+                        raise e
 
             resp = resp*1.0j/C.hbar*kb.parent.side*mu/(freqs[i-1]-nu - 1.0j*gam)
 
@@ -134,7 +151,7 @@ class Propagator(CrossSectionMixin):
         'line_params': {((nupp, jpp), (nup, jp)): {'mu': dipole element, 'gam':  dephasing,
         'nu': position}}}.
     """
-    def __init__(self, sys_params: dict, freq_shift: float=0.0, filter=None):
+    def __init__(self, sys_params: dict, freq_shift: List[float]=None, filter=None):
         self.sys_params = sys_params
         if filter is None:
             self.filter = lambda x: True
@@ -169,6 +186,11 @@ class Propagator(CrossSectionMixin):
         gives n-th order excited fraction in the first case, and n-th order
         polarization in the second case.
         """
+        if self.freq_shift is None:
+            freq_shift = [0.0]*len(times)
+        else:
+            freq_shift = self.freq_shift
+
         resp = np.complex(1.0)
         kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
         for i in range(1, len(kb_series)):
@@ -192,15 +214,19 @@ class Propagator(CrossSectionMixin):
             # pairs in line_params have lower nu first
             pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
             try:
-                nu = self.sys_params['line_params'][pair]['nu'] - self.freq_shift
+                nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
                 gam = self.sys_params['line_params'][pair]['gam']
             except KeyError:
                 try:
-                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + self.freq_shift
+                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + freq_shift[i-1]
                     gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
-                except KeyError:
-                    nu = 0.0
-                    gam = 0.0
+                except KeyError as e:
+                    if ignore_missing:
+                        resp *= 1.0j/C.hbar*kb.parent.side*mu
+                        log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
+                        continue
+                    else:
+                        raise e
 
             resp *= 1.0j/C.hbar*kb.parent.side*mu*np.exp(-2.0*np.pi*times[i-1]*(1.0j*nu+gam))
 
@@ -308,5 +334,16 @@ def polarization(E0: float, resp: float, n: float):
 
 
 def absorptive(spec2d):
-    """Create absorptive spectrum from 2D reph/non-reph spectrum."""
-    pass
+    """Create absorptive spectrum from 2D reph/non-reph spectrum.
+
+    Works for ket-only and full pathways.  Removes DC terms.
+    """
+    return np.imag(np.conj(spec2d[1:, 1:][::-1, ::-1]) + spec2d[1:, 1:][::-1])
+
+
+def dispersive(spec2d):
+    """Create dispersive spectrum from 2D reph/non-reph spectrum.
+
+    Works for ket-only and full pathways.  Removes DC terms.
+    """
+    return np.real(np.conj(spec2d[1:, 1:][::-1, ::-1]) + spec2d[1:, 1:][::-1])
