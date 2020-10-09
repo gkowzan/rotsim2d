@@ -12,8 +12,8 @@ Package to simulate 2D rovibrational spectra of gas-phase samples.
 
 ## Functionality
 
-+ Add symmetric top and physical model.
 + Polarization and rotational coherence.
++ Add symmetric top and physical model.
 + Add line-mixing (proper dephasing) and Doppler.
 + Improve graph export.
 + Extract coherences and positions.

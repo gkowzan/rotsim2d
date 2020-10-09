@@ -35,13 +35,13 @@ root_prop = prop.Spectrum({'elevels': co_levels, 'populations': co_pops,
                             # filter=lambda kb: kb.parent.parent==pw.KetBra(0, 0, 1, 1)\
                             # or kb.parent.parent==pw.KetBra(1, 1, 0, 0),
                             filter=lambda kb: True,
-                            freq_shift=u.wn2nu(1800.0))
+                            freq_shift=[u.wn2nu(1800.0), 0.0, u.wn2nu(1800.0)])
 
 # ** Without interstate coherences
 import time
 ttt = time.time()
 # *** Third order -- nonrephasing
-resp_xs_nonreph = np.zeros((fs.size, fs.size), dtype=np.complex)
+pws = []
 for j in range(0, 40):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
@@ -50,10 +50,16 @@ for j in range(0, 40):
     root = pw.remove_interstates(root)
     root = pw.readout(root)
     root = pw.remove_nondiagonal(root)
-    resp_xs_nonreph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], 0.0, fs[np.newaxis, :]])
+    root.pop = co_pops[(0, j)]
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+print(time.time() - ttt)
+resp_xs_nonreph = multi_prop.response([fs[:, np.newaxis], 0.0, fs[np.newaxis, :]])
+print(time.time()-ttt)
 
 # *** Third order -- rephasing
-resp_xs_reph = np.zeros((fs.size, fs.size), dtype=np.complex)
+ttt = time.time()
+pws = []
 for j in range(0, 40):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
@@ -62,21 +68,23 @@ for j in range(0, 40):
     root = pw.remove_interstates(root)
     root = pw.readout(root)
     root = pw.remove_nondiagonal(root)
-    resp_xs_reph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], 0.0, fs[np.newaxis, :]])
-
+    root.pop = co_pops[(0, j)]
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+resp_xs_reph = multi_prop.response([fs[:, np.newaxis], 0.0, fs[np.newaxis, :]])
 print(time.time()-ttt)
 
 # *** Plot
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=np.imag(resp_xs_reph))
 fig_dict['fig'].suptitle(r'$\vec{k}_1 = -\vec{k}_3$')
-fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
+# fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
 fig_dict['fig'].savefig(str(OUTPUT / 'P5P5_nointerstate_rephasing.png'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=np.imag(resp_xs_nonreph))
 fig_dict['fig'].suptitle(r'$\vec{k}_1 = \vec{k}_3$')
-fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
+# fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
 fig_dict['fig'].savefig(str(OUTPUT / 'P5P5_nointerstate_nonrephasing.png'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),

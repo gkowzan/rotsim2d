@@ -54,5 +54,5 @@ pathways = [pw.readout(pw.excite(pw.KetBra(0, j, 0, j, pop=co_pops[(0, j)]/(2*j+
 multi_prop = prop.MultiPropagator(pathways, root_prop)
 resp_xs_spec = multi_prop.cross_section_spectrum([ts])
 
-import timeit
-print(timeit.timeit('multi_prop.cross_section_spectrum([ts])', globals=globals(), number=5))
+# import timeit
+# print(timeit.timeit('multi_prop.cross_section_spectrum([ts])', globals=globals(), number=5))

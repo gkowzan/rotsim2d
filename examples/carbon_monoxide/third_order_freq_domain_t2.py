@@ -58,6 +58,7 @@ for j in range(5, 6):
     root = pw.remove_nondiagonal(root)
     # resp_xs_nonreph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], 10.0, fs[np.newaxis, :]])
     resp_xs_nonreph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], fs2[np.newaxis, :], None])
+print(time.time()-ttt)
 
 # *** Third order -- rephasing
 resp_xs_reph = np.zeros((fs.size, fs2.size), dtype=np.complex)
@@ -71,7 +72,6 @@ for j in range(5, 6):
     root = pw.remove_nondiagonal(root)
     # resp_xs_reph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], 10.0, fs[np.newaxis, :]])
     resp_xs_reph += co_pops[(0, j)]*root_prop.response(root, [fs[:, np.newaxis], fs2[np.newaxis, :], None])
-print(time.time()-ttt)
 
 # *** Plot
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs2_cm),

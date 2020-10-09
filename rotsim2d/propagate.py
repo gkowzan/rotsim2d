@@ -8,7 +8,7 @@ TODO:
 - generate 2D spectra
 """
 import logging
-from typing import List
+from typing import List, Union, Tuple
 import numpy as np
 import scipy.constants as C
 import pyfftw.interfaces.scipy_fftpack as fftp
@@ -19,6 +19,9 @@ xs2cm = 1e2/C.c                 #: Cross section in m^2 Hz to cm^2 cm^{-1}
 ignore_missing = False          #: silently ignore dynamics of missing lines
 
 log = logging.getLogger(__name__)
+
+def aid(x):
+    return x.__array_interface__['data'][0]
 
 class CrossSectionMixin:
     def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex:
@@ -67,6 +70,74 @@ class CrossSectionMixin:
         return sum(self.leaf_response(leaf, times) for leaf in kb.diagonals()
                    if self.filter(leaf))
 
+    def leaf_response(self, leaf: pw.KetBra, freqs: List[Union[np.ndarray, float]]) -> Union[np.ndarray, np.complex]:
+        r"""Return single pathway response spectrum."""
+        if self.freq_shift is None:
+            freq_shift = [0.0]*len(freqs)
+        else:
+            freq_shift = self.freq_shift
+
+        # resp = np.empty(times_dims(freqs), dtype=np.complex)
+        resps = []
+        const = np.complex(1.0)
+
+        kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
+        for i in range(1, len(kb_series)):
+            kb, kbp = kb_series[i], kb_series[i-1]
+
+            # dipole matrix element
+            if kb.parent.side is pw.Side.KET:
+                pair = ((kbp.knu, kbp.kj), (kb.knu, kb.kj))
+            else:
+                pair = ((kbp.bnu, kbp.bj), (kb.bnu, kb.bj))
+            try:
+                mu = self.sys_params['line_params'][pair]['mu']
+            except KeyError:
+                mu = self.sys_params['line_params'][(pair[1], pair[0])]['mu']
+
+            if kb.parent.readout:
+                const *= mu*kb.root.pop
+                break
+
+            # if None, integrate over frequencies
+            if freqs[i-1] is None:
+                const *= 1.0j/C.hbar*kb.parent.side*mu
+                # np.multiply(resp, 1.0j/C.hbar*kb.parent.side*mu, out=resp)
+                continue
+
+            # nu and gam
+            # pairs in line_params have lower nu first
+            pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
+            try:
+                nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
+                gam = self.sys_params['line_params'][pair]['gam']
+            except KeyError:
+                try:
+                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + freq_shift[i-1]
+                    gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
+                except KeyError as e:
+                    if ignore_missing:
+                        resp[...] = 0.0
+                        log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
+                        break
+                    else:
+                        raise e
+
+            const *= 1.0j/C.hbar*kb.parent.side*mu
+            resps.append(self.leaf_term(nu, gam, freqs[i-1]))
+            # if i-1 == 0:
+            #     resp[...] = self.leaf_term(nu, gam, freqs[i-1])
+            # else:
+            #     np.multiply(resp, self.leaf_term(nu, gam, freqs[i-1]), out=resp)
+
+        if len(resps) == 1:
+            return resps[0]*const
+        else:
+            resp = resps[0]*const
+            for i in range(len(resps)-1):
+                resp = resp*resps[i+1]
+            return resp
+
     
 class Spectrum(CrossSectionMixin):
     """Calculate spectrum based on excitation tree.
@@ -86,61 +157,10 @@ class Spectrum(CrossSectionMixin):
             self.filter = filter
         self.freq_shift = freq_shift
 
-    def leaf_response(self, leaf: pw.KetBra, freqs: List[float]) -> np.complex:
-        r"""Return single pathway response spectrum."""
-        if self.freq_shift is None:
-            freq_shift = [0.0]*len(freqs)
-        else:
-            freq_shift = self.freq_shift
+    def leaf_term(self, nu, gam, freqs):
+        return 1/(freqs-nu - 1.0j*gam)
 
-        resp = np.complex(1.0)
-        kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
-        for i in range(1, len(kb_series)):
-            kb, kbp = kb_series[i], kb_series[i-1]
 
-            # dipole matrix element
-            if kb.parent.side is pw.Side.KET:
-                pair = ((kbp.knu, kbp.kj), (kb.knu, kb.kj))
-            else:
-                pair = ((kbp.bnu, kbp.bj), (kb.bnu, kb.bj))
-            try:
-                mu = self.sys_params['line_params'][pair]['mu']
-            except KeyError:
-                mu = self.sys_params['line_params'][(pair[1], pair[0])]['mu']
-
-            if kb.parent.readout:
-                resp *= mu*kb.root.pop
-                break
-
-            # if None, integrate over frequencies
-            if freqs[i-1] is None:
-                resp = resp*1.0j/C.hbar*kb.parent.side*mu
-                continue
-
-            # nu and gam
-            # pairs in line_params have lower nu first
-            pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
-            try:
-                nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
-                gam = self.sys_params['line_params'][pair]['gam']
-            except KeyError:
-                try:
-                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + freq_shift[i-1]
-                    gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
-                except KeyError as e:
-                    if ignore_missing:
-                        # resp *= 1.0j/C.hbar*kb.parent.side*mu
-                        resp *= 0.0
-                        log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
-                        continue
-                    else:
-                        raise e
-
-            resp = resp*1.0j/C.hbar*kb.parent.side*mu/(freqs[i-1]-nu - 1.0j*gam)
-
-        return resp
-
-            
 class Propagator(CrossSectionMixin):
     """Calculate useful physical quantities based on excitation tree.
 
@@ -176,61 +196,8 @@ class Propagator(CrossSectionMixin):
 
         return fftp.fftfreq(len(times[-1]), d=dt)
 
-    # @profile
-    def leaf_response(self, leaf: pw.KetBra, times: List[float]) -> np.complex:
-        r"""Calculate response from a single leaf.
-
-        The returned quantity has units of :math:`[\mu]^n[\hbar]^{-n}` for
-        `n`-th order excitation or of :math:`[\mu]^{n+1}[\hbar]^{-n}` for `n`-th
-        order excitaion followed by readout. Multiplication by electric field
-        gives n-th order excited fraction in the first case, and n-th order
-        polarization in the second case.
-        """
-        if self.freq_shift is None:
-            freq_shift = [0.0]*len(times)
-        else:
-            freq_shift = self.freq_shift
-
-        resp = np.complex(1.0)
-        kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
-        for i in range(1, len(kb_series)):
-            kb, kbp = kb_series[i], kb_series[i-1]
-
-            # dipole matrix element
-            if kb.parent.side is pw.Side.KET:
-                pair = ((kbp.knu, kbp.kj), (kb.knu, kb.kj))
-            else:
-                pair = ((kbp.bnu, kbp.bj), (kb.bnu, kb.bj))
-            try:
-                mu = self.sys_params['line_params'][pair]['mu']
-            except KeyError:
-                mu = self.sys_params['line_params'][(pair[1], pair[0])]['mu']
-
-            if kb.parent.readout:
-                resp *= mu*kb.root.pop
-                break
-
-            # nu and gam
-            # pairs in line_params have lower nu first
-            pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
-            try:
-                nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
-                gam = self.sys_params['line_params'][pair]['gam']
-            except KeyError:
-                try:
-                    nu = -self.sys_params['line_params'][(pair[1], pair[0])]['nu'] + freq_shift[i-1]
-                    gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
-                except KeyError as e:
-                    if ignore_missing:
-                        resp *= 1.0j/C.hbar*kb.parent.side*mu
-                        log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
-                        continue
-                    else:
-                        raise e
-
-            resp *= 1.0j/C.hbar*kb.parent.side*mu*np.exp(-2.0*np.pi*times[i-1]*(1.0j*nu+gam))
-
-        return resp
+    def leaf_term(self, nu, gam, times):
+        return np.exp(-2.0*np.pi*times*(1.0j*nu+gam))
 
 
 class MultiPropagator:
@@ -279,6 +246,17 @@ class MultiPropagator:
             xs_spectrum = 0.0
 
         return xs_spectrum
+
+
+def times_dims(times: List[Union[float, np.ndarray]]) -> Tuple[int]:
+    dims = []
+    for d in times:
+        try:
+            dims.append(d.size)
+        except AttributeError:
+            pass
+
+    return tuple(dims)
 
 
 def power2electric_field(P: float, r: float):
@@ -338,7 +316,7 @@ def absorptive(spec2d):
 
     Works for ket-only and full pathways.  Removes DC terms.
     """
-    return np.imag(np.conj(spec2d[1:, 1:][::-1, ::-1]) + spec2d[1:, 1:][::-1])
+    return np.real(spec2d[1:, 1:][::-1, ::-1] - spec2d[1:, 1:][::-1])
 
 
 def dispersive(spec2d):
@@ -346,4 +324,4 @@ def dispersive(spec2d):
 
     Works for ket-only and full pathways.  Removes DC terms.
     """
-    return np.real(np.conj(spec2d[1:, 1:][::-1, ::-1]) + spec2d[1:, 1:][::-1])
+    return np.imag(spec2d[1:, 1:][::-1, ::-1] + spec2d[1:, 1:][::-1])
