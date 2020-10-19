@@ -117,7 +117,7 @@ class CrossSectionMixin:
                     gam = self.sys_params['line_params'][(pair[1], pair[0])]['gam']
                 except KeyError as e:
                     if ignore_missing:
-                        resp[...] = 0.0
+                        resps.append(0.0)
                         log.debug("Missing `nu` and `gam` for %s, ignoring pathway", pair)
                         break
                     else:
@@ -158,7 +158,7 @@ class Spectrum(CrossSectionMixin):
         self.freq_shift = freq_shift
 
     def leaf_term(self, nu, gam, freqs):
-        return 1/(freqs-nu - 1.0j*gam)
+        return 1.0/(freqs-nu - 1.0j*gam)
 
 
 class Propagator(CrossSectionMixin):
