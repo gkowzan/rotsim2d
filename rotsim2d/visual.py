@@ -50,7 +50,7 @@ def plot2d_im(freqs, spec2d, spec_linear=None):
     absmax = np.max(np.abs(spec2d))
     linthresh = absmax/100.0
     cset = ax2d.imshow(spec2d, cmap='seismic', aspect='auto', extent=extent,
-                       clim=(-absmax, absmax),
+                       clim=(-absmax, absmax), origin='lower',
                        norm=colors.SymLogNorm(linthresh=linthresh, vmax=absmax, vmin=-absmax))
     ax2d.set(xlabel=r'Probe (cm$^{-1}$)', ylabel=r'Pump (cm$^{-1}$)')
     ax2d.axline((ax2d.get_xlim()[0], ax2d.get_ylim()[0]),
