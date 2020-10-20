@@ -158,7 +158,7 @@ class Spectrum(CrossSectionMixin):
         self.freq_shift = freq_shift
 
     def leaf_term(self, nu, gam, freqs):
-        return 1.0/(freqs-nu - 1.0j*gam)
+        return 1.0/(gam - 1.0j*(freqs-nu))
 
 
 class Propagator(CrossSectionMixin):
@@ -314,14 +314,14 @@ def polarization(E0: float, resp: float, n: float):
 def absorptive(spec2d):
     """Create absorptive spectrum from 2D reph/non-reph spectrum.
 
-    Works for ket-only and full pathways.  Removes DC terms.
+    Works for ket-only and full pathways.
     """
-    return np.real(spec2d[1:, 1:][::-1, ::-1] - spec2d[1:, 1:][::-1])
+    return np.imag(spec2d - spec2d[:,::-1])
 
 
 def dispersive(spec2d):
     """Create dispersive spectrum from 2D reph/non-reph spectrum.
 
-    Works for ket-only and full pathways.  Removes DC terms.
+    Works for ket-only and full pathways.
     """
-    return np.imag(spec2d[1:, 1:][::-1, ::-1] + spec2d[1:, 1:][::-1])
+    return np.real(spec2d + spec2d[:,::-1])
