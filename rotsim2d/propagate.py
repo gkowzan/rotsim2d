@@ -72,14 +72,8 @@ class CrossSectionMixin:
 
     def leaf_response(self, leaf: pw.KetBra, freqs: List[Union[np.ndarray, float]]) -> Union[np.ndarray, np.complex]:
         r"""Return single pathway response spectrum."""
-        if self.freq_shift is None:
-            freq_shift = [0.0]*len(freqs)
-        else:
-            freq_shift = self.freq_shift
-
-        # resp = np.empty(times_dims(freqs), dtype=np.complex)
-        resps = []
-        const = np.complex(1.0)
+        freq_shift = [0.0]*len(freqs) if self.freq_shift is None else self.freq_shift
+        resps, const = [], np.complex(1.0)
 
         kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
         for i in range(1, len(kb_series)):
@@ -98,15 +92,11 @@ class CrossSectionMixin:
             if kb.parent.readout:
                 const *= mu*kb.root.pop
                 break
-
-            # if None, integrate over frequencies
+            const *= 1.0j/C.hbar*kb.parent.side*mu
             if freqs[i-1] is None:
-                const *= 1.0j/C.hbar*kb.parent.side*mu
-                # np.multiply(resp, 1.0j/C.hbar*kb.parent.side*mu, out=resp)
                 continue
 
-            # nu and gam
-            # pairs in line_params have lower nu first
+            # nu and gam; pairs in line_params have lower nu first
             pair = ((kb.bnu, kb.bj), (kb.knu, kb.kj))
             try:
                 nu = self.sys_params['line_params'][pair]['nu'] - freq_shift[i-1]
@@ -123,12 +113,7 @@ class CrossSectionMixin:
                     else:
                         raise e
 
-            const *= 1.0j/C.hbar*kb.parent.side*mu
             resps.append(self.leaf_term(nu, gam, freqs[i-1]))
-            # if i-1 == 0:
-            #     resp[...] = self.leaf_term(nu, gam, freqs[i-1])
-            # else:
-            #     np.multiply(resp, self.leaf_term(nu, gam, freqs[i-1]), out=resp)
 
         if len(resps) == 1:
             return resps[0]*const
