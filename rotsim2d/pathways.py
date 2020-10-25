@@ -241,6 +241,14 @@ def remove_interstates(ketbra: KetBra) -> KetBra:
     return prune(ketbra)
 
 
+def only_interstates(ketbra: KetBra) -> KetBra:
+    for l in ketbra.leaves:
+        if l.ketbras()[2].is_diagonal():
+            l.parent = None
+
+    return prune(ketbra)
+
+
 def prune(ketbra: KetBra) -> KetBra:
     """Remove leaves whose depth is less than maximum."""
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
