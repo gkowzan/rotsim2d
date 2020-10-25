@@ -1,9 +1,11 @@
 r"""Generate all Liouville pathways for nth order rovibrational excitation.
 """
 import enum
-from typing import List, Union
 from copy import deepcopy
-import itertools as it
+import operator as op
+from functools import reduce
+from typing import List, Union
+
 import anytree as at
 from anytree.exporter import UniqueDotExporter
 
@@ -156,14 +158,20 @@ class KetBra(at.NodeMixin):
         """Interactions which generated this KetBra."""
         return [x for x in self.ancestors if isinstance(x, LightInteraction)]
 
-    def total_sign(self) -> int:
+    def ksigns(self) -> List[KSign]:
+        return [i.sign for i in self.interactions()]
+
+    def sides(self) -> List[Side]:
+        return [i.side for i in self.interactions()]
+
+    def total_ksign(self) -> int:
         """Cumulative sign of the term."""
-        sign = 1
-        for i in self.interactions():
-            sign *= i.sign
+        return reduce(op.mul, self.ksigns(), 1)
 
-        return sign
-
+    def total_side(self) -> int:
+        """Cumulative side of the term."""
+        return reduce(op.mul, self.sides(), 1)
+    
     
 def remove_nonrephasing(ketbra: KetBra) -> KetBra:
     for l in ketbra.leaves:
