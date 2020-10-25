@@ -59,7 +59,7 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog'):
     ax2d.set(xlabel=r'Probe (cm$^{-1}$)', ylabel=r'Pump (cm$^{-1}$)')
     ax2d.axline((ax2d.get_xlim()[0], ax2d.get_ylim()[0]),
                 (ax2d.get_xlim()[1], ax2d.get_ylim()[1]),
-                color='gray')
+                color='gray', alpha=0.5)
     axcbar = fig.colorbar(cset, ax=ax2d, cax=axcbar)
 
     if spec_linear is not None:
