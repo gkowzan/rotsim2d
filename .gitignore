@@ -2,6 +2,7 @@
 .idea
 *.log
 tmp/
+.vscode
 
 *.py[cod]
 *.egg
