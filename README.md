@@ -1,5 +1,18 @@
 Package to simulate 2D rovibrational spectra of gas-phase samples.
 
+# Installation
+Install the package by downloading or cloning the repo and calling the following inside main repository directory (containing `setup.py`):
+
+``` sh
+python -m pip install --no-deps -e .
+```
+
+or by installing directly from the repo with pip
+
+``` sh
+python -m pip git+ssh://git@gitlab.com:allisonlab/mdcs/rotsim2d.git@master
+```
+
 # TODO
 
 ## Speed up calculations
@@ -12,12 +25,16 @@ Package to simulate 2D rovibrational spectra of gas-phase samples.
 
 ## Functionality
 
++ Make time-domain and frequency-domain results agree.
++ Constants.
 + Polarization and rotational coherence.
+    + 
 + Add symmetric top and physical model.
 + Add line-mixing (proper dephasing) and Doppler.
-+ Improve graph export.
 + Extract coherences and positions.
 + Generate real spectra (relative to linear absorption).
-+ Constants.
++ ~~Look at signals for different T_w times.~~ 
++ ~~Compare w/ overtones and wo/ overtones.~~
++ ~~Improve graph export.~~
 + ~~Add interstate coherences.~~
 + ~~Add filtering of pathways: k-vectors.~~
