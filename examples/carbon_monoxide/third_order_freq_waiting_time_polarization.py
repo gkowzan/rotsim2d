@@ -148,6 +148,7 @@ dt = 1.0/(2.0*u.wn2nu(343.0))/2.0
 T = 1.0/co_params[((0,0), (1,1))]['gam']*4.0/5.0         # relaxation time constant
 N = np.round(T/dt).astype(np.int)
 t2 = 4375e-15
+# t2 = 2190e-15
 ts = np.arange(N)*dt
 
 root_prop = prop.Propagator({'elevels': co_levels, 'populations': co_pops, 'line_params': co_params},
@@ -158,15 +159,16 @@ root_prop = prop.Propagator({'elevels': co_levels, 'populations': co_pops, 'line
 
 # ** Third order --- full -- pump and detection time
 resp_xs = np.zeros((ts.size, ts.size), dtype=np.complex)
-for j in range(0, 26):
+for j in range(0, 15):
     # third order
     print(j, time.asctime())
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'])
+                           parts=['ket', 'both', 'both'],
+                           light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi])
     # root = pw.remove_overtones(root)
     root = pw.readout(root)
-    pop_factor = co_pops[(0, j)]
+    pop_factor = co_pops[(0, j)]/np.sqrt(2*j+1)
     for i, t1 in enumerate(ts):
         with wig.wigxjpf(300, 6):
             resp_xs[i, :] += pop_factor*root_prop.response(root, [t1, t2, ts])
@@ -186,8 +188,8 @@ fig_dict = vis.plot2d_im(freqs=(resp_xs_freqs_wn+1800.0, resp_xs_freqs_wn+1800.0
                          spec2d=prop.absorptive(resp_xs_spec_fft),
                          scale='linear')
 fig_dict['fig'].set_size_inches(4.0, 3.0)
-fig_dict['fig'].canvas.set_window_title('Time domain -- absorptive -- no overtones')
+# fig_dict['fig'].canvas.set_window_title('Time domain -- absorptive -- no overtones')
 fig_dict['ax2d'].set_title(r'$t_2 = {:.3f}$ ps'.format(t2*1e12), fontsize=9.0)
 fig_dict['ax2d'].set(xlim=(2030, 2230), ylim=(2030, 2230))
-fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.png'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
-fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.pdf'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
+# fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.png'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
+# fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.pdf'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)

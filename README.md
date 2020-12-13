@@ -1,5 +1,13 @@
 Package to simulate 2D rovibrational spectra of gas-phase samples.
 
+See examples in `examples/carbon_monoxide`.
+
+# Dependencies
+- numpy, scipy, anytree
+- [pywigxjpf](https://gitlab.com/allisonlab/mdcs/shed)
+- [shed](https://gitlab.com/allisonlab/mdcs/shed)
+- [spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy)
+
 # Installation
 Install the package by downloading or cloning the repo and calling the following inside main repository directory (containing `setup.py`):
 
@@ -28,7 +36,6 @@ python -m pip git+ssh://git@gitlab.com:allisonlab/mdcs/rotsim2d.git@master
 + Make time-domain and frequency-domain results agree.
 + Constants.
 + Polarization and rotational coherence.
-    + 
 + Add symmetric top and physical model.
 + Add line-mixing (proper dephasing) and Doppler.
 + Extract coherences and positions.

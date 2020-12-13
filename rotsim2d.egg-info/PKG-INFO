@@ -1,0 +1,65 @@
+Metadata-Version: 2.1
+Name: rotsim2d
+Version: 0.0.1
+Summary: Simulation of rotationally-resolved rovibrational 2D spectra
+Home-page: https://gitlab.com/allisonlab/mdcs/rotsim2d
+Author: Grzegorz Kowzan
+Author-email: grzegorz.kowzan@stonybrook.edu
+License: UNKNOWN
+Description: Package to simulate 2D rovibrational spectra of gas-phase samples.
+        
+        See examples in `examples/carbon_monoxide`.
+        
+        # Dependencies
+        - numpy, scipy, anytree
+        - [pywigxjpf](https://gitlab.com/allisonlab/mdcs/shed)
+        - [shed](https://gitlab.com/allisonlab/mdcs/shed)
+        - [spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy)
+        
+        # Installation
+        Install the package by downloading or cloning the repo and calling the following inside main repository directory (containing `setup.py`):
+        
+        ``` sh
+        python -m pip install --no-deps -e .
+        ```
+        
+        or by installing directly from the repo with pip
+        
+        ``` sh
+        python -m pip git+ssh://git@gitlab.com:allisonlab/mdcs/rotsim2d.git@master
+        ```
+        
+        # TODO
+        
+        ## Speed up calculations
+        
+        + Transform the problem into n-dimensional array calculations.
+        + Parallelize the code. Orders of magnitude improvement is needed, this won't be fast enough on its own.
+        + Translate the code to C++. *Profile first.*
+        + ~~Calculate only for initial ket excitation.~~
+        + ~~Calculate directly in the frequency domain. This is not a general solution, can't be done if pulse-shape effects are included or dephasing function does not have analytical Fourier transform.~~
+        
+        ## Functionality
+        
+        + Make time-domain and frequency-domain results agree.
+        + Constants.
+        + Polarization and rotational coherence.
+        + Add symmetric top and physical model.
+        + Add line-mixing (proper dephasing) and Doppler.
+        + Extract coherences and positions.
+        + Generate real spectra (relative to linear absorption).
+        + ~~Look at signals for different T_w times.~~ 
+        + ~~Compare w/ overtones and wo/ overtones.~~
+        + ~~Improve graph export.~~
+        + ~~Add interstate coherences.~~
+        + ~~Add filtering of pathways: k-vectors.~~
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Planning
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Scientific/Engineering :: Physics
+Requires-Python: >=3.5
+Description-Content-Type: text/markdown
+Provides-Extra: doc

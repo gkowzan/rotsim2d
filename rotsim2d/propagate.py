@@ -13,6 +13,7 @@ import numpy as np
 import scipy.constants as C
 import pyfftw.interfaces.scipy_fftpack as fftp
 from rotsim2d import pathways as pw
+from rotsim2d.couple import four_couple
 
 e2i = C.epsilon_0*C.c/2         #: Electric field to intensity
 xs2cm = 1e2/C.c                 #: Cross section in m^2 Hz to cm^2 cm^{-1}
@@ -76,14 +77,19 @@ class CrossSectionMixin:
         resps, const = [], np.complex(1.0)
 
         kb_series = [x for x in leaf.ancestors if isinstance(x, pw.KetBra)] + [leaf]
+        wkets, wbras = [], []
         for i in range(1, len(kb_series)):
             kb, kbp = kb_series[i], kb_series[i-1]
 
-            # dipole matrix element
+            # dipole interaction reduced matrix element
             if kb.parent.side is pw.Side.KET:
                 pair = ((kbp.knu, kbp.kj), (kb.knu, kb.kj))
+                if not i == len(kb_series)-1:
+                    wkets.append((kb.kj,  kb.parent.angle))
             else:
                 pair = ((kbp.bnu, kbp.bj), (kb.bnu, kb.bj))
+                if not i == len(kb_series)-1:
+                    wbras.append((kb.bj, kb.parent.angle))
             try:
                 mu = self.sys_params['line_params'][pair]['mu']
             except KeyError:
@@ -91,6 +97,9 @@ class CrossSectionMixin:
 
             if kb.parent.readout:
                 const *= mu*kb.root.pop
+                wbras.extend(reversed(wkets))
+                wbras.insert(0, (kb.root.kj, leaf.parent.angle))
+                const *= four_couple([x[0] for x in wbras], [x[1] for x in wbras])
                 break
             const *= 1.0j/C.hbar*kb.parent.side*mu
             if freqs[i-1] is None:

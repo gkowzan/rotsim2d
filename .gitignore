@@ -5,7 +5,6 @@ tmp/
 .vscode
 
 *.py[cod]
-*.egg
 build
 htmlcov
 

@@ -42,12 +42,14 @@ class LightInteraction(at.NodeMixin):
     readout : bool
         Readout or actual light interaction.
     """
-    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, parent=None, children=None):
+    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: float=0.0, parent=None,
+                 children=None):
         super(LightInteraction, self).__init__()
         self.separator = "->"
         self.name = name
         self.side = side
         self.sign = sign
+        self.angle = angle
         self.readout = readout
         self.fullname = "{:s}(side={:d}, sign={:d})".format(self.name, self.side, self.sign)
         self.parent = parent
@@ -272,15 +274,15 @@ def prune(ketbra: KetBra) -> KetBra:
     return ketbra
 
                 
-def readout(ketbra: KetBra) -> KetBra:
+def readout(ketbra: KetBra, angle: float=0.0) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
-        excite(kb, 'mu', 'ket', True)
+        excite(kb, 'mu', 'ket', True, angle)
 
     return ketbra
 
 
-def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False) -> KetBra:
+def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False, angle: float=0.0) -> KetBra:
     """Generate all excitations of `ketbra`.
 
     Modifies `ketbra` in place.
@@ -315,9 +317,9 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
                     continue
                 children.append(KetBra(nnu, nj, ketbra.bnu, ketbra.bj))
             if dnu > 0:             # ket absorption
-                LightInteraction(light_name, Side.KET, KSign.POS, readout, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.KET, KSign.POS, readout, angle, parent=ketbra, children=children)
             elif dnu < 0:           # ket emission
-                LightInteraction(light_name, Side.KET, KSign.NEG, readout, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.KET, KSign.NEG, readout, angle, parent=ketbra, children=children)
 
     if part == 'bra' or part == 'both':
         for dnu in dnus:
@@ -331,14 +333,15 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
                     continue
                 children.append(KetBra(ketbra.knu, ketbra.kj, nnu, nj))
             if dnu > 0:         # bra absorption
-                LightInteraction(light_name, Side.BRA, KSign.NEG, readout, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.BRA, KSign.NEG, readout, angle, parent=ketbra, children=children)
             elif dnu < 0:       # bra emission
-                LightInteraction(light_name, Side.BRA, KSign.POS, readout, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.BRA, KSign.POS, readout, angle, parent=ketbra, children=children)
 
     return ketbra
 
 
-def multi_excite(ketbra: KetBra, light_names: List[str], parts: Union[List, None]=None) -> KetBra:
+def multi_excite(ketbra: KetBra, light_names: List[str], parts: Union[List, None]=None,
+                 light_angles: Union[List, None]=None) -> KetBra:
     """Generate multiple excitations of `ketbra`.
 
     Parameters
@@ -356,9 +359,14 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Union[List, None
         parts = ['ket']
         parts.extend(['both']*(len(light_names)-1))
 
+    if light_angles is not None and len(light_angles) != len(light_names):
+        raise ValueError("len(light_angles) != len(light_names)")
+    if light_angles is None:
+        light_angles = [0.0]*len(light_names)
+
     if light_names:
-        excite(ketbra, light_names.pop(0), parts.pop(0))
+        excite(ketbra, light_names.pop(0), parts.pop(0), False, light_angles.pop(0))
         for kb in ketbra.leaves:
-            multi_excite(kb, light_names[:], parts[:])
+            multi_excite(kb, light_names[:], parts[:], light_angles[:])
 
     return ketbra.root
