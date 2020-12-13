@@ -4,7 +4,7 @@ See examples in `examples/carbon_monoxide`.
 
 # Dependencies
 - numpy, scipy, anytree
-- [pywigxjpf](https://gitlab.com/allisonlab/mdcs/shed)
+- [pywigxjpf](https://gitlab.com/allisonlab/mdcs/pywigxjpf)
 - [shed](https://gitlab.com/allisonlab/mdcs/shed)
 - [spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy)
 
