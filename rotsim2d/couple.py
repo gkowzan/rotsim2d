@@ -1,4 +1,5 @@
 """Calculate interaction matrix elements between rotational states."""
+from numbers import Number
 import numpy as np
 import pywigxjpf.pywigxjpf as wig
 
@@ -26,7 +27,10 @@ def G(ji, j1, j2, j3, k):
 
 
 def T00(phi, phj, phk, phl, k):
-    """Recoupling of four collinear beams with total Q=K=0."""
+    """Recoupling of four collinear beams with total Q=K=0.
+
+    Only linear polarization.
+    """
     if k==0:
         return np.cos(phi-phj)*np.cos(phk-phl)/3.0
     elif k==1:
@@ -36,8 +40,55 @@ def T00(phi, phj, phk, phl, k):
     else:
         return 0.0
 
+def T00_circ(phi, phj, phk, phl, delti, deltj, deltk, deltl, k):
+    """Recoupling of four collinear beams with total Q=K=0.
+
+    Possibly circular polarization.
+    """
+    if k==0:
+        return (1/3*(np.cos(phi)*np.cos(phj)*np.cos(phk)*np.cos(phl)+\
+                     np.exp(1.0j*(deltl-deltk))*\
+                     np.sin(phk)*np.sin(phl)*np.cos(phi)*np.cos(phj)+\
+                     np.exp(1.0j*(deltj-delti))*\
+                     np.sin(phi)*np.sin(phj)*np.cos(phk)*np.cos(phl)+\
+                     np.exp(1.0j*(deltj+deltl-delti-deltk))*\
+                     np.sin(phi)*np.sin(phj)*np.sin(phk)*np.sin(phl)))
+    elif k==1:
+        return (1/6*np.sqrt(3)*\
+                (np.exp(1.0j*(deltj+deltl))*np.sin(phj)*np.sin(phl)*np.cos(phi)*np.cos(phk)-\
+                 np.exp(1.0j*(deltj-deltk))*np.sin(phj)*np.sin(phk)*np.cos(phi)*np.cos(phl)-\
+                 np.exp(1.0j*(deltl-delti))*np.sin(phi)*np.sin(phl)*np.cos(phj)*np.cos(phk)+\
+                 np.exp(-1.0j*(delti+deltk))*np.sin(phi)*np.sin(phk)*np.cos(phj)*np.cos(phl)))
+    elif k==2:
+        return (np.sqrt(5)*\
+                (0.1*np.exp(1.0j*(deltj+deltl))*np.sin(phj)*np.sin(phl)*np.cos(phi)*np.cos(phk)+\
+                 0.1*np.exp(1.0j*(deltj-deltk))*np.sin(phj)*np.sin(phk)*np.cos(phi)*np.cos(phl)+\
+                 1/7.5*np.cos(phi)*np.cos(phj)*np.cos(phk)*np.cos(phl)-\
+                 1/15*np.exp(1.0j*(deltl-deltk))*np.sin(phk)*np.sin(phl)*np.cos(phi)*np.cos(phj)-\
+                 1/15*np.exp(1.0j*(deltj-delti))*np.sin(phi)*np.sin(phj)*np.cos(phk)*np.cos(phl)+\
+                 1/7.5*np.exp(1.0j*(deltj+deltl-delti-deltk))*\
+                 np.sin(phi)*np.sin(phj)*np.sin(phk)*np.sin(phl)+\
+                 0.1*np.exp(1.0j*(deltl-delti))*np.sin(phi)*np.sin(phl)*np.cos(phj)*np.cos(phk)+\
+                 0.1*np.exp(-1.0j*(delti+deltk))*np.sin(phi)*np.sin(phk)*np.cos(phj)*np.cos(phl)))
+    else:
+        return 0.0
 
 def four_couple(js, angles):
+    if isinstance(angles[0], Number):
+        return four_couple_linear(js, angles)
+    else:
+        return four_couple_circ(js, angles)
+
+def four_couple_linear(js, angles):
     return G(js[0], js[1], js[2], js[3], 0)*T00(angles[0], angles[1], angles[2], angles[3], 0)+\
         G(js[0], js[1], js[2], js[3], 1)*T00(angles[0], angles[1], angles[2], angles[3], 1)+\
         G(js[0], js[1], js[2], js[3], 2)*T00(angles[0], angles[1], angles[2], angles[3], 2)
+
+def four_couple_circ(js, angles):
+    """`angles` is a list of four tuples with angles."""
+    return G(js[0], js[1], js[2], js[3], 0)*T00_circ(angles[0][0], angles[1][0], angles[2][0], angles[3][0],
+                                                     angles[0][1], angles[1][1], angles[2][1], angles[3][1], 0)+\
+        G(js[0], js[1], js[2], js[3], 1)*T00_circ(angles[0][0], angles[1][0], angles[2][0], angles[3][0],
+                                                  angles[0][1], angles[1][1], angles[2][1], angles[3][1], 1)+\
+        G(js[0], js[1], js[2], js[3], 2)*T00_circ(angles[0][0], angles[1][0], angles[2][0], angles[3][0],
+                                                  angles[0][1], angles[1][1], angles[2][1], angles[3][1], 2)
