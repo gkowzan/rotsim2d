@@ -1,4 +1,5 @@
 """Calculate interaction matrix elements between rotational states."""
+from typing import Sequence, List, Union, Tuple
 from numbers import Number
 import numpy as np
 import pywigxjpf.pywigxjpf as wig
@@ -20,13 +21,13 @@ def wigner6j0(a: int, b: int, c: int) -> float:
     return (-1)**s/np.sqrt((2*b+1)*(2*c+1))
 
 
-def G(ji, j1, j2, j3, k):
+def G(ji: int, jj: int, jk: int, jl: int, k: int):
     """Wigner6j part of four-fold reduced matrix element."""
-    return (2*k+1)*wigner6j0(j2, ji, k)*wig.wig6j(1, 1, k, j2, ji, j1)*\
-        wig.wig6j(1, 1, k, ji, j2, j3)
+    return (2*k+1)*wigner6j0(jk, ji, k)*wig.wig6j(1, 1, k, jk, ji, jj)*\
+        wig.wig6j(1, 1, k, ji, jk, jl)
 
 
-def T00(phi, phj, phk, phl, k):
+def T00(phi: float, phj: float, phk: float, phl: float, k: int):
     """Recoupling of four collinear beams with total Q=K=0.
 
     Only linear polarization.
@@ -40,7 +41,8 @@ def T00(phi, phj, phk, phl, k):
     else:
         return 0.0
 
-def T00_circ(phi, phj, phk, phl, delti, deltj, deltk, deltl, k):
+def T00_circ(phi: float, phj: float, phk: float, phl: float,
+             delti: float, deltj: float, deltk: float, deltl: float, k: int):
     """Recoupling of four collinear beams with total Q=K=0.
 
     Possibly circular polarization.
@@ -73,18 +75,21 @@ def T00_circ(phi, phj, phk, phl, delti, deltj, deltk, deltl, k):
     else:
         return 0.0
 
-def four_couple(js, angles):
+
+def four_couple(js: List[int], angles: Union[List[float], List[Tuple[float]]]):
     if isinstance(angles[0], Number):
         return four_couple_linear(js, angles)
     else:
         return four_couple_circ(js, angles)
 
-def four_couple_linear(js, angles):
+
+def four_couple_linear(js: List[int], angles: List[float]):
     return G(js[0], js[1], js[2], js[3], 0)*T00(angles[0], angles[1], angles[2], angles[3], 0)+\
         G(js[0], js[1], js[2], js[3], 1)*T00(angles[0], angles[1], angles[2], angles[3], 1)+\
         G(js[0], js[1], js[2], js[3], 2)*T00(angles[0], angles[1], angles[2], angles[3], 2)
 
-def four_couple_circ(js, angles):
+
+def four_couple_circ(js: List[int], angles: List[Tuple[float]]):
     """`angles` is a list of four tuples with angles."""
     return G(js[0], js[1], js[2], js[3], 0)*T00_circ(angles[0][0], angles[1][0], angles[2][0], angles[3][0],
                                                      angles[0][1], angles[1][1], angles[2][1], angles[3][1], 0)+\
