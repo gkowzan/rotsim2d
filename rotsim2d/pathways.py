@@ -4,13 +4,17 @@ import enum
 from copy import deepcopy
 import operator as op
 from functools import reduce
-from typing import List, Union
+from typing import List, Union, Tuple
+import numpy as np
 
 import anytree as at
 from anytree.exporter import UniqueDotExporter
 
 dnus = [-1, +1] #: possible changes of vibrational state
 djs = [-1, +1] #: possible changes of rotational state
+
+right_pol = (5/4*np.pi, -np.pi/2)
+left_pol = (np.pi/4, np.pi/2)
 
 def nodeattrfunc(node):
     if isinstance(node, LightInteraction):
@@ -42,8 +46,8 @@ class LightInteraction(at.NodeMixin):
     readout : bool
         Readout or actual light interaction.
     """
-    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: float=0.0, parent=None,
-                 children=None):
+    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: Union[float, List[tuple]]=0.0,
+                 parent=None, children=None):
         super(LightInteraction, self).__init__()
         self.separator = "->"
         self.name = name
@@ -144,6 +148,11 @@ class KetBra(at.NodeMixin):
         pump_kb = self.ketbras()[1]
         return (kb1 == pump_kb or kb1 == pump_kb.conj()) and (kb2 == self or kb2 == self.conj())
 
+    def is_dfwm(self):
+        """Check is this pathway contains only coherences corresponding to a single dipole transition."""
+        kbs = self.ketbras()
+        return all([kb.is_diagonal() or kb == kbs[1] or kb == kbs[1].conj() for kb in kbs])
+
     def is_pathway(self, *kbs):
         """Match self to pathway consisting of `kbs`."""
         return tuple(self.ketbras()) == kbs
@@ -227,6 +236,14 @@ def only_between(ketbra: KetBra, kb1: KetBra, kb2: KetBra) -> KetBra:
     return prune(ketbra)
 
 
+def only_dfwm(ketbra: KetBra) -> KetBra:
+    for l in ketbra.leaves:
+        if not l.is_dfwm():
+            l.parent = None
+
+    return prune(ketbra)
+
+
 def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
     for l in ketbra.leaves:
         if not l.is_pathway(pathway):
@@ -274,7 +291,7 @@ def prune(ketbra: KetBra) -> KetBra:
     return ketbra
 
                 
-def readout(ketbra: KetBra, angle: float=0.0) -> KetBra:
+def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
         excite(kb, 'mu', 'ket', True, angle)
@@ -341,7 +358,7 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
 
 
 def multi_excite(ketbra: KetBra, light_names: List[str], parts: Union[List, None]=None,
-                 light_angles: Union[List, None]=None) -> KetBra:
+                 light_angles: Union[List[float], List[Tuple[float]], None]=None) -> KetBra:
     """Generate multiple excitations of `ketbra`.
 
     Parameters
