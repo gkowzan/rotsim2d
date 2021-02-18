@@ -352,8 +352,13 @@ def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
         excite(kb, 'mu', 'ket', True, angle)
+    # Below is correct for DFWM but incorrent in general. readout doesn't have
+    # to produce ground state population.
+    # for kb in ketbra.leaves:
+    #     if not kb == kb.root:
+    #         kb.parent = None
 
-    return ketbra
+    return prune(remove_nondiagonal(ketbra))
 
 
 def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False,
