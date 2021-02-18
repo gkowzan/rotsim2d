@@ -23,7 +23,7 @@ def wigner6j0(a: int, b: int, c: int) -> float:
 
 def G(ji: int, jj: int, jk: int, jl: int, k: int):
     """Wigner6j part of four-fold reduced matrix element."""
-    return (2*k+1)*wigner6j0(jk, ji, k)*wig.wig6j(1, 1, k, jk, ji, jj)*\
+    return (2*k+1)*wig.wig6j(k, k, 0, ji, ji, jk)*wig.wig6j(1, 1, k, jk, ji, jj)*\
         wig.wig6j(1, 1, k, ji, jk, jl)
 
 
