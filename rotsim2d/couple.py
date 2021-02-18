@@ -77,6 +77,7 @@ def T00_circ(phi: float, phj: float, phk: float, phl: float,
 
 
 def four_couple(js: List[int], angles: Union[List[float], List[Tuple[float]]]):
+    """j values in `js` correspond to bras associated with dipole operators"""
     if isinstance(angles[0], Number):
         return four_couple_linear(js, angles)
     else:
