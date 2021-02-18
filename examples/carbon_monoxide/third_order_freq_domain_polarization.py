@@ -47,53 +47,68 @@ jmax = 20
 pws = []
 for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
-
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
                            # light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
                            # light_angles=[np.pi/2, 0.0, np.pi/2]
                            )
+    root = pw.remove_rephasing(root)
     root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
     resp_xs_xxxx = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
-# ** XYXY
-pws = []
-for j in range(0, jmax):
-    root = pw.KetBra(0, j, 0, j)
-    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           # light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
-                           light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
-    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
-    pws.append(root)
-multi_prop = prop.MultiPropagator(pws, root_prop)
-with wig.wigxjpf(300, 6):
-    resp_xs_xyxy = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
-
 # ** X(MA)X(MA)
+ma = 54.7356103172453*np.pi/180.0 # magic angle
 pws = []
 for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
-                           light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
+                           light_angles=[0.0, ma, ma])
+    root = pw.remove_rephasing(root)
+    root = pw.readout(root, 0.0)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
     resp_xs_xmaxma = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+
+# ** Remove k=2 ('|0,5><1,6|', '|1,6><2,7|')
+ma = 54.7356103172453*np.pi/180.0 # magic angle
+# [pi+phj, ma, 0, 0] <- [0, pi+ma, 0, ma]
+pws = []
+for j in range(0, jmax):
+    root = pw.KetBra(0, j, 0, j)
+    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                           parts=['ket', 'both', 'both'],
+                           light_angles=[0.0, np.pi+ma, 0.0])
+    root = pw.remove_rephasing(root)
+    root = pw.readout(root, ma)
+    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
+    pws.append(root)
+multi_prop = prop.MltiPropagator(pws, root_prop)
+with wig.wigxjpf(300, 6):
+    resp_xs_twozero = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+
+# ** Remove k=2 ('|0,5><1,6|', '|0,7><1,6|')
+ma = 54.7356103172453*np.pi/180.0 # magic angle
+# [pi+phj, ma, 0, 0] <- [0, pi+ma, ma, 0]
+pws = []
+for j in range(0, jmax):
+    root = pw.KetBra(0, j, 0, j)
+    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                           parts=['ket', 'both', 'both'],
+                           light_angles=[0.0, np.pi+ma, ma])
+    root = pw.remove_rephasing(root)
+    root = pw.readout(root, 0.0)
+    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+with wig.wigxjpf(300, 6):
+    resp_xs_twozero2 = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
 # ** Bracamonte
 pws = []
@@ -104,47 +119,41 @@ for j in range(0, jmax):
                            light_angles=[np.pi/2, np.pi/4, np.pi/2]
                            # light_angles=[np.pi/2, 0.0, np.pi/2]
                            )
-    root = pw.readout(root, -18.43/180.0*np.pi)
-    root = pw.remove_nondiagonal(root)
+    root = pw.remove_rephasing(root)
+    root = pw.remove_interstates(root)
+    root = pw.readout(root, 26.57/180.0*np.pi)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
     resp_xs_bracamonte = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
-# ** Bracamonte 2
+# ** (circ)(circ)XX
 pws = []
 for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
-                           light_angles=[np.pi/2, np.pi/4, np.pi/2]
+                           light_angles=[pw.left_pol, pw.left_pol, (0.0, 0.0)]
                            # light_angles=[np.pi/2, 0.0, np.pi/2]
                            )
-    root = pw.readout(root, 26.57/180.0*np.pi)
+    root = pw.readout(root, (0.0, 0.0))
     root = pw.remove_nondiagonal(root)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
-    resp_xs_bracamonte2 = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+    resp_xs_circ = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
-# ** Mine
-pws = []
-for j in range(0, jmax):
-    root = pw.KetBra(0, j, 0, j)
-    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           light_angles=[np.pi/2, np.pi/4, np.pi/2]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    root = pw.readout(root, np.pi/4)
-    root = pw.remove_nondiagonal(root)
-    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
-    pws.append(root)
-multi_prop = prop.MultiPropagator(pws, root_prop)
-with wig.wigxjpf(300, 6):
-    resp_xs_mine = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
+                         spec2d=prop.absorptive(resp_xs_circ),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle('LLXX (no overtones)')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'LLXX_noovertones.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'LLXX_noovertones.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=prop.absorptive(resp_xs_bracamonte2),
@@ -163,10 +172,41 @@ fig_dict['fig'].savefig(str(OUTPUT / 'XXXX.png'))
 fig_dict['fig'].savefig(str(OUTPUT / 'XXXX.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
+                         spec2d=prop.absorptive(resp_xs_xmaxma),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle(r'X(MA)X(MA)')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA.pdf'))
+
+fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
+                         spec2d=prop.absorptive(resp_xs_twozero),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle(r'zeroed k=2')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'twozero.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'twozero.pdf'))
+
+
+fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
+                         spec2d=prop.absorptive(resp_xs_twozero2),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle(r'zeroed k=2')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'twozero2.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'twozero2.pdf'))
+
+fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=prop.absorptive(resp_xs_bracamonte),
-                         scale='linear')
+                         scale='linear', line=False)
 fig_dict['fig'].suptitle('Bracamonte')
-fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=prop.absorptive(resp_xs_xyxy),
@@ -179,14 +219,14 @@ fig_dict['fig'].savefig(str(OUTPUT / 'XYXY.png'))
 fig_dict['fig'].savefig(str(OUTPUT / 'XYXY.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_xmaxma),
+                         spec2d=prop.absorptive(resp_xs_yyxx),
                          scale='linear', line=False,
                          fig_kwargs=dict(figsize=(4,3),
                                          constrained_layout=True))
-fig_dict['fig'].suptitle('X(MA)X(MA)')
+fig_dict['fig'].suptitle('YYXX')
 fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
-fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA.png'))
-fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA.pdf'))
+fig_dict['fig'].savefig(str(OUTPUT / 'YYXX.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'YYXX.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=prop.absorptive(resp_xs_xmaxma)-prop.absorptive(resp_xs_xxxx),
@@ -198,7 +238,7 @@ fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
 fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_XMAXMA.png'))
 fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_XMAXMA.pdf'))
 
-# * Calculate molecular coherence spectrum -- no interstates
+# * Calculate molecular coherence spectrum -- no overtones
 root_prop = prop.Spectrum({'elevels': co_levels, 'populations': co_pops,
                              'line_params': co_params},
                             # filter=lambda kb: kb.parent.parent==pw.KetBra(0, 0, 1, 1)\
@@ -212,38 +252,14 @@ pws = []
 for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           # light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    # root = pw.remove_interstates(root)
+                           parts=['ket', 'both', 'both'])
     root = pw.remove_overtones(root)
     root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
     resp_xs_xxxx = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
-
-# ** XYXY
-pws = []
-for j in range(0, jmax):
-    root = pw.KetBra(0, j, 0, j)
-    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           # light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
-                           light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    # root = pw.remove_interstates(root)
-    root = pw.remove_overtones(root)
-    root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
-    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
-    pws.append(root)
-multi_prop = prop.MultiPropagator(pws, root_prop)
-with wig.wigxjpf(300, 6):
-    resp_xs_xyxy = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
 # ** X(MA)X(MA)
 pws = []
@@ -251,78 +267,42 @@ for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
-                           light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    # root = pw.remove_interstates(root)
+                           light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi])
     root = pw.remove_overtones(root)
     root = pw.readout(root)
-    root = pw.remove_nondiagonal(root)
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
     resp_xs_xmaxma = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
-# ** Bracamonte
+# ** (circ)(circ)XX
 pws = []
 for j in range(0, jmax):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
-                           light_angles=[0.0, np.pi/4, -np.pi/4]
+                           light_angles=[pw.left_pol, pw.right_pol, (0.0, 0.0)]
                            # light_angles=[np.pi/2, 0.0, np.pi/2]
                            )
     root = pw.remove_overtones(root)
-    root = pw.readout(root, 0.0)
-    root = pw.remove_nondiagonal(root)
+    root = pw.readout(root, (0.0, 0.0))
     root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
     pws.append(root)
 multi_prop = prop.MultiPropagator(pws, root_prop)
 with wig.wigxjpf(300, 6):
-    resp_xs_bracamonte = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+    resp_xs_circ = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
 
-# ** Bracamonte 2
-pws = []
-for j in range(0, jmax):
-    root = pw.KetBra(0, j, 0, j)
-    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           light_angles=[54.7356/180.0*np.pi, 54.7356/180.0*np.pi, 0.0]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    root = pw.remove_overtones(root)
-    root = pw.readout(root, 0.0)
-    root = pw.remove_nondiagonal(root)
-    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
-    pws.append(root)
-multi_prop = prop.MultiPropagator(pws, root_prop)
-with wig.wigxjpf(300, 6):
-    resp_xs_bracamonte2 = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
-
-# ** Mine
-pws = []
-for j in range(0, jmax):
-    root = pw.KetBra(0, j, 0, j)
-    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                           parts=['ket', 'both', 'both'],
-                           light_angles=[np.pi/2, np.pi/4, np.pi/2]
-                           # light_angles=[np.pi/2, 0.0, np.pi/2]
-                           )
-    root = pw.remove_interstates(root)
-    root = pw.readout(root, np.pi/4)
-    root = pw.remove_nondiagonal(root)
-    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
-    pws.append(root)
-multi_prop = prop.MultiPropagator(pws, root_prop)
-with wig.wigxjpf(300, 6):
-    resp_xs_mine = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
-
+# ** Plots
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_bracamonte2),
-                         scale='linear', line=False, fig_kwargs=dict(figsize=(4,3)))
-fig_dict['fig'].suptitle('Bracamonte 2')
-fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
+                         spec2d=prop.absorptive(resp_xs_xmaxma),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle('X(MA)X(MA) (no overtones)')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_noovertones.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_noovertones.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
                          spec2d=prop.absorptive(resp_xs_xxxx),
@@ -335,37 +315,110 @@ fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_noovertones.png'))
 fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_noovertones.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_bracamonte),
+                         spec2d=prop.absorptive(resp_xs_circ),
                          scale='linear', line=False,
                          fig_kwargs=dict(figsize=(4,3),
                                          constrained_layout=True))
-fig_dict['fig'].suptitle(r'X($\pi/4$)(-$\pi/4$)X (no overtones)')
+fig_dict['fig'].suptitle('(left)(right)XX (no overtones)')
 fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
-fig_dict['fig'].savefig(str(OUTPUT / 'XPI4PI4X_noovertones.png'))
-fig_dict['fig'].savefig(str(OUTPUT / 'XPI4PI4X_noovertones.pdf'))
+fig_dict['fig'].savefig(str(OUTPUT / 'leftrightXX_noovertones.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'leftrightXX_noovertones.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_xyxy),
+                         spec2d=prop.absorptive(resp_xs_circ)+prop.absorptive(resp_xs_xxxx),
                          scale='linear', line=False,
                          fig_kwargs=dict(figsize=(4,3),
                                          constrained_layout=True))
-fig_dict['fig'].suptitle('XYXY (no overtones)')
+fig_dict['fig'].suptitle('(left)(right)XX (no overtones)')
 fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
-fig_dict['fig'].savefig(str(OUTPUT / 'XYXY_noovertones.png'))
-fig_dict['fig'].savefig(str(OUTPUT / 'XYXY_noovertones.pdf'))
 
+# * Calculate molecular coherence spectrum -- DFWM
+root_prop = prop.Spectrum({'elevels': co_levels, 'populations': co_pops,
+                             'line_params': co_params},
+                            # filter=lambda kb: kb.parent.parent==pw.KetBra(0, 0, 1, 1)\
+                            # or kb.parent.parent==pw.KetBra(1, 1, 0, 0),
+                            filter=lambda kb: True,
+                            freq_shift=[u.wn2nu(1800.0), 0.0, u.wn2nu(1800.0)])
+jmax = 20
+
+# ** XXXX
+pws = []
+for j in range(0, 10):
+    root = pw.KetBra(0, j, 0, j)
+    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                           parts=['ket', 'both', 'both'])
+    root = pw.remove_overtones(root)
+    root = pw.readout(root)
+    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+with wig.wigxjpf(300, 6):
+    resp_xs_xxxx = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+
+# vis.latex_compile(OUTPUT / 'diagrams/DFWM_diagrams_2.tex',
+#                   vis.LATEX_PRE+vis.tikz_diagrams(pws[0])+vis.LATEX_POST)
+
+# ** Bracamonte1
+pws = []
+for j in range(0, 10):
+    root = pw.KetBra(0, j, 0, j)
+    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                           parts=['ket', 'both', 'both'],
+                           light_angles=[np.pi/2, np.pi/4, np.pi/2])
+#    root = pw.only_dfwm(root)
+#    root = pw.remove_rephasing(root)
+    root = pw.remove_overtones(root)
+    root = pw.readout(root, 26.57/180.0*np.pi)
+    # root = pw.readout(root, 4)
+    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+with wig.wigxjpf(300, 6):
+    resp_xs_maxmax = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+
+# ** (circ)(circ)XX
+pws = []
+for j in range(0, 10):
+    root = pw.KetBra(0, j, 0, j)
+    root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                           parts=['ket', 'both', 'both'],
+                           light_angles=[pw.left_pol, pw.left_pol, (0.0, 0.0)])
+    # root = pw.remove_interstates(root)
+    root = pw.remove_overtones(root)
+    root = pw.readout(root, (0.0, 0.0))
+    root.pop = co_pops[(0, j)]/np.sqrt(2*j+1)
+    pws.append(root)
+multi_prop = prop.MultiPropagator(pws, root_prop)
+with wig.wigxjpf(300, 6):
+    resp_xs_circ = multi_prop.response([fs[:, np.newaxis], None, fs[np.newaxis, :]])
+
+# ** Plots
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_xmaxma),
+                         spec2d=prop.absorptive(resp_xs_xxxx),
                          scale='linear', line=False,
                          fig_kwargs=dict(figsize=(4,3),
                                          constrained_layout=True))
-fig_dict['fig'].suptitle('X(MA)X(MA) (no overtones)')
+fig_dict['fig'].suptitle('XXXX (DFWM)')
 fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
-fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_noovertones.png'))
-fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_noovertones.pdf'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_DFWM.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_DFWM.pdf'))
 
 fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
-                         spec2d=prop.absorptive(resp_xs_bracamonte2)-prop.absorptive(resp_xs_xxxx),
-                         scale='linear')
-fig_dict['fig'].suptitle('XXXX+X(MA)X(MA)')
-fig_dict['ax2d'].set(xlim=(2000, 2250), ylim=(2000, 2250))
+                         spec2d=prop.absorptive(resp_xs_maxmax),
+                         scale='linear', line=True,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle('X(45)X(PR) (DFWM)')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_DFWM.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XMAXMA_DFWM.pdf'))
+
+fig_dict = vis.plot2d_im(freqs=(fs_cm+1800.0, fs_cm+1800.0),
+                         spec2d=prop.absorptive(resp_xs_circ),
+                         scale='linear', line=False,
+                         fig_kwargs=dict(figsize=(4,3),
+                                         constrained_layout=True))
+fig_dict['fig'].suptitle('XXXX (circ)')
+fig_dict['ax2d'].set(xlim=(2030, 2220), ylim=(2030, 2220))
+fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_circ.png'))
+fig_dict['fig'].savefig(str(OUTPUT / 'XXXX_circ.pdf'))

@@ -15,7 +15,7 @@ from spectroscopy import happier
 prop.ignore_missing = False
 plt.ion()
 
-OUTPUT = Path('/mnt/d/DFCS/Stony Brook/rotsim2d_results/carbon_monoxide/waiting_time')
+OUTPUT = Path('/mnt/d/DFCS/Stony Brook/rotsim2d_results/carbon_monoxide/polarization/waiting_time')
 # * System properties
 pressure, Tgas, length = 15.0, 296.0, 3.0
 conc = 1e-7*happier.volumeConcentration(pressure, Tgas)*1e6
@@ -37,7 +37,7 @@ N = np.round(F/df).astype(np.int)
 fs = np.arange(-N, N+1)*df
 fs_cm = u.nu2wn(fs)
 
-df2 = 100e9
+df2 = 50e9
 F2 = u.wn2nu(5000.0)
 N2 = np.round(F2/df2).astype(np.int)
 fs2 = np.arange(-N2, N2)*df2
@@ -147,8 +147,9 @@ ax.set(xlabel=r'Waiting time (ps)', ylabel='Molecular coherence',
 dt = 1.0/(2.0*u.wn2nu(343.0))/2.0
 T = 1.0/co_params[((0,0), (1,1))]['gam']*4.0/5.0         # relaxation time constant
 N = np.round(T/dt).astype(np.int)
-t2 = 4375e-15
-# t2 = 2190e-15
+# t2 = 4375e-15
+t2 = 2190e-15
+# t2= 0.0
 ts = np.arange(N)*dt
 
 root_prop = prop.Propagator({'elevels': co_levels, 'populations': co_pops, 'line_params': co_params},
@@ -165,9 +166,11 @@ for j in range(0, 15):
     root = pw.KetBra(0, j, 0, j)
     root = pw.multi_excite(root, ['omg1', 'omg2', 'omg3'],
                            parts=['ket', 'both', 'both'],
-                           light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi])
+                           # light_angles=[54.7356/180.0*np.pi, 0.0, 54.7356/180.0*np.pi]
+                           light_angles=[np.pi/2, np.pi/4, np.pi/2])
+    root = pw.remove_rephasing(root)
     # root = pw.remove_overtones(root)
-    root = pw.readout(root)
+    root = pw.readout(root, 26.57/180.0*np.pi)
     pop_factor = co_pops[(0, j)]/np.sqrt(2*j+1)
     for i, t1 in enumerate(ts):
         with wig.wigxjpf(300, 6):
@@ -191,5 +194,5 @@ fig_dict['fig'].set_size_inches(4.0, 3.0)
 # fig_dict['fig'].canvas.set_window_title('Time domain -- absorptive -- no overtones')
 fig_dict['ax2d'].set_title(r'$t_2 = {:.3f}$ ps'.format(t2*1e12), fontsize=9.0)
 fig_dict['ax2d'].set(xlim=(2030, 2230), ylim=(2030, 2230))
-# fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.png'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
-# fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.pdf'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
+fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.png'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
+fig_dict['fig'].savefig(OUTPUT / '2d_{:s}.pdf'.format("{:.3f}".format(t2*1e12).replace('.', '_')), dpi=300.0)
