@@ -25,6 +25,7 @@ python -m pip git+ssh://git@gitlab.com:allisonlab/mdcs/rotsim2d.git@master
 
 ## Speed up calculations
 
++ Use explicit formulas for G-factors instead of calculating Wigner coefficients numerically.
 + Transform the problem into n-dimensional array calculations.
 + Parallelize the code. Orders of magnitude improvement is needed, this won't be fast enough on its own.
 + Translate the code to C++. *Profile first.*
@@ -35,11 +36,11 @@ python -m pip git+ssh://git@gitlab.com:allisonlab/mdcs/rotsim2d.git@master
 
 + Make time-domain and frequency-domain results agree.
 + Constants.
-+ Polarization and rotational coherence.
 + Add symmetric top and physical model.
 + Add line-mixing (proper dephasing) and Doppler.
-+ Extract coherences and positions.
 + Generate real spectra (relative to linear absorption).
++ ~~Extract coherences and positions.~~
++ ~~Polarization and rotational coherence.~~
 + ~~Look at signals for different T_w times.~~ 
 + ~~Compare w/ overtones and wo/ overtones.~~
 + ~~Improve graph export.~~

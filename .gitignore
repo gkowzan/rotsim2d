@@ -11,3 +11,7 @@ htmlcov
 docs/_autosummary
 docs/_build
 examples/hitran.csv
+.ob-jupyter
+*.bbl
+*.tex
+.auctex-auto
