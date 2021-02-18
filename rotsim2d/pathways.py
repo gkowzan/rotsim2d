@@ -5,7 +5,7 @@ import enum
 from copy import deepcopy
 import operator as op
 from functools import reduce
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict, Iterable, Sequence, Optional
 import numpy as np
 
 import anytree as at
@@ -48,14 +48,17 @@ class LightInteraction(at.NodeMixin):
     readout : bool
         Readout or actual light interaction.
     """
-    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: Union[float, List[tuple]]=0.0,
+    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: Union[float, Tuple[float]]=0.0,
                  parent=None, children=None):
         super(LightInteraction, self).__init__()
         self.separator = "->"
         self.name = name
         self.side = side
         self.sign = sign
-        self.angle = angle
+        if isinstance(angle, tuple):
+            self.angle = (angle[0], angle[1]*sign)
+        else:
+            self.angle = angle
         self.readout = readout
         self.fullname = "{:s}(side={:d}, sign={:d})".format(self.name, self.side, self.sign)
         self.parent = parent
@@ -304,7 +307,8 @@ def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     return ketbra
 
 
-def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False, angle: float=0.0) -> KetBra:
+def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False,
+           angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate all excitations of `ketbra`.
 
     Modifies `ketbra` in place.
@@ -362,8 +366,8 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
     return ketbra
 
 
-def multi_excite(ketbra: KetBra, light_names: List[str], parts: Union[List, None]=None,
-                 light_angles: Union[List[float], List[Tuple[float]], None]=None) -> KetBra:
+def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=None,
+                 light_angles: Optional[Union[List[float], List[Tuple[float]]]]=None) -> KetBra:
     """Generate multiple excitations of `ketbra`.
 
     Parameters
