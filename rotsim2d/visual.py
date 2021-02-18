@@ -138,7 +138,6 @@ mymats/.style={
 }
 
 \begin{document}
-Bazinga!\\
 \begin{tikzpicture}[font=\sffamily,
     every left delimiter/.style={xshift=.4em},
     every right delimiter/.style={xshift=-.4em}]
