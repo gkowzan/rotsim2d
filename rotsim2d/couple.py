@@ -35,7 +35,7 @@ def T00(phi: float, phj: float, phk: float, phl: float, k: int):
     if k==0:
         return np.cos(phi-phj)*np.cos(phk-phl)/3.0
     elif k==1:
-        return np.sin(phi-phk)*np.sin(phk-phl)*np.sqrt(3)/6
+        return np.sin(phi-phj)*np.sin(phk-phl)*np.sqrt(3)/6
     elif k==2:
         return np.sqrt(5)/60*(np.cos(phi-phj-phk+phl)+np.cos(phi-phj+phk-phl)+6*np.cos(phi+phj-phk-phl))
     else:
