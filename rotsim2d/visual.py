@@ -32,7 +32,7 @@ def make_extent(t1s, t2s, scale=1.0):
     return [t2s[0]-dt2, t2s[-1]+dt2, t1s[0]-dt1, t1s[-1]+dt1]
 
 
-def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, fig_kwargs={}):
+def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthresh=100.0, fig_kwargs={}):
     """2D imshow plot with decent defaults."""
     extent = make_extent(freqs[0], freqs[1])
 
@@ -48,7 +48,7 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, fig_kw
         axcbar = plt.subplot(gs[1])
 
     absmax = np.max(np.abs(spec2d))
-    linthresh = absmax/100.0
+    linthresh = absmax/pthresh
     if scale == 'symlog':
         cset = ax2d.imshow(spec2d, cmap='seismic', aspect='auto', extent=extent,
                            clim=(-absmax, absmax), origin='lower',
