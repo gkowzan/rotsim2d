@@ -78,6 +78,34 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthres
         return {'ax2d': ax2d, 'axcbar': axcbar, 'ax1d': None, 'fig': fig}
 
 
+def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, scatter_kwargs={}):
+    if fig_dict:
+        fig = fig_dict['fig']
+        ax = fig_dict['ax']
+        axcbar = fig_dict['axcbar']
+    else:
+        fig = plt.figure(**fig_kwargs)
+        gs = grd.GridSpec(1, 2, width_ratios=[20, 1], figure=fig)
+        ax = plt.subplot(gs[0])
+        axcbar = plt.subplot(gs[1])
+    if vminmax:
+        vmin = -np.abs(vminmax)
+    else:
+        vmin = -np.max(np.abs(pl.sigs))
+
+    sc = ax.scatter(pl.probes, pl.pumps, s=20.0, c=pl.sigs, cmap='seismic',
+                    vmin=vmin, vmax=-vmin, **scatter_kwargs)
+    if not fig_dict:
+        fig.colorbar(sc, ax=ax, cax=axcbar)
+    if line:
+        ax.axline((pl.probes[0], pl.probes[0]),
+                  slope=1.0, color='gray', alpha=0.5, zorder=0)
+
+    fig.set_constrained_layout_pads(wspace=0.01, hspace=0.01, h_pad=0.01, w_pad=0.01)
+
+    return {'ax': ax, 'axcbar': axcbar, 'fig': fig}
+
+
 def plot1d_probe(pump_wn, freqs, spec2d, fig_dict=None, **plot_kwargs):
     """Plot probe spectrum at `pump_wn`."""
     ipump = find_index(freqs[0], pump_wn)
