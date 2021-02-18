@@ -114,6 +114,13 @@ class KetBra(at.NodeMixin):
         """Return conjugate of this KetBra."""
         return KetBra(self.bnu, self.bj, self.knu, self.kj)
 
+    def normalized(self):
+        """Return copy with ket being the lower energy level."""
+        if self.knu > self.bnu or (self.knu == self.bnu and self.kj > self.bj):
+            return KetBra(self.bnu, self.bj, self.knu, self.kj)
+        else:
+            return self
+
     def kb_ancestor(self, ancestor=None):
         """Return first KetBra ancestor."""
         if ancestor is None:
@@ -139,6 +146,21 @@ class KetBra(at.NodeMixin):
         ints = self.interactions()
 
         return ints[0].sign != ints[2].sign
+
+    def is_SI(self):
+        ints = self.interactions()
+
+        return ints[0].sign != ints[2].sign and ints[0].sign != ints[1].sign
+
+    def is_SII(self):
+        ints = self.interactions()
+
+        return ints[0].sign == ints[2].sign and ints[0].sign != ints[1].sign
+
+    def is_SIII(self):
+        ints = self.interactions()
+
+        return ints[0].sign != ints[2].sign and ints[0].sign == ints[1].sign
 
     def is_esa(self):
         return (self.knu != self.root.knu) and (self.bnu != self.root.knu)
@@ -254,6 +276,33 @@ def only_dfwm(ketbra: KetBra) -> KetBra:
 def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
     for l in ketbra.leaves:
         if not l.is_pathway(pathway):
+            l.parent = None
+
+    return prune(ketbra)
+
+
+def only_SII(ketbra: KetBra) -> KetBra:
+    """SII are non-rephasing."""
+    for l in ketbra.leaves:
+        if not l.is_SII():
+            l.parent = None
+
+    return prune(ketbra)
+
+
+def only_SI(ketbra: KetBra) -> KetBra:
+    """SI are rephasing without overtone coherences."""
+    for l in ketbra.leaves:
+        if not l.is_SI():
+            l.parent = None
+
+    return prune(ketbra)
+
+
+def only_SIII(ketbra: KetBra) -> KetBra:
+    """SIII are rephasing with overtone coherences."""
+    for l in ketbra.leaves:
+        if not l.is_SIII():
             l.parent = None
 
     return prune(ketbra)
