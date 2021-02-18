@@ -450,3 +450,20 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=N
             multi_excite(kb, light_names[:], parts[:], light_angles[:])
 
     return ketbra.root
+
+
+def gen_pathways(jiter, pols, pops, meths=None):
+    pws = []
+    for j in jiter:
+        root = KetBra(0,j, 0,j)
+        root = multi_excite(root, ['omg1', 'omg2', 'omg3'],
+                            parts=['ket', 'both', 'both'],
+                            light_angles=pols[:3])
+        if meths is not None:
+            for meth in meths:
+                root = meth(root)
+        root = readout(root, pols[3])
+        root.pop = pops[(0, j)]
+        pws.append(root)
+
+    return pws
