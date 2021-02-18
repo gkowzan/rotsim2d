@@ -1,5 +1,6 @@
 r"""Generate all Liouville pathways for nth order rovibrational excitation.
 """
+# * Imports, constants and enums
 import enum
 from copy import deepcopy
 import operator as op
@@ -31,7 +32,8 @@ class KSign(enum.IntEnum):
     POS = 1
     NEG = -1
 
-    
+
+# * LightInteraction
 class LightInteraction(at.NodeMixin):
     """Represents (dipole) interaction between the system and a light beam.
 
@@ -67,6 +69,7 @@ class LightInteraction(at.NodeMixin):
         return "LightInteraction({:s}, side={:d}, sign={:d})".format(self.name, self.side, self.sign)
 
 
+# * KetBra
 class KetBra(at.NodeMixin):
     def __init__(self, knu: int, kj: int, bnu: int, bj: int, pop: float=1.0, parent=None, children=None):
         super(KetBra, self).__init__()
@@ -183,7 +186,8 @@ class KetBra(at.NodeMixin):
         """Cumulative side of the term."""
         return reduce(op.mul, self.sides(), 1)
     
-    
+
+# * Tree filtering functions
 def remove_nonrephasing(ketbra: KetBra) -> KetBra:
     for l in ketbra.leaves:
         if not l.is_rephasing():
@@ -290,7 +294,8 @@ def prune(ketbra: KetBra) -> KetBra:
 
     return ketbra
 
-                
+
+# * Tree-modifying functions
 def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
