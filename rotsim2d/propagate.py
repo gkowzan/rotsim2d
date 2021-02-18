@@ -8,7 +8,7 @@ TODO:
 - generate 2D spectra
 """
 import logging
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional, Sequence
 import numpy as np
 import scipy.constants as C
 import pyfftw.interfaces.scipy_fftpack as fftp
@@ -23,6 +23,47 @@ log = logging.getLogger(__name__)
 
 def aid(x):
     return x.__array_interface__['data'][0]
+
+
+def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
+    """Return either time or frequency domain response."""
+    if domain == 'f':
+        return 1.0/(gam - 1.0j*(coord-nu))
+    elif domain == 't':
+        return np.exp(-2.0*np.pi*coord*(1.0j*nu+gam))
+
+
+def dressed_leaf_response(dl: pw.DressedLeaf, coords: Sequence[Optional[np.ndarray]],
+                          domains: Sequence[str], freq_shifts: Optional[Sequence[float]]) -> np.ndarray:
+    """Calculate response for a single DressedLeaf."""
+    # validate inputs
+    if len(coords) != len(domains):
+        raise ValueError("len(coords) != len(domains)")
+    for d in domains:
+        if d not in ('t', 'f'):
+            raise ValueError("domain can either be 't' or 'f'")
+
+    freq_shifts = freq_shifts if freq_shifts else [0.0]*len(coords)
+    resps = []
+    for i, coord in enumerate(coords):
+        if coord is None:
+            continue
+
+        if dl.nus[i] > 0.0:
+            nu = dl.nus[i]-freq_shifts[i]
+        elif dl.nus[i] < 0.0:
+            nu = dl.nus[i]+freq_shifts[i]
+        else:
+            nu = dl.nus[i]
+
+        resps.append(leaf_term(nu, dl.gams[i], coord, domains[i]))
+
+    resp = resps[0]*dl.intensity()
+    if len(resps) > 1:
+        for next_resp in resps[1:]:
+            resp = resp*next_resp
+    return resp
+
 
 class CrossSectionMixin:
     def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex:
