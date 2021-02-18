@@ -124,6 +124,7 @@ def plot1d_probe(pump_wn, freqs, spec2d, fig_dict=None, **plot_kwargs):
 # * LaTeX double-sided Feynmann diagrams
 LATEX_PRE = r"""\documentclass[tikz,border=3.14mm]{standalone}
 \usetikzlibrary{matrix,fit,positioning}
+\medmuskip=0mu
 \tikzset{
 mymat/.style={
     matrix of math nodes,
