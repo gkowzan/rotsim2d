@@ -147,11 +147,48 @@ mymats/.style={
 LATEX_POST = r"""\end{tikzpicture}
 \end{document}"""
 
-def tikz_diagram(leaf, index=1, first=True):
-    """Return TikZ double-sided Feynmann diagram."""
+dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
+
+
+def tikz_abstract_format(dnu: int, dj: int):
+    if dnu==0 and dj==0:
+        return "0"
+    else:
+        return str(dnu)+dj_to_letter[dj]
+
+
+def tikz_diagram(leaf, index=1, first=True, direction=False, abstract=None, hspace="2cm"):
+    """Return TikZ double-sided Feynmann diagram.
+
+    With `abstract` ketbras are labeled relative to some (nu, j) ground state.
+
+    Parameters
+    ----------
+    index : str
+        Internal Tikz index of the current diagram.
+    first : bool
+        First diagram in the document.
+    direction : bool
+        Add phase-matching direction label.
+    abstract : tuple of int, optional
+        Tuple of ground state quantum numbers, (nu, j).
+    hspace : str
+        Horizontal space between pathways in LaTeX dimensions.
+    """
     diag_rows = []
-    for kb in reversed(leaf.ketbras()):
-        diag_rows.append(r"$|{:d},{:d}\rangle\langle {:d},{:d}|$\\".format(kb.knu, kb.kj, kb.bnu, kb.bj))
+    for i, kb in enumerate(leaf.ketbras()):
+        if not abstract:
+            diag_rows.append(r"$|{:d},{:d}\rangle\langle {:d},{:d}|$\\".format(kb.knu, kb.kj, kb.bnu, kb.bj))
+        else:
+            taf = tikz_abstract_format
+            gnu, gj = abstract
+            knu, kj, bnu, bj = kb.knu-gnu, kb.kj-gj, kb.bnu-gnu, kb.bj-gj
+            if i==0:
+                diag_rows.append(r"$|0\rangle\langle 0|$\\")
+            else:
+                diag_rows.append(r"$|{:s}\rangle\langle {:s}|$\\".format(
+                    taf(knu, kj), taf(bnu, bj)))
+    diag_rows.reverse()
 
     diag_arrows = []
     ints = leaf.interactions()
@@ -191,24 +228,36 @@ def tikz_diagram(leaf, index=1, first=True):
         arrow = r"\draw[{arr:s}] (mat{index:d}-{ri:d}-1.south -| mat{index:d}.{arr_side:s}) -- ++({xshift:s},{yshift:s});".format(arr=arr, ri=nints-i, arr_side=arr_side, xshift=xshift, yshift=yshift, index=index)
         diag_arrows.append(arrow)
 
+    note = ''
+    if direction:
+        note = r"\node[below] (mat{index:d}label) at (mat{index:d}.south)".format(index=index)
+        if leaf.is_SI():
+            note += r"{$S_{\mathrm{I}}$};"
+        elif leaf.is_SII():
+            note += r"{$S_{\mathrm{II}}$};"
+        elif leaf.is_SIII():
+            note += r"{$S_{\mathrm{III}}$};"
+
     if first:
         header = r"""\matrix[mymat] at (0,0) (mat{index:d})""".format(index=index)
     else:
-        header = r"""\matrix[mymat,right=2cm of mat{prev_index:d}] (mat{index:d})""".format(prev_index=index-1,
-                                                                                            index=index)
+        header = r"""\matrix[mymat,right={hspace:s} of mat{prev_index:d}] (mat{index:d})""".format(prev_index=index-1,
+                                                                                                   index=index,
+                                                                                                   hspace=hspace)
     ret = header + """ {{ {rows:s} }};
 {arrows:s}
-""".format(rows="\n".join(diag_rows), arrows="\n".join(diag_arrows))
+{note:s}
+""".format(rows="\n".join(diag_rows), arrows="\n".join(diag_arrows), note=note)
 
     return ret
 
 
-def tikz_diagrams(tree):
+def tikz_diagrams(tree, direction=False, abstract=None, hspace="2cm"):
     """Return tikz code for series of double-sided Feynmann diagrams."""
     leaves = tree.leaves
-    diagrams = [tikz_diagram(leaves[0])]
+    diagrams = [tikz_diagram(leaves[0], direction=direction, abstract=abstract)]
     for i, l in enumerate(leaves[1:], start=2):
-        diagrams.append(tikz_diagram(l, index=i, first=False))
+        diagrams.append(tikz_diagram(l, index=i, first=False, direction=direction, abstract=abstract, hspace=hspace))
 
     return "\n".join(diagrams)
 
