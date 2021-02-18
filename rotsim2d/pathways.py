@@ -467,3 +467,33 @@ def gen_pathways(jiter, pols, pops, meths=None):
         pws.append(root)
 
     return pws
+
+
+def geometric_factor(leaf: KetBra):
+    """Return polarization and angular momentum sequence for a pathway.
+
+    Same as in leaf_response."""
+    kbs = leaf.ketbras()
+    wkets, wbras = [], []
+    for i in range(1, len(kbs)):
+        kb, kbp = kbs[i], kbs[i-1]
+        if kb.parent.side is Side.KET:
+            wkets.insert(0, (kb.kj, kb.parent.angle))
+        else:
+            wbras.append((kb.parent.parent.bj, kb.parent.angle))
+        if kb.parent.readout:
+            wbras.extend(wkets)
+            break
+    return tuple([x[0] for x in wbras]), tuple([x[1] for x in wbras])
+
+
+def tensor_analysis(kb: KetBra) -> List[Tuple]:
+    """Assign cross peak and geometric factor to each pathway."""
+    ret = []
+    for l in kb.leaves:
+        js, pols = geometric_factor(l)
+        kbs = l.ketbras()
+        peak = (kbs[1].normalized().name, kbs[3].normalized().name)
+        ret.append((peak, js, pols))
+
+    return ret
