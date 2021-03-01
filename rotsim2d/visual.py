@@ -7,6 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.gridspec as grd
+import matplotlib.cm as cm
 from shed.experiment import find_index
 
 # * Matplotlib visualization
@@ -35,6 +36,7 @@ def make_extent(t1s, t2s, scale=1.0):
 def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthresh=100.0, absmax=None, fig_kwargs={}):
     """2D imshow plot with decent defaults."""
     extent = make_extent(freqs[0], freqs[1])
+    cmap = cm.get_cmap('RdBu').reversed()
 
     fig = plt.figure(**fig_kwargs)
     if spec_linear is not None:
@@ -51,11 +53,11 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthres
         absmax = np.max(np.abs(spec2d))
     linthresh = absmax/pthresh
     if scale == 'symlog':
-        cset = ax2d.imshow(spec2d, cmap='seismic', aspect='auto', extent=extent,
+        cset = ax2d.imshow(spec2d, cmap=cmap, aspect='auto', extent=extent,
                            clim=(-absmax, absmax), origin='lower',
                            norm=colors.SymLogNorm(linthresh=linthresh, vmax=absmax, vmin=-absmax))
     elif scale == 'linear':
-        cset = ax2d.imshow(spec2d, cmap='seismic', aspect='auto', extent=extent,
+        cset = ax2d.imshow(spec2d, cmap=cmap, aspect='auto', extent=extent,
                            clim=(-absmax, absmax), origin='lower')
     ax2d.set(xlabel=r'Probe (cm$^{-1}$)', ylabel=r'Pump (cm$^{-1}$)')
 
