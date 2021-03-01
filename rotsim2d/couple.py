@@ -1,9 +1,17 @@
 """Calculate interaction matrix elements between rotational states."""
 from typing import Sequence, List, Union, Tuple
+import atexit
 from numbers import Number
 import numpy as np
 import pywigxjpf.pywigxjpf as wig
 
+wig.table_init(1000, 9)
+wig.temp_init(1000)
+
+@atexit.register
+def free_wigxjpf():
+    wig.temp_free()
+    wig.table_free()
 
 def jm_dipole(j1: int, m1: int, j2:int, m2: int) -> float:
     """Geometric part of the element <j2,m2|mu|j1,m1>."""
