@@ -14,6 +14,7 @@ import scipy.constants as C
 import pyfftw.interfaces.scipy_fftpack as fftp
 from rotsim2d import pathways as pw
 from rotsim2d.couple import four_couple
+import rotsim2d.dressedleaf as dl
 
 e2i = C.epsilon_0*C.c/2         #: Electric field to intensity
 xs2cm = 1e2/C.c                 #: Cross section in m^2 Hz to cm^2 cm^{-1}
@@ -33,7 +34,7 @@ def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
         return np.exp(-2.0*np.pi*coord*(1.0j*nu+gam))
 
 
-def dressed_leaf_response(dl: pw.DressedLeaf, coords: Sequence[Optional[np.ndarray]],
+def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarray]],
                           domains: Sequence[str], freq_shifts: Optional[Sequence[float]]) -> np.ndarray:
     """Calculate response for a single DressedLeaf."""
     # validate inputs
