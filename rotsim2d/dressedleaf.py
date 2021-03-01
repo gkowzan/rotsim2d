@@ -14,11 +14,12 @@ class DressedLeaf:
     """Assign polarizations in proper order, line intensities, coherence frequencies
     and allow for calculating the intensity of the pathway. Do everything except
     calculating the associated line shape/response time dependence."""
-    fields = ['peak', 'const', 'nus', 'gams', 'js', 'pols', 'tw_coherence', 'diagonal', 'geo_label']
+    fields = ['peak', 'const', 'nus', 'gams', 'js', 'pols', 'tw_coherence', 'tw_peak', 'diagonal', 'geo_label']
 
     def __init__(self, leaf: KetBra, sys_params):
         kb_series = [x for x in leaf.ancestors if isinstance(x, KetBra)] + [leaf]
         self.peak = (kb_series[1].name, kb_series[3].name)
+        self.tw_peak = kb_series[2].name
         wkets, wbras = [], []
         self.nus, self.gams = [], []
         self.const = np.complex(1.0)
