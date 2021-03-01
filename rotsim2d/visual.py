@@ -1,5 +1,6 @@
 """Visualization procedures."""
 # * Imports
+from typing import Optional, Tuple, Dict
 from pathlib import Path
 import subprocess as subp
 import numpy as np
@@ -79,6 +80,60 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthres
         return {'ax2d': ax2d, 'axcbar': axcbar, 'ax1d': ax1d, 'fig': fig}
     else:
         return {'ax2d': ax2d, 'axcbar': axcbar, 'ax1d': None, 'fig': fig}
+
+
+def plot2d_animation(freqs: Tuple[np.ndarray], spec3d: np.ndarray, absmax: Optional[float]=None,
+                     fig_kwargs: Dict={}):
+    """Prepare Figure and callbacks for `matplotlib.animation.FuncAnimation`.
+
+    Parameters
+    ----------
+    freqs : tuple of ndarray
+        Array if pump frequencies, array of waiting times and array of
+        probe frequencies.
+    spec3d : ndarray
+        3D array of data to plot, second dimension is the animated time.
+    absmax : float
+        Data limits for colorbar, taken from data otherwise.
+    fig_kwargs : dict
+        Keyword arguments for `plt.figure`.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    init : function
+        Initialization closure function for FuncAnimation.
+    update : function
+        Update closure function for FuncAnimation.
+    frames : ndarray
+        NumPy array of frame numbers. 
+    """
+    extent = vis.make_extent(freqs[0], freqs[2])
+    ts2 = freqs[1]
+    cmap = cm.get_cmap('RdBu').reversed()
+    fig = plt.figure(**fig_kwargs)
+    gs = fig.add_gridspec(nrows=1, ncols=2, width_ratios=[20, 1], figure=fig)
+    ax2d = fig.add_subplot(gs[0])
+    axcbar = fig.add_subplot(gs[1])
+    if absmax is None:
+        absmax = np.max(np.abs(spec2d))
+    cset = ax2d.imshow(np.zeros((spec3d.shape[0], spec3d.shape[2])),
+                       cmap=cmap, aspect='auto', extent=extent, clim=(-absmax, absmax),
+                       origin='lower')
+    ax2d.set(xlabel=r'Probe (cm$^{-1}$)', ylabel=r'Pump (cm$^{-1}$)')
+    title = ax2d.text(0.5, 0.99, "$t_2$", ha='center', va='top', transform=ax2d.transAxes)
+    axcbar = fig.colorbar(cset, ax=ax2d, cax=axcbar)
+    fig.set_constrained_layout_pads(wspace=0.01, hspace=0.01, h_pad=0.01, w_pad=0.01)
+
+    def init():
+        return [cset, title]
+
+    def update(i):
+        cset.set_data(spec3d[:, i, :])
+        title.set_text('$t_2={:.2f}$ ps'.format(ts2[i]*1e12))
+        return [cset, title]
+
+    return fig, init, update, np.arange(spec2d.shape[1])
 
 
 def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, scatter_kwargs={}):
