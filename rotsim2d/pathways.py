@@ -171,10 +171,13 @@ class KetBra(at.NodeMixin):
     def has_overtone(self):
         return len([kb for kb in self.ketbras() if kb.is_overtone()]) > 0
 
-    def is_between(self, kb1, kb2):
-        """Check if this pathway produces cross-peak between `kb1` and `kb2`."""
-        pump_kb = self.ketbras()[1]
-        return (kb1 == pump_kb or kb1 == pump_kb.conj()) and (kb2 == self or kb2 == self.conj())
+    def is_between(self, pump, probe):
+        """Check if this pathway produces cross-peak between `kb1` and `kb2`.
+
+        Called with self being a leaf.
+        """
+        pump_kb, probe_kb = self.ketbras()[1], self.ketbras()[3] 
+        return (pump == pump_kb or pump == pump_kb.conj()) and (probe == self or probe == self.conj())
 
     def is_dfwm(self):
         """Check is this pathway contains only coherences corresponding to a single dipole transition."""
@@ -256,10 +259,10 @@ def remove_overtones(ketbra: KetBra) -> KetBra:
     return prune(ketbra)
 
 
-def only_between(ketbra: KetBra, kb1: KetBra, kb2: KetBra) -> KetBra:
+def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
     """Limit tree to pathways bewteen `kb1` and `kb2`."""
     for l in ketbra.leaves:
-        if not l.is_between(kb1, kb2):
+        if not l.is_between(pump, probe):
             l.parent = None
 
     return prune(ketbra)
