@@ -55,20 +55,22 @@ def decay_single(Ji: int, Ki: int, B: float, t: Union[float, np.ndarray], parall
         delta(Ji,Ki,parallel)*np.cos(2*np.pi*(nu1+nu2)*t)
 
 
-def decay_total(Jmax: int, A: float, B: float, T: float, t: Union[float, np.ndarray], parallel: bool=True):
+def decay_total(Jmax: int, A: float, B: float, T: float, t: Union[float, np.ndarray], parallel: bool=True, D: float=0.0):
     """Thermally-averaged fluorescence decay."""
     t = np.atleast_1d(t)
     ret = np.zeros(t.shape)
     if not isclose(A, 0.0):     # symmetric top case
         for j in range(1, Jmax+1):
+            Beff = B-D*j*(j+1)
             ks = np.arange(-j, j+1)
             # print(j, (j*(j+1)*B + (A-B)*ks[:, None].T**2))
-            ret[...] += np.sum(decay_single(j, ks[:, None], B, t[None, :], parallel)*
-                               np.exp(-(j*(j+1)*B + (A-B)*ks[:, None]**2)/k_cm/T), axis=0)
+            ret[...] += np.sum(decay_single(j, ks[:, None], Beff, t[None, :], parallel)*
+                               np.exp(-(j*(j+1)*Beff + (A-Beff)*ks[:, None]**2)/k_cm/T), axis=0)
     else:                       # linear case
         js = np.arange(1, Jmax+1)
-        ret[...] += np.sum(decay_single(js[:, None], 0, B, t[None, :])*\
-                           np.exp(-js[:, None]*(js[:, None]+1)*B/k_cm/T), axis=0)
+        Beff = B-D*js[:, None]*(js[:, None]+1)
+        ret[...] += np.sum(decay_single(js[:, None], 0, Beff, t[None, :])*\
+                           np.exp(-js[:, None]*(js[:, None]+1)*Beff/k_cm/T), axis=0)
 
     return ret
 
