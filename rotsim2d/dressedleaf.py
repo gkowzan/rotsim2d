@@ -1,6 +1,6 @@
 r"""Associate polarizations, angular momentum factors and pathways amplitudes
 with pathways, i.e. everything but line shapes."""
-from typing import Optional, Iterable, Tuple, List
+from typing import Optional, Iterable, Tuple, List, Sequence
 from collections import namedtuple
 import numpy as np
 import scipy.constants as C
@@ -106,10 +106,12 @@ def split_by_js(kbl: Iterable[DressedLeaf]):
     return ret
 
 
-def perm_pols(pols: Tuple):
+def perm_pols(pols: Tuple) -> Tuple:
     return (pols[2], pols[3], pols[0], pols[1])
 
 
+def perm_js(js: Tuple) -> Tuple:
+    return (js[0], js[3], js[2], js[1])
 def split_by_pols(kbl: Iterable[DressedLeaf]):
     ret = {}
     for dl in kbl:
