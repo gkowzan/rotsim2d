@@ -151,7 +151,7 @@ def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, sc
     else:
         vmin = -np.max(np.abs(pl.sigs))
 
-    sc = ax.scatter(pl.probes, pl.pumps, s=20.0, c=pl.sigs, cmap='seismic',
+    sc = ax.scatter(pl.probes, pl.pumps, s=10.0, c=pl.sigs, cmap='seismic',
                     vmin=vmin, vmax=-vmin, **scatter_kwargs)
     if not fig_dict:
         fig.colorbar(sc, ax=ax, cax=axcbar)
