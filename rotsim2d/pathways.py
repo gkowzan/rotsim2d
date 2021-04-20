@@ -11,8 +11,9 @@ import numpy as np
 import anytree as at
 from anytree.exporter import UniqueDotExporter
 
+from spectroscopy.molecule import DiatomState, SymTopState, RotState 
+
 dnus = [-1, +1] #: possible changes of vibrational state
-djs = [-1, +1] #: possible changes of rotational state
 
 right_pol = (5/4*np.pi, -np.pi/2)
 left_pol = (np.pi/4, np.pi/2)
@@ -74,11 +75,12 @@ class LightInteraction(at.NodeMixin):
 
 # * KetBra
 class KetBra(at.NodeMixin):
-    def __init__(self, knu: int, kj: int, bnu: int, bj: int, pop: float=1.0, parent=None, children=None):
+    def __init__(self, ket, bra, pop: float=1.0, parent=None, children=None):
         super(KetBra, self).__init__()
+        self.ket = ket
+        self.bra = bra
         self.separator = "->"
-        self.name = "|{:d},{:d}><{:d},{:d}|".format(knu, kj, bnu, bj)
-        self.knu, self.kj, self.bnu, self.bj = knu, kj, bnu, bj
+        self.name = "|{:s}><{:s}|".format(self.ket.name, self.bra.name)
         self.parent = parent
         if children:
             self.children = children
@@ -91,7 +93,7 @@ class KetBra(at.NodeMixin):
             print(treestr)
 
     def __repr__(self):
-        return "Ketbra({:d}, {:d}, {:d}, {:d})".format(self.knu, self.kj, self.bnu, self.bj)
+        return "Ketbra({!r}, {!r})".format(self.ket, self.bra)
 
     def __str__(self):
         return self.name
@@ -100,7 +102,7 @@ class KetBra(at.NodeMixin):
         if not isinstance(o, KetBra):
             return NotImplemented
         else:
-            return self.knu == o.knu and self.kj == o.kj and self.bnu == o.bnu and self.bj == o.bj
+            return self.ket == o.ket and self.bra == o.bra
 
     def copy(self):
         return deepcopy(self)
@@ -109,15 +111,15 @@ class KetBra(at.NodeMixin):
         UniqueDotExporter(self, nodeattrfunc=nodeattrfunc).to_picture(str(path))
 
         return path
-    
+
     def conj(self):
         """Return conjugate of this KetBra."""
-        return KetBra(self.bnu, self.bj, self.knu, self.kj)
+        return KetBra(self.bra, self.ket)
 
     def normalized(self):
-        """Return copy with ket being the lower energy level."""
-        if self.knu > self.bnu or (self.knu == self.bnu and self.kj > self.bj):
-            return KetBra(self.bnu, self.bj, self.knu, self.kj)
+        """Return copy with ket being the lower nu, j level."""
+        if self.ket.nu > self.bra.nu or (self.ket.nu == self.bra.nu and self.ket.j > self.bra.j):
+            return self.conj()
         else:
             return self
 
@@ -128,19 +130,19 @@ class KetBra(at.NodeMixin):
         if isinstance(ancestor, KetBra):
             return ancestor
         else:
-            self.kb_ancestor(ancestor.ancestors[0])
+            return self.kb_ancestor(ancestor.ancestors[0])
 
     def diagonals(self, sort=False, rot=True):
         """Collect diagonal leaves."""
-        pops = [x for x in self.leaves if x.knu == x.bnu and x.kj == x.bj]
+        pops = [x for x in self.leaves if x.ket == x.bra]
         if sort:
-            pops.sort(key=lambda x: x.kj)
-            pops.sort(key=lambda x: x.knu)
+            pops.sort(key=lambda x: x.ket.j)
+            pops.sort(key=lambda x: x.ket.nu)
 
         return pops
 
     def is_diagonal(self):
-        return self.knu == self.bnu and self.kj == self.bj
+        return self.ket == self.bra
 
     def is_rephasing(self):
         ints = self.interactions()
@@ -163,10 +165,10 @@ class KetBra(at.NodeMixin):
         return ints[0].sign != ints[2].sign and ints[0].sign == ints[1].sign
 
     def is_esa(self):
-        return (self.knu != self.root.knu) and (self.bnu != self.root.knu)
+        return (self.ket.nu != self.root.ket.nu) and (self.bra.nu != self.root.ket.nu)
 
     def is_overtone(self):
-        return abs(self.knu-self.bnu)>1
+        return abs(self.ket.nu-self.bra.nu)>1
 
     def has_overtone(self):
         return len([kb for kb in self.ketbras() if kb.is_overtone()]) > 0
@@ -368,7 +370,7 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
            angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate all excitations of `ketbra`.
 
-    Modifies `ketbra` in place.
+    Modifies `ketbra` in place. Only parallel transitions.
 
     Parameters
     ----------
@@ -380,6 +382,8 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
         'ket', 'bra' or 'both', consider ket, bra or double-sided excitations.
     readout : bool, optional
         Readout or actual light interaction.
+    angle : float or tuple of float, optional
+        Either linear angle or a tuple of linear angle and circularity.
 
     Returns
     -------
@@ -388,17 +392,29 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
     # ket excitation
     if part not in ('ket', 'bra', 'both'):
         raise ValueError("`part` has to be either 'ket', 'bra' or 'both'")
+    if isinstance(ketbra.ket, DiatomState):
+        djs = [-1, 1]
+    elif isinstance(ketbra.ket, SymTopState):
+        djs = [-1, 0, 1]
+    else:
+        raise TypeError("`ketbra.ket` is neither DiatomState nor SymtopState")
     if part == 'ket' or part == 'both':
         for dnu in dnus:
             children = []
-            nnu = ketbra.knu+dnu
+            nnu = ketbra.ket.nu+dnu
             if nnu < 0:
                 continue
             for dj in djs:
-                nj = ketbra.kj+dj
+                if ketbra.ket.j == 0 and dj == 0:
+                    continue
+                if isinstance(ketbra.ket, SymTopState) and ketbra.ket.k == 0 and dj == 0:
+                    continue
+                nj = ketbra.ket.j+dj
                 if nj < 0:
                     continue
-                children.append(KetBra(nnu, nj, ketbra.bnu, ketbra.bj))
+                if isinstance(ketbra.ket, SymTopState) and ketbra.ket.k > nj:
+                    continue
+                children.append(KetBra(ketbra.ket._replace(nu=nnu, j=nj), ketbra.bra))
             if dnu > 0:             # ket absorption
                 LightInteraction(light_name, Side.KET, KSign.POS, readout, angle, parent=ketbra, children=children)
             elif dnu < 0:           # ket emission
@@ -407,14 +423,20 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
     if part == 'bra' or part == 'both':
         for dnu in dnus:
             children = []
-            nnu = ketbra.bnu+dnu
+            nnu = ketbra.bra.nu+dnu
             if nnu < 0:
                 continue
             for dj in djs:
-                nj = ketbra.bj+dj
+                if ketbra.bra.j == 0 and dj == 0:
+                    continue
+                if isinstance(ketbra.bra, SymTopState) and ketbra.bra.k == 0 and dj == 0:
+                    continue
+                nj = ketbra.bra.j+dj
                 if nj < 0:
                     continue
-                children.append(KetBra(ketbra.knu, ketbra.kj, nnu, nj))
+                if isinstance(ketbra.bra, SymTopState) and ketbra.bra.k > nj:
+                    continue
+                children.append(KetBra(ketbra.ket, ketbra.bra._replace(nu=nnu, j=nj)))
             if dnu > 0:         # bra absorption
                 LightInteraction(light_name, Side.BRA, KSign.NEG, readout, angle, parent=ketbra, children=children)
             elif dnu < 0:       # bra emission
@@ -455,19 +477,47 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=N
     return ketbra.root
 
 
-def gen_pathways(jiter, pols, pops, meths=None):
-    pws = []
+def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: Callable=None) -> List[KetBra]:
+    roots = []
     for j in jiter:
-        root = KetBra(0,j, 0,j)
-        root = multi_excite(root, ['omg1', 'omg2', 'omg3'],
-                            parts=['ket', 'both', 'both'],
-                            light_angles=pols[:3])
-        if meths is not None:
-            for meth in meths:
-                root = meth(root)
-        root = readout(root, pols[3])
-        root.pop = pops[(0, j)]
-        pws.append(root)
+        if rotor == 'linear':
+            roots.append(KetBra(DiatomState(0, j), DiatomState(0, j)))
+        elif rotor == 'symmetric':
+            if kiter_func is None:
+                kiter = range(0, j+1)
+            else:
+                kiter = kiter_func(j)
+            for k in kiter:
+                roots.append(KetBra(SymTopState(0, j, k), SymTopState(0, j, k)))
+    return roots
+
+
+def gen_excitations(root, light_names, parts, pols, meths=None) -> List[KetBra]:
+    root = multi_excite(root, light_names, parts=parts, light_angles=pols[:3])
+    if meths is not None:
+        for meth in meths:
+            root = meth(root)
+    root = readout(root, pols[3])
+
+    return root
+
+
+def gen_pathways(jiter: Iterable, pols: Sequence,
+                 meths: Optional[Sequence[Callable]]=None,
+                 rotor: str='linear', kiter_func: Callable=None,
+                 pump_overlap: bool=False) -> List[KetBra]:
+    roots = gen_roots(jiter, rotor, kiter_func)
+    pws = [gen_excitations(root, ['omg1', 'omg2', 'omg3'],
+                           ['ket', 'both', 'both'], pols, meths)
+           for root in roots]
+    if pump_overlap:
+        roots = gen_roots(jiter, rotor, kiter_func)
+        pws.extend(
+            [gen_excitations(root, ['omg2', 'omg1', 'omg3'],
+                             ['ket', 'both', 'both'],
+                             [pols[1], pols[0], pols[2], pols[3]],
+                             meths)
+             for root in roots])
 
     return pws
 
