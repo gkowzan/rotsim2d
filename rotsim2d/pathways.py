@@ -258,6 +258,23 @@ class KetBra(at.NodeMixin):
             return True
         return False
 
+    def is_equiv_pathway(self, o):
+        """Check if other pathway is R-factor-equivalent.
+
+        `o` should either be :class:`KetBra` or a result of :meth:`to_statelist`
+        with `normalize` set to True.
+
+        This won't work if initial state is vibrationally excited.
+        """
+        s = self.to_statelist(diatom=True, normalize=True)
+        if isinstance(o, KetBra):
+            o = o.to_statelist(diatom=True, normalize=True)
+        for sp, op in zip(s, o):
+            if not (sp[0].j == op[0].j and sp[1].j == op[1].j and
+                    sp[0].nu == op[0].nu and sp[1].nu == op[1].nu):
+                return False
+        return True
+
     def is_pathway(self, *kbs):
         """Match self to pathway consisting of `kbs`."""
         return tuple(self.ketbras()) == kbs
@@ -295,7 +312,6 @@ class KetBra(at.NodeMixin):
     def total_side(self) -> int:
         """Cumulative side of the term."""
         return reduce(op.mul, self.sides(), 1)
-    
 
 # * Tree filtering functions
 def remove_nonrephasing(ketbra: KetBra) -> KetBra:
