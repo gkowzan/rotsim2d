@@ -213,8 +213,7 @@ dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
 def tikz_abstract_format(dnu: int, dj: int):
     if dnu==0 and dj==0:
         return "0"
-    else:
-        return str(dnu)+dj_to_letter[dj]
+    return str(dnu)+dj_to_letter[dj]
 
 
 def tikz_diagram(leaf, index=1, first=True, direction=False, abstract=None, hspace="2cm"):
