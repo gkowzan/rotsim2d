@@ -26,6 +26,7 @@ setup(
                       'pywigxjpf @ git+ssh://git@gitlab.com/allisonlab/mdcs/pywigxjpf.git@master',
                       'shed @ git+ssh://git@gitlab.com/allisonlab/mdcs/shed.git@master',
                       'spectroscopy @ git+ssh://git@gitlab.com/allisonlab/mdcs/spectroscopy.git@master'],
+    setup_requires=['wheel'],
     extras_require={'doc': ['sphinx', 'sphinx_rtd_theme', 'numpydoc']},
     packages=find_packages(),
 )
