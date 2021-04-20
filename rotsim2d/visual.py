@@ -163,7 +163,7 @@ def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, sc
 
     fig.set_constrained_layout_pads(wspace=0.01, hspace=0.01, h_pad=0.01, w_pad=0.01)
 
-    return {'ax': ax, 'axcbar': axcbar, 'fig': fig}
+    return {'ax': ax, 'axcbar': axcbar, 'fig': fig, 'sc': sc}
 
 
 def plot1d_probe(pump_wn, freqs, spec2d, fig_dict=None, **plot_kwargs):
