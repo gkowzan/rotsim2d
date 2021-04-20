@@ -113,6 +113,23 @@ class KetBra(at.NodeMixin):
         else:
             return self.ket == o.ket and self.bra == o.bra
 
+    def to_statelist(self, diatom=False, normalize=False) -> List[Tuple[RotState]]:
+        """KetBras leading to this one as a list of state pairs.
+
+        Drops `k` quantum number if `diatom` is True. Subtracts the initial `j`
+        value from all states if `normalize` is True.
+        """
+        statelist = [(kb.ket, kb.bra) for kb in self.ketbras()]
+        if diatom:
+            statelist = [(DiatomState.from_symtop(state1), DiatomState.from_symtop(state2))
+                         for state1, state2 in statelist]
+        if normalize:
+            startj = statelist[0][0].j
+            statelist = [(state1._replace(j=state1.j-startj), state2._replace(j=state2.j-startj))
+                         for state1, state2 in statelist]
+
+        return statelist
+
     def copy(self):
         return deepcopy(self)
 
