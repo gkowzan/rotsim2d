@@ -5,7 +5,7 @@ import enum
 from copy import deepcopy
 import operator as op
 from functools import reduce
-from typing import List, Union, Tuple, Dict, Iterable, Sequence, Optional
+from typing import List, Union, Tuple, Dict, Iterable, Sequence, Optional, Callable
 import numpy as np
 
 import anytree as at
@@ -34,6 +34,15 @@ class KSign(enum.IntEnum):
     NEG = -1
 
 
+ks = {
+    (KSign.NEG, KSign.POS, KSign.POS): 'SI',
+    (KSign.POS, KSign.NEG, KSign.NEG): 'SI',
+    (KSign.POS, KSign.NEG, KSign.POS): 'SII',
+    (KSign.NEG, KSign.POS, KSign.NEG): 'SII',
+    (KSign.POS, KSign.POS, KSign.NEG): 'SIII',
+    (KSign.NEG, KSign.NEG, KSign.POS): 'SIII'
+}
+
 # * LightInteraction
 class LightInteraction(at.NodeMixin):
     """Represents (dipole) interaction between the system and a light beam.
@@ -49,8 +58,8 @@ class LightInteraction(at.NodeMixin):
     readout : bool
         Readout or actual light interaction.
     """
-    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False, angle: Union[float, Tuple[float]]=0.0,
-                 parent=None, children=None):
+    def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False,
+                 angle: Union[float, Tuple[float]]=0.0, parent=None, children=None):
         super(LightInteraction, self).__init__()
         self.separator = "->"
         self.name = name
@@ -149,20 +158,38 @@ class KetBra(at.NodeMixin):
 
         return ints[0].sign != ints[2].sign
 
-    def is_SI(self):
-        ints = self.interactions()
+    def is_SI(self, order=None):
+        r"""Check if :math:`\vec{k}_s = -\vec{k}_1+\vec{k}_2+\vec{k}_3` (rephasing).
 
-        return ints[0].sign != ints[2].sign and ints[0].sign != ints[1].sign
+        `order` is a list of :class:`LightInteraction` names specifying which
+        interaction corresponds to which wavevector.  First name is
+        :math:`\vec{k}_1`, second one is :math:`\vec{k}_2`, etc.
+        """
+        if order is None:
+            order = ('omg1', 'omg2', 'omg3')
+        return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SI'
 
-    def is_SII(self):
-        ints = self.interactions()
+    def is_SII(self, order=None):
+        r"""Check if :math:`\vec{k}_s=\vec{k}_1-\vec{k}_2+\vec{k}_3` (non-rephasing).
 
-        return ints[0].sign == ints[2].sign and ints[0].sign != ints[1].sign
+        See also
+        --------
+        is_SI
+        """
+        if order is None:
+            order = ('omg1', 'omg2', 'omg3')
+        return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SII'
 
-    def is_SIII(self):
-        ints = self.interactions()
+    def is_SIII(self, order=None):
+        r"""Check if :math:`\vec{k}_s=\vec{k}_1+\vec{k}_2-\vec{k}_3` (double quantum).
 
-        return ints[0].sign != ints[2].sign and ints[0].sign == ints[1].sign
+        See also
+        --------
+        is_SI
+        """
+        if order is None:
+            order = ('omg1', 'omg2', 'omg3')
+        return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SIII'
 
     def is_esa(self):
         return (self.ket.nu != self.root.ket.nu) and (self.bra.nu != self.root.ket.nu)
@@ -182,9 +209,37 @@ class KetBra(at.NodeMixin):
         return (pump == pump_kb or pump == pump_kb.conj()) and (probe == self or probe == self.conj())
 
     def is_dfwm(self):
-        """Check is this pathway contains only coherences corresponding to a single dipole transition."""
+        """Check if this pathway contains only coherences corresponding to a single dipole transition."""
         kbs = self.ketbras()
-        return all([kb.is_diagonal() or kb == kbs[1] or kb == kbs[1].conj() for kb in kbs])
+        return all((kb.is_diagonal() or kb == kbs[1] or kb == kbs[1].conj() for kb in kbs))
+
+    def is_twocolor(self, same=None):
+        """Check if pathway is at most two-color.
+
+        By default interactions 'omg1' and 'omg2' are checked. If another pair
+        should be checked then the names should be listed as the argument.
+        """
+        chain = self.ancestors + (self,)
+        # find indices of interactions 
+        if same is None:
+            same = ('omg1', 'omg2')
+        i1 = [x[0] for x in enumerate(chain) if isinstance(x[1], LightInteraction) and x[1].name == same[0]][0]
+        i2 = [x[0] for x in enumerate(chain) if isinstance(x[1], LightInteraction) and x[1].name == same[1]][0]
+
+        # get transitions
+        if chain[i1].side == Side.BRA:
+            trans1 = (chain[i1-1].bra, chain[i1+1].bra)
+        else:
+            trans1 = (chain[i1-1].ket, chain[i1+1].ket)
+        if chain[i2].side == Side.BRA:
+            trans2 = (chain[i2-1].bra, chain[i2+1].bra)
+        else:
+            trans2 = (chain[i2-1].ket, chain[i2+1].ket)
+
+        # check if transitions are between the same states
+        if trans1 == trans2 or trans1 == trans2[::-1]:
+            return True
+        return False
 
     def is_pathway(self, *kbs):
         """Match self to pathway consisting of `kbs`."""
@@ -202,11 +257,19 @@ class KetBra(at.NodeMixin):
         """Interactions which generated this KetBra."""
         return [x for x in self.ancestors if isinstance(x, LightInteraction)]
 
-    def ksigns(self) -> List[KSign]:
-        return [i.sign for i in self.interactions()]
+    def interaction(self, name: str) -> LightInteraction:
+        """Return :class:`LightInteraction` with given name."""
+        for x in self.ancestors:
+            if isinstance(x, LightInteraction) and x.name == name:
+                return x
 
-    def sides(self) -> List[Side]:
-        return [i.side for i in self.interactions()]
+    def ksigns(self) -> Tuple[KSign]:
+        """Return signs of wavevectors of interactions."""
+        return tuple(i.sign for i in self.interactions())
+
+    def sides(self) -> Tuple[Side]:
+        """Return sides of DM on which interactions acted."""
+        return tuple(i.side for i in self.interactions())
 
     def total_ksign(self) -> int:
         """Cumulative sign of the term."""
@@ -337,6 +400,14 @@ def only_interstates(ketbra: KetBra) -> KetBra:
     return prune(ketbra)
 
 
+def only_twocolor(ketbra: KetBra, same=None) -> KetBra:
+    for l in ketbra.leaves:
+        if not l.is_twocolor(same):
+            l.parent = None
+
+    return prune(ketbra)
+
+
 def prune(ketbra: KetBra) -> KetBra:
     """Remove leaves whose depth is less than maximum."""
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
@@ -357,11 +428,6 @@ def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
         excite(kb, 'mu', 'ket', True, angle)
-    # Below is correct for DFWM but incorrent in general. readout doesn't have
-    # to produce ground state population.
-    # for kb in ketbra.leaves:
-    #     if not kb == kb.root:
-    #         kb.parent = None
 
     return prune(remove_nondiagonal(ketbra))
 
