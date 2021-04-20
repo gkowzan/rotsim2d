@@ -6,5 +6,8 @@ rotsim2d API documentation
    :maxdepth: 1
 
    pathways
-   couple
+   dressedleaf
+   angular.symbolic
    propagate
+   visual
+   rcs

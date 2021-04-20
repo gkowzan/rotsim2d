@@ -74,7 +74,8 @@ intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'numba': ('https://numba.pydata.org/numba-doc/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
-    'xarray': ('http://xarray.pydata.org/en/stable/', None)
+    'xarray': ('http://xarray.pydata.org/en/stable/', None),
+    'spectroscopy': ('file://D:/python/packages/spectroscopy/docs/_build/html/index.html', None)
 }
 
 # -- pygments
