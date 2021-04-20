@@ -404,3 +404,14 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: boo
         return Peak2DList([x[0] for x in pairs]), [x[1] for x in pairs]
 
     return pl
+
+
+def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[DressedPathway]) -> Peak2DList:
+    """Return peaks from `pl` which are polarization-equivalent to `pw`."""
+    new_pl = Peak2DList()
+    for peak, dp_list in zip(pl, dll):
+        if any(dp.leaf.is_equiv_pathway(pw) for dp in dp_list):
+            new_pl.append(peak)
+    new_pl.sort_by_sigs()
+
+    return new_pl
