@@ -357,7 +357,7 @@ def dress_pws(pws, vib_mode, T):
 
 
 # * Peaks without line shapes
-Peak2D = namedtuple("Peak2D", "pump_wl probe_wl sig")
+Peak2D = namedtuple("Peak2D", "pump_wl probe_wl sig peak")
 
 class Peak2DList(list):
     """List of 2D peaks with easy access to pump, probe frequencies and peak
@@ -374,18 +374,33 @@ class Peak2DList(list):
     def sigs(self):
         return [peak.sig for peak in self]
 
+    @staticmethod
+    def _sort_func(peak):
+        return abs(peak.sig)
 
-def peak_list(ll: List[DressedLeaf], tw: Optional[float]=0.0) -> Peak2DList:
-    """Create a list of 2D peaks from a list of DressedLeaf's."""
+    def sort_by_sigs(self):
+        self.sort(key=self._sort_func)
+
+
+def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: bool=False) -> Peak2DList:
+    """Create a list of 2D peaks from a list of DressedLeaf's.
+
+    Optionally return sorted list of DressedLeaf's corresponding to peaks.
+    """
     ll = split_by_peaks(ll)
     pl = Peak2DList()
+    dls = []
     for peak, dll in ll.items():
-        pu, pr = u.nu2wn(dll[0].nus[0]), u.nu2wn(dll[0].nus[2])
+        pu, pr = u.nu2wn(dll[0].nu(0)), u.nu2wn(dll[0].nu(2))
         sig = 0.0
         for dl in dll:
             with wigxjpf(300, 6):
                 sig += np.imag(dl.intensity(tw=tw))
-        pl.append(Peak2D(pu, pr, sig))
-    pl.sort(key=lambda x: abs(x.sig))
+        pl.append(Peak2D(pu, pr, sig, peak))
+        if return_dls:
+            dls.append(dll)
+    if return_dls:
+        pairs = sorted(zip(pl, dls), key=lambda x: abs(x[0].sig))
+        return Peak2DList([x[0] for x in pairs]), [x[1] for x in pairs]
 
     return pl
