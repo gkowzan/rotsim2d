@@ -3,9 +3,13 @@
 General idea is to dress up the tree with dipole couplings, pulse properties,
 dephasing and evolution times and then collapse the tree into a scalar.
 
+Concentration scales polarization linearly, there is no need to embed it in
+KetBra's or any structures/functions.
+
 TODO:
 - add selection of k
 - generate 2D spectra
+
 """
 import logging
 from typing import List, Union, Tuple, Optional, Sequence
@@ -50,14 +54,14 @@ def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarr
         if coord is None:
             continue
 
-        if dl.nus[i] > 0.0:
-            nu = dl.nus[i]-freq_shifts[i]
-        elif dl.nus[i] < 0.0:
-            nu = dl.nus[i]+freq_shifts[i]
+        if dl.nu(i) > 0.0:
+            nu = dl.nu(i)-freq_shifts[i]
+        elif dl.nu(i) < 0.0:
+            nu = dl.nu(i)+freq_shifts[i]
         else:
-            nu = dl.nus[i]
+            nu = dl.nu(i)
 
-        resps.append(leaf_term(nu, dl.gams[i], coord, domains[i]))
+        resps.append(leaf_term(nu, dl.gamma(i), coord, domains[i]))
 
     resp = resps[0]*dl.intensity()
     if len(resps) > 1:
