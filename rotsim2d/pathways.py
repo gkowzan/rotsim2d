@@ -211,6 +211,10 @@ class KetBra(at.NodeMixin):
     def is_esa(self):
         return (self.ket.nu != self.root.ket.nu) and (self.bra.nu != self.root.ket.nu)
 
+    def is_sep(self):
+        return all((x.ket.nu-x.root.ket.nu)<2 and (x.bra.nu-x.root.ket.nu)<2 for x in self.ketbras())\
+            and not self.is_dfwm() and self.is_twocolor()
+
     def is_overtone(self):
         return abs(self.ket.nu-self.bra.nu)>1
 
@@ -369,6 +373,14 @@ def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
 def only_dfwm(ketbra: KetBra) -> KetBra:
     for l in ketbra.leaves:
         if not l.is_dfwm():
+            l.parent = None
+
+    return prune(ketbra)
+
+
+def only_sep(ketbra: KetBra) -> KetBra:
+    for l in ketbra.leaves:
+        if not l.is_sep():
             l.parent = None
 
     return prune(ketbra)
