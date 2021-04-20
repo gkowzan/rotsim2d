@@ -36,6 +36,7 @@ def make_extent(t1s, t2s, scale=1.0):
 
 def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True, pthresh=100.0, absmax=None, fig_kwargs={}):
     """2D imshow plot with decent defaults."""
+    # pylint: disable=too-many-locals,too-many-arguments,dangerous-default-value
     extent = make_extent(freqs[0], freqs[1])
     cmap = cm.get_cmap('RdBu').reversed()
 
@@ -137,6 +138,7 @@ def plot2d_animation(freqs: Tuple[np.ndarray], spec3d: np.ndarray, absmax: Optio
 
 
 def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, scatter_kwargs={}):
+    # pylint: disable=dangerous-default-value,too-many-arguments
     if fig_dict:
         fig = fig_dict['fig']
         ax = fig_dict['ax']
