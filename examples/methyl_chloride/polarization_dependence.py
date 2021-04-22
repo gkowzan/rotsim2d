@@ -13,7 +13,7 @@ import rotsim2d.angular.symbolic_results as symr
 plt.ion()
 
 # * Vibrational mode
-sql_path = Path(h.hitran_cache) / 'CH3Cl_nu3.sqlite3'
+sql_path = Path(h.hitran_cache) / 'CH3Cl.sqlite3'
 engine = create_engine("sqlite:///" + str(sql_path))
 ch3cl_mode = CH3ClAlchemyMode(engine)
 T = 296.0
@@ -50,7 +50,7 @@ for angle in symr.angles_pws_vaccaro:
     peaks_by_angles[angle].sort_by_sigs()
 
 
-# Mark the zeroed pathways by black crosses    
+# Mark the zeroed pathways by black crosses
 ang = angles[1]
 fig_dict['ax'].scatter(peaks_by_angles[ang].probes, peaks_by_angles[ang].pumps,
                        s=10.0, c='black', marker='x')

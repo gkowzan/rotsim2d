@@ -11,7 +11,7 @@ import rotsim2d.angular.symbolic_results as symr
 plt.ion()
 
 # * Vibrational mode
-sql_path = Path(h.hitran_cache) / 'CH3Cl_nu3.sqlite3'
+sql_path = Path(h.hitran_cache) / 'CH3Cl.sqlite3'
 engine = create_engine("sqlite:///" + str(sql_path))
 ch3cl_mode = CH3ClAlchemyMode(engine)
 T = 296.0
@@ -29,15 +29,17 @@ classified = sym.classify_dls(pws, rfactors)
 classified_states = {k: [pw.leaf.to_statelist(diatom=True, normalize=True) for pw in v]
                      for k, v in classified.items()}
 
+dl.print_dl_dict(classified, fields=['peak', 'angles', 'geo_label', 'trans_label', 'tw_coherence'])
+
 # * Find zeroing angles
 zeroing_angles_gk = sym.suppression_angles(classified.keys(), [0, sym.pi/4, sym.pi/2])
-zeroing_angles_vaccaro = sym.suppression_angles(classified.keys(), [0, sym.pi/4, 0])
+zeroing_angles_vaccaro = sym.suppression_angles(classified.keys(), [sym.pi/2, sym.pi/4, sym.pi/2])
 
 # * Classify Pathway's with respect to suppression angles
 # Make a map between zeroing angles and the pathways they suppress.
-angles_pws_gk = sym.classify_suppression(classified_states, zeroing_angles_gk)
-angles_pws_vaccaro = sym.classify_suppression(classified_states, zeroing_angles_vaccaro)
+angles_pws_gk = sym.classify_suppression(classified, zeroing_angles_gk)
+angles_pws_vaccaro = sym.classify_suppression(classified, zeroing_angles_vaccaro)
 
 # this will print out expressions for polarization dependence and pathways which
 # correspond to each expression
-dl.print_dl_dict(classified, fields=['peak', 'angles', 'geo_label', 'tw_coherence'])
+dl.print_dl_dict(angles_pws_vaccaro, fields=['peak', 'angles', 'geo_label', 'trans_label', 'tw_coherence'])
