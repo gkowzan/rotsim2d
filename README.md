@@ -31,7 +31,7 @@ python -m pip install -e .
 or by installing directly from the repo with pip
 
 ``` sh
-python -m pip install git+ssh://git@gitlab.com/allisonlab/mdcs/rotsim2d.git@symmetrictop
+python -m pip install git+ssh://git@gitlab.com/allisonlab/mdcs/rotsim2d.git@master
 ```
 
 [spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy) package needs to
