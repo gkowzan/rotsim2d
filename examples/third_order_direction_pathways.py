@@ -9,9 +9,9 @@ import pyfftw.interfaces.scipy_fftpack as fftp
 import rotsim2d.pathways as pw
 import rotsim2d.propagate as prop
 import rotsim2d.visual as vis
-import shed.units as u
-from shed.experiment import find_index
-from spectroscopy import happier
+import knickknacks.units as u
+from knickknacks.experiment import find_index
+from molspecutils import happier
 plt.ion()
 OUTPUT = Path('/mnt/d/DFCS/Stony Brook/rotsim2d_results/carbon_monoxide')
 

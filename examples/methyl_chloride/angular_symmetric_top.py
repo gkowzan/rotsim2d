@@ -1,10 +1,6 @@
 # * Imports
-from pathlib import Path
-import numpy as np
-from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
-import spectroscopy.happier as h
-from spectroscopy.molecule import CH3ClAlchemyMode
+from molspecutils.molecule import CH3ClAlchemyMode
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.angular.symbolic as sym
@@ -12,9 +8,7 @@ import rotsim2d.angular.symbolic_results as symr
 plt.ion()
 
 # * Vibrational mode
-sql_path = Path(h.hitran_cache) / 'CH3Cl_nu3.sqlite3'
-engine = create_engine("sqlite:///" + str(sql_path))
-ch3cl_mode = CH3ClAlchemyMode(engine)
+ch3cl_mode = CH3ClAlchemyMode()
 T = 296.0
 
 # * Distinct R-factors
@@ -49,7 +43,7 @@ zeroing_angles_vaccaro = sym.suppression_angles(classified.keys(), [0, sym.pi/4,
 angles_pws_gk = sym.classify_suppression(classified_states, zeroing_angles_gk)
 angles_pws_vaccaro = sym.classify_suppression(classified_states, zeroing_angles_vaccaro)
 
-dl.print_dl_dict(classified, fields=['peak', 'pols', 'geo_label', 'tw_coherence'])
+dl.print_dl_dict(classified, fields=['peak', 'angles', 'geo_label', 'tw_coherence'])
 
 # * Collect coefficients from `classified`
 phis = [sym.phi, sym.phj, sym.phk, sym.phl]

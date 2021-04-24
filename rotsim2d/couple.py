@@ -3,8 +3,9 @@ from typing import Sequence, List, Union, Tuple
 import atexit
 from numbers import Number
 import numpy as np
-import pywigxjpf.pywigxjpf as wig
+import gkpywigxjpf.gkpywigxjpf as wig
 
+print('Loaded rotsim2d.couple')
 wig.table_init(1000, 9)
 wig.temp_init(1000)
 
@@ -31,8 +32,10 @@ def wigner6j0(a: int, b: int, c: int) -> float:
 
 def G(ji: int, jj: int, jk: int, jl: int, k: int):
     """Wigner6j part of four-fold reduced matrix element."""
-    return (2*k+1)*wig.wig6j(k, k, 0, ji, ji, jk)*wig.wig6j(1, 1, k, jk, ji, jj)*\
+    return (2*k+1)*(-1)**(jj+jk+jl-ji)*wig.wig6j(k, k, 0, ji, ji, jk)*wig.wig6j(1, 1, k, jk, ji, jj)*\
         wig.wig6j(1, 1, k, ji, jk, jl)
+    # return (2*k+1)*wig.wig6j(k, k, 0, ji, ji, jk)*wig.wig6j(1, 1, k, jk, ji, jj)*\
+    #     wig.wig6j(1, 1, k, ji, jk, jl)
 
 
 def T00(phi: float, phj: float, phk: float, phl: float, k: int):

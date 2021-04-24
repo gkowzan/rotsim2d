@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
-import spectroscopy.happier as h
-from spectroscopy.molecule import CH3ClAlchemyMode
+import molspecutils.happier as h
+from molspecutils.molecule import CH3ClAlchemyMode
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.visual as vis

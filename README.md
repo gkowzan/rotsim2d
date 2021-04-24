@@ -17,12 +17,13 @@ See examples in `examples` directory:
 
 # Dependencies
 - numpy, scipy, anytree, sympy
-- [pywigxjpf](https://gitlab.com/allisonlab/mdcs/pywigxjpf)
-- [shed](https://gitlab.com/allisonlab/mdcs/shed)
-- [spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy)
+- [gkpywigxjpf](https://gitlab.com/allisonlab/mdcs/gkpywigxjpf)
+- [knickknacks](https://gitlab.com/allisonlab/mdcs/knickknacks)
+- [molspecutils](https://gitlab.com/allisonlab/mdcs/molspecutils)
 
 # Installation
-Install the package by downloading or cloning the repo and calling the following inside main repository directory (containing `setup.py`):
+Install the package by downloading or cloning the repo and calling the following
+inside main repository directory (containing `setup.py`):
 
 ``` sh
 python -m pip install -e .
@@ -34,9 +35,9 @@ or by installing directly from the repo with pip
 python -m pip install git+ssh://git@gitlab.com/allisonlab/mdcs/rotsim2d.git@master
 ```
 
-[spectroscopy](https://gitlab.com/allisonlab/mdcs/spectroscopy) package needs to
-be initialized by executing `spectroscopy/scripts/initialize_dbs.py` script to
-download spectroscopic data and fill the local database.
+[molspecutils](https://gitlab.com/allisonlab/mdcs/molspecutils) package needs to
+be initialized by executing `molspecutils_init` script to download spectroscopic
+data and fill the local database.
 
 # TODO
 + Refactor angular momentum code.

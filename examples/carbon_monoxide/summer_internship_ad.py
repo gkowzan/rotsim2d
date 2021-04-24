@@ -2,13 +2,13 @@
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-from spectroscopy import happier
-import shed.units as u
+from molspecutils import happier
+import knickknacks.units as u
 import rotsim2d.propagate as prop
 prop.ignore_missing = False
 import rotsim2d.pathways as pw
 import rotsim2d.visual as vis
-import pywigxjpf as wig
+import gkpywigxjpf as wig
 plt.ion()
 
 OUTPUT = Path('/mnt/d/DFCS/Stony Brook/rotsim2d_results/carbon_monoxide/summer_internship_ad')

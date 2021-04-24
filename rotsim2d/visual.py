@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.gridspec as grd
 import matplotlib.cm as cm
-from shed.experiment import find_index
+from knickknacks.experiment import find_index
 
 # * Matplotlib visualization
 def make_extent(t1s, t2s, scale=1.0):

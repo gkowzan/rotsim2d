@@ -8,9 +8,9 @@ import pyfftw.interfaces.scipy_fftpack as fftp
 import rotsim2d.pathways as pw
 import rotsim2d.propagate as prop
 import rotsim2d.visual as vis
-import shed.units as u
+import knickknacks.units as u
 import pywigxjpf as wig
-from spectroscopy import happier
+from molspecutils import happier
 
 prop.ignore_missing = False
 plt.ion()

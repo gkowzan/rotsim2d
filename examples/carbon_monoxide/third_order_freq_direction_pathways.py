@@ -7,8 +7,8 @@ import numpy as np
 import rotsim2d.pathways as pw
 import rotsim2d.propagate as prop
 import rotsim2d.visual as vis
-import shed.units as u
-from spectroscopy import happier
+import knickknacks.units as u
+from molspecutils import happier
 
 prop.ignore_missing = False
 plt.ion()

@@ -2,8 +2,8 @@
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-from spectroscopy import happier
-import shed.units as u
+from molspecutils import happier
+import knickknacks.units as u
 import rotsim2d.propagate as prop
 prop.ignore_missing = False
 import rotsim2d.pathways as pw

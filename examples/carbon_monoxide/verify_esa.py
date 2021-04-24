@@ -5,9 +5,9 @@ Line strengths check out.
 # * Imports
 import numpy as np
 import scipy.constants as C
-import spectroscopy.happier as hap
+import molspecutils.happier as hap
 import rotsim2d.propagate as prop
-import shed.units as u
+import knickknacks.units as u
 
 # * HITRAN line strengths
 line01_0_1 = 9.48e-20

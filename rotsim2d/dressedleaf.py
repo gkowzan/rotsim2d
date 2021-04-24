@@ -8,18 +8,20 @@ from __future__ import annotations
 from typing import Optional, Iterable, Tuple, List, Sequence
 from collections import namedtuple
 import numpy as np
-from pywigxjpf import wigxjpf
-import shed.units as u
-import spectroscopy.molecule as mol
+from gkpywigxjpf import wigxjpf
+import knickknacks.units as u
+import molspecutils.molecule as mol
 import scipy.constants as C
-from rotsim2d.pathways import KetBra, Side
+from rotsim2d.pathways import KetBra, Side, KSign
 from rotsim2d.couple import four_couple
+import rotsim2d.couple as cp
 
 
 class Pathway:
     """Collect information on a pathway based on KetBra tree leaf without
     specializing it to any specific vibrational mode of a molecule."""
-    fields = ['leaf', 'coherences', 'transitions', 'js', 'angles', 'const', 'geo_label', 'tw_coherence', 'peak']
+    fields = ['leaf', 'coherences', 'transitions', 'js', 'angles', 'const',
+              'geo_label', 'trans_label', 'tw_coherence', 'peak']
 
     def __init__(self, leaf: KetBra):
         self.leaf = leaf
@@ -27,7 +29,7 @@ class Pathway:
         self.transitions = []
         self.js = []
         self.angles = []
-        self.const = np.complex(1.0)
+        self.const = np.complex128(1.0)
         self.isotropy = 1/np.sqrt(2*leaf.root.ket.j+1)
 
         kb_series = leaf.ketbras()
@@ -51,8 +53,23 @@ class Pathway:
         self.js = tuple(x[0] for x in wbras)
         self.angles = tuple(x[1] for x in wbras)
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
-        self.geo_label = geometric_label(self)
         self.peak = (kb_series[1].name, kb_series[3].name)
+
+    @property
+    def geo_label(self):
+        """G-factor label."""
+        return geometric_labels[tuple(j-self.js[0] for j in self.js)]
+
+    @property
+    def trans_label(self):
+        """Three-fold transition label (Murdock style)."""
+        return ''.join((self._trans_label(i) for i in (0, 1, 2)))
+
+    def _trans_label(self, i):
+        labels = {-1: 'P', 0: 'Q', 1: 'R'}
+        trans = sorted(self.transitions[i], key=lambda x: x.nu)
+
+        return labels[trans[1].j-trans[0].j]
 
     def geometric_factor(self, relative: bool=False) -> float:
         """Geometric factor for pathway intensity.
@@ -69,9 +86,17 @@ class Pathway:
         """
         ret = four_couple(self.js, self.angles)
         if relative:
-            ret /= four_couple(self.angles, [0.0]*4)
+            ret /= four_couple(self.js, [0.0]*4)
 
         return ret
+
+    def gfactors(self):
+        js = list(self.js)
+        return (cp.G(*(js + [0])), cp.G(*(js + [1])), cp.G(*(js + [2])))
+
+    def T00s(self):
+        angles = list(self.angles)
+        return (cp.T00(*(angles + [0])), cp.T00(*(angles + [1])), cp.T00(*(angles + [2])))
 
     @classmethod
     def from_kb_tree(cls, kb_tree: KetBra) -> List[Pathway]:
@@ -81,7 +106,7 @@ class Pathway:
     @classmethod
     def from_kb_list(cls, kb_list: KetBra) -> List[Pathway]:
         """Make a list of Pathway's from KetBra list."""
-        return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), start=[])
+        return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), [])
 
     def custom_str(self, fields=None):
         fields = fields if fields is not None else self.fields
@@ -89,14 +114,28 @@ class Pathway:
 
         return "Pathway({:s})".format(s)
 
+    @staticmethod
+    def _ketbra_symbols(kb: KetBra) -> Tuple[str]:
+        l, r = '  ', '  '
+        if kb.parent:
+            arr = '->' if kb.parent.sign == KSign.POS else '<-'
+            if kb.parent.side == Side.KET:
+                l = arr
+            else:
+                r = arr
+        return l, r
+
     def print_diagram(self):
         for kb in self.leaf.ketbras()[::-1]:
-            print(f"|{kb.ket.name}><{kb.bra.name}|")
+            l, r = Pathway._ketbra_symbols(kb)
+            print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
     def pprint(self):
         print("diagram:")
         self.print_diagram()
-        print(f"geometric factor: {self.geo_label}")
+        print(f"G-factor label: {self.geo_label}")
+        print(f"Transition chain label: {self.trans_label}")
+        print("Intensity relative to XXXX polarization: {}".format(self.geometric_factor(True)))
 
     def __repr__(self):
         return f"Pathway(leaf={self.leaf!r})"
@@ -135,8 +174,7 @@ class DressedPathway(Pathway):
     def from_kb_list(cls, kb_list: KetBra, vib_mode: mol.VibrationalMode,
                      T: float) -> List[DressedPathway]:
         """Make a list of DressedPathway's from KetBra list."""
-        return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list),
-                   start=[])
+        return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list), [])
 
     def __repr__(self):
         return f"DressedPathway(leaf={self.leaf!r}, vib_mode={self.vib_mode!r}, T={self.T!r})"
@@ -352,8 +390,7 @@ def print_dl_tuple_dict(dldict, fields=None):
 
 
 def dress_pws(pws, vib_mode, T):
-    return sum(([DressedLeaf(l, vib_mode, T) for l in root.leaves] for root in pws),
-               start=[])
+    return sum(([DressedLeaf(l, vib_mode, T) for l in root.leaves] for root in pws), [])
 
 
 # * Peaks without line shapes
@@ -394,8 +431,8 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: boo
         pu, pr = u.nu2wn(dll[0].nu(0)), u.nu2wn(dll[0].nu(2))
         sig = 0.0
         for dl in dll:
-            with wigxjpf(300, 6):
-                sig += np.imag(dl.intensity(tw=tw))
+            # with wigxjpf(300, 6):
+            sig += np.imag(dl.intensity(tw=tw))
         pl.append(Peak2D(pu, pr, sig, peak))
         if return_dls:
             dls.append(dll)

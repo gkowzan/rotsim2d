@@ -6,15 +6,15 @@ from pathlib import Path
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import aliased
 import matplotlib.pyplot as plt
-import spectroscopy.happier as h
-import spectroscopy.molecule
-from spectroscopy.molecule import CH3ClAlchemyMode, SymTopState
-from spectroscopy.alchemy import CH3Cl
+import molspecutils.happier as h
+import molspecutils.molecule
+from molspecutils.molecule import CH3ClAlchemyMode, SymTopState
+from molspecutils.alchemy import CH3Cl
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.visual as vis
 import rotsim2d.propagate as prop
-import pywigxjpf as wig
+import gkpywigxjpf as wig
 plt.ion()
 
 # * Vibrational mode

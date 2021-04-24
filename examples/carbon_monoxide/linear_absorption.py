@@ -3,10 +3,10 @@
 import numpy as np
 import scipy.constants as C
 import matplotlib.pyplot as plt
-import spectroscopy.foreign.hapi3 as h3
-from spectroscopy import happier
-from shed.experiment import find_index
-import shed.units as u
+import molspecutils.foreign.hapi3 as h3
+from molspecutils import happier
+from knickknacks.experiment import find_index
+import knickknacks.units as u
 import rotsim2d.propagate as prop
 import rotsim2d.pathways as pw
 

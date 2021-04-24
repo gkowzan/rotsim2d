@@ -5,9 +5,10 @@ dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.angular.symbolic_results`."""
 # * Imports
 from typing import Sequence, Dict, Tuple, Optional 
+import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
-from spectroscopy.molecule import SymTopState, DiatomState
+from molspecutils.molecule import SymTopState, DiatomState
 
 J_i = symbols("J_i", integer=True, nonnegative=True)
 phi, phj, phk, phl = symbols(r"\phi_i \phi_j \phi_k \phi_l", real=True)
@@ -26,11 +27,16 @@ def inf_syms():
 # Analytical formulas for Wigner-6j coefficients for arguments differing by
 # small factors. Based on formulas from "Microwave molecular spectra" by Gordy
 # and Cook.
+def wigner6j0(j1, j2, j3):
+    s = j1+j2+j3
+    return (-1)**s/sqrt((2*j2+1)*(2*j3+1))
+
+
 def wigner6j1_nn(j1, j2, j3):
     """{j1, j2, j3}
        { 1, j3, j2}"""
     s = j1+j2+j3
-    nom = j1*(j1+1)-j2*(j2+1)-j3*(j3+1)
+    nom = 2*(j1*(j1+1)-j2*(j2+1)-j3*(j3+1))
     denom = sqrt( 2*j2*(2*j2+1)*(2*j2+2)*2*j3*(2*j3+1)*(2*j3+2) )
     return (-1)**s*nom/denom
 
@@ -44,22 +50,22 @@ def wigner6j1_nm(j1, j2, j3):
     return (-1)**s*sqrt(nom/denom)
 
 
-def wigner6j1_mn(j1, j2, j3):
-    """{j1,   j2, j3}
-       { 1, j3, j2-1}"""
-    return wigner6j1_nm(j1, j3, j2)
+# def wigner6j1_mn(j1, j2, j3):
+#     """{j1,   j2, j3}
+#        { 1, j3, j2-1}"""
+#     return wigner6j1_nm(j1, j3, j2)
 
 
-def wigner6j1_pn(j1, j2, j3):
-    """{j1,   j2, j3}
-       { 1, j3, j2+1}"""
-    return wigner6j1_mn(j1, j2+1, j3)
+# def wigner6j1_pn(j1, j2, j3):
+#     """{j1,   j2, j3}
+#        { 1, j3, j2+1}"""
+#     return wigner6j1_mn(j1, j2+1, j3)
 
 
-def wigner6j1_np(j1, j2, j3):
-    """{j1,   j2, j3}
-       { 1, j3+, j2}"""
-    return wigner6j1_pn(j1, j3, j2)
+# def wigner6j1_np(j1, j2, j3):
+#     """{j1,   j2, j3}
+#        { 1, j3+1, j2}"""
+#     return wigner6j1_pn(j1, j3, j2)
 
 
 def wigner6j1_mm(j1, j2, j3):
@@ -71,10 +77,10 @@ def wigner6j1_mm(j1, j2, j3):
     return (-1)**s*sqrt(nom/denom)
 
 
-def wigner6j1_pp(j1, j2, j3):
-    """{j1,   j2,   j3}
-       { 1, j3-1, j2-1}"""
-    return wigner6j1_mm(j1, j2+1, j3+1)
+# def wigner6j1_pp(j1, j2, j3):
+#     """{j1,   j2,   j3}
+#        { 1, j3+1, j2+1}"""
+#     return wigner6j1_mm(j1, j2+1, j3+1)
 
 
 def wigner6j1_pm(j1, j2, j3):
@@ -86,11 +92,68 @@ def wigner6j1_pm(j1, j2, j3):
     return (-1)**s*sqrt(nom/denom)
 
 
-def wigner6j1_mp(j1, j2, j3):
-    """{j1,   j2,   j3}
-       { 1, j3+1, j2-1}"""
-    return wigner6j1_pm(j1, j3, j2)
+# def wigner6j1_mp(j1, j2, j3):
+#     """{j1,   j2,   j3}
+#        { 1, j3+1, j2-1}"""
+#     return wigner6j1_pm(j1, j3, j2)
 
+
+wigner6j1_map = {
+    (0,  0,  0): wigner6j0,
+    (1,  0,  0): wigner6j1_nn,
+    (1, -1,  0): wigner6j1_nm,
+    # (1,  0, -1): wigner6j1_mn,
+    # (1,  0,  1): wigner6j1_pn,
+    # (1,  1,  0): wigner6j1_np,
+    (1, -1, -1): wigner6j1_mm,
+    # (1,  1,  1): wigner6j1_pp,
+    (1, -1,  1): wigner6j1_pm,
+    # (1,  1, -1): wigner6j1_mp
+}
+
+
+def w6j_args_match(args):
+    for pat, func in wigner6j1_map.items():
+        if args[2]+pat[1] == args[4] and args[1]+pat[2] == args[5]\
+           and args[3] == pat[0]:
+            return func
+
+
+def w6j_equiv_args(args):
+    """Return all equivalent lists of Wigner-6j arguments.
+
+    `args` has the form: (j1, j2, j3, j4, j5, j6) 
+    and
+    {j1, j2, j3}
+    {j4, j5, j6}
+    """
+    cols = [(args[0], args[3]), (args[1], args[4]), (args[2], args[5])]
+    cols = it.permutations(cols)
+    new_cols = []
+    for arg_list in cols:
+        new_cols.append(arg_list)
+        new_cols.append((arg_list[0][::-1], arg_list[1][::-1], arg_list[2]))
+        new_cols.append((arg_list[0][::-1], arg_list[1], arg_list[2][::-1]))
+        new_cols.append((arg_list[0], arg_list[1][::-1], arg_list[2][::-1]))
+
+    return [(alist[0][0], alist[1][0], alist[2][0], alist[0][1], alist[1][1], alist[2][1])
+            for alist in new_cols]
+    
+
+def w6j_expr(*args):
+    """Return analytical expression for Wigner-6j coefficient."""
+    args_list = w6j_equiv_args(args)
+    for args_cand in args_list:
+        func = w6j_args_match(args_cand)
+        if func is not None:
+            print(func.__name__)
+            return func(*args_cand[:3])
+
+
+def gfactor_expr(ji, jj, jk, jl, k):
+    return (2*k+1)*(-1)**(jj+jk+jl-ji)*w6j_expr(k, k, 0, ji, ji, jk)*\
+        w6j_expr(1, 1, k, jk, ji, jj)*w6j_expr(1, 1, k, ji, jk, jl)
+    
 # * Polarization
 # ** Linear polarization
 def T1q(q, ph):
@@ -195,6 +258,28 @@ def dl_to_rfactor(dl, rfactors):
          phk: thetas[dl.angles[2]],
          phl: thetas[dl.angles[3]]})
 
+
+def dl_gfactors(dl):
+    """Return G-factors for a DressedLeaf."""
+    js = list(dl.js)
+    return (gfactor_expr(*(js + [0])).evalf(),
+            gfactor_expr(*(js + [1])).evalf(),
+            gfactor_expr(*(js + [2])).evalf())
+
+
+def dl_T00s(dl):
+    phis = [phi, phj, phk, phl]
+    T00_exprs = [
+        cos(phi - phj)*cos(phk - phl)/3,
+        sqrt(3)*sin(phi - phj)*sin(phk - phl)/6,
+        sqrt(5)*(cos(phi - phj - phk + phl) +
+                 cos(phi - phj + phk - phl) +
+                 6*cos(phi + phj - phk - phl))/60]
+
+    return (T00_exprs[0].subs(dict(zip(phis, dl.angles))).evalf(),
+            T00_exprs[1].subs(dict(zip(phis, dl.angles))).evalf(),
+            T00_exprs[2].subs(dict(zip(phis, dl.angles))).evalf())
+    
 
 def classify_dls(dressed_pws: Sequence, rfactors, states=False) -> dict:
     """Return a mapping between polarization expressions and pathways in dressed_pws.

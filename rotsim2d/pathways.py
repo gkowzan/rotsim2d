@@ -1,5 +1,4 @@
-r"""Generate all Liouville pathways for nth order rovibrational excitation.
-"""
+r"""Generate all Liouville pathways for nth order rovibrational excitation."""
 # * Imports, constants and enums
 import enum
 from copy import deepcopy
@@ -11,11 +10,13 @@ import numpy as np
 import anytree as at
 from anytree.exporter import UniqueDotExporter
 
-from spectroscopy.molecule import DiatomState, SymTopState, RotState 
+from molspecutils.molecule import DiatomState, SymTopState, RotState
 
-dnus = [-1, +1] #: possible changes of vibrational state
+dnus = [-1, +1] #: Possible changes of vibrational state
 
+#: Right-circular polarized light
 right_pol = (5/4*np.pi, -np.pi/2)
+#: Left-circular polarized light
 left_pol = (np.pi/4, np.pi/2)
 
 def nodeattrfunc(node):
@@ -26,10 +27,12 @@ def nodeattrfunc(node):
 
 
 class Side(enum.IntEnum):
+    """Ket- or Bra-side excitation by :class:`LightInteraction`"""
     KET = 1
     BRA = -1
 
 class KSign(enum.IntEnum):
+    """Positive or negative part light spectrum."""
     POS = 1
     NEG = -1
 
@@ -84,6 +87,11 @@ class LightInteraction(at.NodeMixin):
 
 # * KetBra
 class KetBra(at.NodeMixin):
+    """Node in a tree of excited states.
+
+    Each KetBra is described by :attr:`ket` and :attr:`bra` which describes the
+    density matrix element.
+    """
     def __init__(self, ket, bra, pop: float=1.0, parent=None, children=None):
         super(KetBra, self).__init__()
         self.ket = ket

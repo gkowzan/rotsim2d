@@ -5,14 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
-from spectroscopy import happier
-import shed.units as u
+from molspecutils import happier
+import knickknacks.units as u
 import rotsim2d.propagate as prop
 prop.ignore_missing = False
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.visual as vis
-import pywigxjpf as wig
+import gkpywigxjpf as wig
 plt.ion()
 PAPER_OUTPUT = Path('/mnt/d/DFCS/ARTYKULY/2021 rotsim PRL/figures')
 
@@ -245,7 +245,7 @@ ax0_data = prop.absorptive(resp_xs_xxxx+resp_xs_xxxx_SI)
 extent = vis.make_extent(fs_cm+1800.0, fs_cm+1800.0)
 
 FIGW = 2*(3+3/8)
-from shed.matplotlib import jqsrt_rc, compact
+from knickknacks.matplotlib import jqsrt_rc, compact
 import matplotlib as mpl
 import matplotlib.ticker as tck
 mpl.rcParams.update(jqsrt_rc)
