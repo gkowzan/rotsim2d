@@ -1,6 +1,7 @@
 Package to simulate 2D rovibrational spectra of gas-phase samples.
 
 See examples in `examples` directory:
+
 - `methyl_chloride/classify_pathways.py` prints out a mapping between
   polarization-dependence expressions and pathways they correspond to. Modify
   `gen_pathways` call to obtain classifications for different experimental
@@ -17,25 +18,23 @@ See examples in `examples` directory:
 
 # Dependencies
 - numpy, scipy, anytree, sympy
-- [gkpywigxjpf](https://gitlab.com/allisonlab/mdcs/gkpywigxjpf)
-- [knickknacks](https://gitlab.com/allisonlab/mdcs/knickknacks)
-- [molspecutils](https://gitlab.com/allisonlab/mdcs/molspecutils)
+- [gkpywigxjpf](https://gitlab.com/allisonlab/mdcs/pywigxjpf)
+- [knickknacks](https://gitlab.com/allisonlab/mdcs/shed)
+- [molspecutils](https://gitlab.com/allisonlab/mdcs/spectroscopy)
 
 # Installation
-Install the package by downloading or cloning the repo and calling the following
-inside main repository directory (containing `setup.py`):
+Install the package from our private GitLab repository by executing:
 
 ``` sh
-python -m pip install -e .
+pip install rotsim2d --extra-index-url https://<token_name>:<token>@gitlab.com/api/v4/projects/26140156/packages/pypi
 ```
 
-or by installing directly from the repo with pip
+where `<token_name>` and `<token>` are obtained by creating a personal token
+with `read_api` scope. See [Creating personal access
+tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#creating-a-personal-access-token)
+for details.
 
-``` sh
-python -m pip install git+ssh://git@gitlab.com/allisonlab/mdcs/rotsim2d.git@master
-```
-
-[molspecutils](https://gitlab.com/allisonlab/mdcs/molspecutils) package needs to
+[molspecutils](https://gitlab.com/allisonlab/mdcs/spectroscopy) package needs to
 be initialized by executing `molspecutils_init` script to download spectroscopic
 data and fill the local database.
 
