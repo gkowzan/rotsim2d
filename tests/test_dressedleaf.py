@@ -4,8 +4,8 @@ from numbers import Complex
 from sqlalchemy import create_engine
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
-from spectroscopy.alchemy.meta import hitran_cache
-from spectroscopy.molecule import CH3ClAlchemyMode, DiatomState
+from molspecutils.alchemy.meta import hitran_cache
+from molspecutils.molecule import CH3ClAlchemyMode, DiatomState
 
 
 @pytest.fixture
