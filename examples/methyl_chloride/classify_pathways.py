@@ -1,8 +1,5 @@
 # * Imports
-from pathlib import Path
-from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
-import molspecutils.happier as h
 from molspecutils.molecule import CH3ClAlchemyMode
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
@@ -11,9 +8,7 @@ import rotsim2d.angular.symbolic_results as symr
 plt.ion()
 
 # * Vibrational mode
-sql_path = Path(h.hitran_cache) / 'CH3Cl.sqlite3'
-engine = create_engine("sqlite:///" + str(sql_path))
-ch3cl_mode = CH3ClAlchemyMode(engine)
+ch3cl_mode = CH3ClAlchemyMode()
 T = 296.0
 
 # * Classify pathways
