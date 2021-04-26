@@ -237,11 +237,12 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, abstract=None, hspa
     diag_rows = []
     for i, kb in enumerate(leaf.ketbras()):
         if not abstract:
-            diag_rows.append(r"$|{:d},{:d}\rangle\langle {:d},{:d}|$\\".format(kb.knu, kb.kj, kb.bnu, kb.bj))
+            diag_rows.append(r"$|{:d},{:d}\rangle\langle {:d},{:d}|$\\".format(kb.ket.nu, kb.ket.j,
+                                                                               kb.bra.nu, kb.bra.j))
         else:
             taf = tikz_abstract_format
             gnu, gj = abstract
-            knu, kj, bnu, bj = kb.knu-gnu, kb.kj-gj, kb.bnu-gnu, kb.bj-gj
+            knu, kj, bnu, bj = kb.ket.nu-gnu, kb.ket.j-gj, kb.bra.nu-gnu, kb.bra.j-gj
             if i==0:
                 diag_rows.append(r"$|0\rangle\langle 0|$\\")
             else:
