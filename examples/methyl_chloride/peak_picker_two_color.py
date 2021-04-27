@@ -5,7 +5,6 @@ from molspecutils.molecule import CH3ClAlchemyMode
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.visual as vis
-plt.ion()
 
 # * Vibrational mode
 ch3cl_mode = CH3ClAlchemyMode()
@@ -31,3 +30,4 @@ def scatter_onpick(event):
             print()
 
 fig_dict['fig'].canvas.mpl_connect('pick_event', scatter_onpick)
+plt.show()
