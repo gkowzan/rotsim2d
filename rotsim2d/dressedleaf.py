@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import Optional, Iterable, Tuple, List, Sequence
 from collections import namedtuple
 import numpy as np
-from gkpywigxjpf import wigxjpf
 import knickknacks.units as u
 import molspecutils.molecule as mol
 import scipy.constants as C
