@@ -130,12 +130,16 @@ class Pathway:
             l, r = Pathway._ketbra_symbols(kb)
             print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
+    def _tw_pprint(self):
+        print(f"Coherence during waiting time: {self.tw_coherence!r}")
+
     def pprint(self):
         print("diagram:")
         self.print_diagram()
         print(f"G-factor label: {self.geo_label}")
         print(f"Transition chain label: {self.trans_label}")
         print("Intensity relative to XXXX polarization: {}".format(self.geometric_factor(True)))
+        self._tw_pprint()
 
     def __repr__(self):
         return f"Pathway(leaf={self.leaf!r})"
@@ -163,6 +167,14 @@ class DressedPathway(Pathway):
             ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1) + self.gamma(1)))
 
         return ret
+
+    def _tw_pprint(self):
+        print(f"Coherence during waiting time: {self.tw_coherence!r}", end='')
+        if self.tw_coherence:
+            print(", {:.2f} cm-1".format(u.nu2wn(self.nu(1))))
+        else:
+            print()
+
 
     @classmethod
     def from_kb_tree(cls, kb_tree: KetBra, vib_mode: mol.VibrationalMode,
