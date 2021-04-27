@@ -1,5 +1,6 @@
 """Test DressedLeaf and PeakList with new SQLAlchemy classes."""
 # * Imports
+import knickknacks.units as u
 import matplotlib.pyplot as plt
 from molspecutils.molecule import CH3ClAlchemyMode
 import rotsim2d.pathways as pw
@@ -7,10 +8,12 @@ import rotsim2d.dressedleaf as dl
 import rotsim2d.visual as vis
 
 # * Vibrational mode
+print('Initializing vibrational mode')
 ch3cl_mode = CH3ClAlchemyMode()
 T = 296.0
 
 # * Pathways
+print('Calculating peak list')
 pws = pw.gen_pathways(range(1, 37), [0]*4, meths=[pw.only_SII, pw.only_twocolor],
                       rotor='symmetric',
                       kiter_func=lambda x: range(x if x<10 else 10))
@@ -25,8 +28,16 @@ def scatter_onpick(event):
     if event.artist != fig_dict['sc']:
         return
     for i, dl in enumerate(dls[event.ind[0]]):
-        dl.pprint()
+        if i == 0:
+            print('-'*10)
+            print('pump = {:.2f} cm-1, probe = {:.2f} cm-1'.format(
+                u.nu2wn(dl.nu(0)), u.nu2wn(dl.nu(2))))
+            dl.pprint()
+        else:
+            print()
+            dl.pprint()
         if i == len(dls[event.ind[0]])-1:
+            print('-'*10)
             print()
 
 fig_dict['fig'].canvas.mpl_connect('pick_event', scatter_onpick)
