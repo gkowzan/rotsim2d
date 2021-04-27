@@ -1,7 +1,7 @@
 import pytest
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
-import rotsim2d.angular.symbolic as sym
+import rotsim2d.symbolic.functions as sym
 
 
 @pytest.fixture
@@ -27,5 +27,4 @@ def test_polarization_numeric_analytical(pws):
         numeric = pw.T00s()
         analytical = sym.dl_T00s(pw)
         for n, a in zip(numeric, analytical):
-            assert n == pytest.approx(a) 
-    
+            assert n == pytest.approx(a)

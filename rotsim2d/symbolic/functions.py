@@ -2,19 +2,17 @@
 """This module contains functions to derive and manipulate SymPy expressions
 related to polarization dependence and angular momentum dependence of four-fold
 dipole interaction operator. The derived expressions are in
-:mod:`rotsim2d.angular.symbolic_results`."""
+:mod:`rotsim2d.symbolic.results`."""
 # * Imports
 from typing import Sequence, Dict, Tuple, Optional 
 import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
 from molspecutils.molecule import SymTopState, DiatomState
-
-J_i = symbols("J_i", integer=True, nonnegative=True)
-phi, phj, phk, phl = symbols(r"\phi_i \phi_j \phi_k \phi_l", real=True)
-thetas = symbols(r"\theta_i \theta_j \theta_k \theta_l", real=True)
-theta_i, theta_j, theta_k, theta_l = thetas
-x0, x1, x2, x3 = symbols("x0 x1 x2 x3", real=True)
+import rotsim2d.dressedleaf as dl
+import rotsim2d.pathways as pw
+from rotsim2d.symbolic.common import *
+from rotsim2d.symbolic.results import rfactors_highj
 
 # ** Utilities
 def inf_syms():
@@ -122,10 +120,11 @@ def w6j_args_match(args):
 def w6j_equiv_args(args):
     """Return all equivalent lists of Wigner-6j arguments.
 
-    `args` has the form: (j1, j2, j3, j4, j5, j6) 
-    and
-    {j1, j2, j3}
-    {j4, j5, j6}
+    `args` has the form: (j1, j2, j3, j4, j5, j6), which correspond to the
+    following Wigner-6j coefficient::
+
+      {j1, j2, j3}
+      {j4, j5, j6}
     """
     cols = [(args[0], args[3]), (args[1], args[4]), (args[2], args[5])]
     cols = it.permutations(cols)
@@ -146,14 +145,14 @@ def w6j_expr(*args):
     for args_cand in args_list:
         func = w6j_args_match(args_cand)
         if func is not None:
-            print(func.__name__)
             return func(*args_cand[:3])
 
 
 def gfactor_expr(ji, jj, jk, jl, k):
     return (2*k+1)*(-1)**(jj+jk+jl-ji)*w6j_expr(k, k, 0, ji, ji, jk)*\
         w6j_expr(1, 1, k, jk, ji, jj)*w6j_expr(1, 1, k, ji, jk, jl)
-    
+
+
 # * Polarization
 # ** Linear polarization
 def T1q(q, ph):
@@ -179,7 +178,7 @@ def T00_phis(k, phis):
                     T1q(qp,phis[0])*T1q(q-qp,phis[1])*T1q(qpp,phis[2])*T1q(-q-qpp,phis[3])
     return pre*ret
 
-#: Cosines terms present in :var:`T00_exprs`
+#: Cosines terms present in `T00_exprs`
 T00_trigs = [cos(phi + phj - phk - phl), cos(phi - phj + phk - phl), cos(phi - phj - phk + phl)]
 
 # * R-factors
@@ -246,11 +245,11 @@ def rfactorize(gterm: Sequence, pterms: Sequence, cfac: bool=True, relative: boo
 
 # * Classify pathways with regards to R-factor
 # ** Functions
-def dl_to_rfactor(dl, rfactors):
-    """Return R-factor corresponding to DressedLeaf.
+def dl_to_rfactor(dl, rfactors: dict):
+    """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
     
-    DressedLeaf polarization angles need to be indices (integers) from 0 to 3.
-    `rfactors` is one of dicts from this modules containing SymPy expressions.
+    Pathway polarization angles need to be indices (integers) from 0 to 3.
+    `rfactors` is one of dicts from this module containing SymPy expressions.
     """
     return rfactors[dl.geo_label].subs(
         {phi: thetas[dl.angles[0]],
@@ -260,7 +259,7 @@ def dl_to_rfactor(dl, rfactors):
 
 
 def dl_gfactors(dl):
-    """Return G-factors for a DressedLeaf."""
+    """Return G-factors for a :class:`rotsim2d.dressedleaf.Pathway`."""
     js = list(dl.js)
     return (gfactor_expr(*(js + [0])).evalf(),
             gfactor_expr(*(js + [1])).evalf(),
@@ -268,6 +267,7 @@ def dl_gfactors(dl):
 
 
 def dl_T00s(dl):
+    """Return polarization components a :class:`rotsim2d.dressedleaf.Pathway`."""
     phis = [phi, phj, phk, phl]
     T00_exprs = [
         cos(phi - phj)*cos(phk - phl)/3,
@@ -281,8 +281,8 @@ def dl_T00s(dl):
             T00_exprs[2].subs(dict(zip(phis, dl.angles))).evalf())
     
 
-def classify_dls(dressed_pws: Sequence, rfactors, states=False) -> dict:
-    """Return a mapping between polarization expressions and pathways in dressed_pws.
+def classify_dls(dressed_pws: Sequence, rfactors: dict, states=False) -> dict:
+    """Return a mapping between polarization expressions and pathways in `dressed_pws`.
 
     If `states` is True, convert Pathways to lists of states."""
     classified = {}
@@ -316,10 +316,59 @@ def suppression_angles(exprs: Sequence, angles: Sequence) -> dict:
             for k in exprs}
 
 
-def classify_suppression(classified: dict, angles: dict):
-    """Return a map between suppression angles and pathways."""
+def classify_suppression(classified: dict, angles: dict) -> dict:
+    """Return a map between suppression angles and pathways.
+
+    `classified` is the map between expressions and pathways returned by
+    :func:`classify_dls`.
+    """
     angles_to_pws = {}
     for k, v in angles.items():
         angles_to_pws.setdefault(v, []).extend(classified[k])
 
     return angles_to_pws
+
+
+def pathway_angles(pws: Sequence, angles: Sequence) -> dict:
+    """Return a map between detection angles and elements of `pws` they suppress.
+
+    Parameters
+    ----------
+    pws
+        Sequence of class:`dressedleaf.Pathway`.
+    angles
+        Linear polarization angles of three interacting pulses in sequence.
+    """
+    pws_rfactors = [dl_to_rfactor(pw, rfactors_highj) for pw in pws]
+    classified = classify_dls(pws, pws_rfactors)
+    zeroing_angles = suppression_angles(classified.keys(), angles)
+    ret = classify_suppression(classified, zeroing_angles)
+
+    return ret
+
+
+def detection_angles(angles: Sequence):
+    """Zeroing det. angles for a minimal complete set of pathways.
+
+    Generate a minimal complete set of non-R-factor-equivalent pathways
+    including Q-branch transitions. The resulting dict can be used with
+    :func:`rotsim2d.dressedleaf.equiv_peaks` or
+    :func:`rotsim2d.dressedleaf.split_by_equiv_peaks` to identify other pathways that are
+    also zeroed by any of the detection angles.
+
+    Parameters
+    ----------
+    angles
+        Light beam polarizations.
+
+    Returns
+    -------
+    det_angles
+        Dict from detection angles to symmetric top pathways.
+
+    """
+    kbs = pw.gen_pathways([5], [0, 1, 2, 3], rotor='symmetric', kiter_func=lambda x: [1])
+    pws = dl.Pathway.from_kb_list(kbs)
+    det_angles = pathway_angles(pws, angles)
+
+    return det_angles
