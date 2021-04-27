@@ -156,7 +156,6 @@ class DressedPathway(Pathway):
 
     def nu(self, i: int) -> float:
         return self.vib_mode.nu(self.coherences[i])
-
     def gamma(self, i: int) -> float:
         return self.vib_mode.gamma(self.coherences[i])
 
@@ -454,7 +453,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: boo
     return pl
 
 
-def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[DressedPathway]) -> Peak2DList:
+def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[Pathway]) -> Peak2DList:
     """Return peaks from `pl` which are polarization-equivalent to `pw`."""
     new_pl = Peak2DList()
     for peak, dp_list in zip(pl, dll):
@@ -463,3 +462,36 @@ def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[DressedPathway]) -> P
     new_pl.sort_by_sigs()
 
     return new_pl
+
+
+def split_by_equiv_peaks(det_angles: dict, pl: Peak2DList, dll: Sequence[Pathway]) -> dict:
+    """Map zeroing angles from `det_angles` to peaks from `pl`.
+
+    If `det_angles` is complete, e.g. a result of
+    :func:`rotsim2d.symbolic.functions.detection_angles`, then this function
+    will split *all* peaks from `pl` into disjoint sets distinguishable by
+    polarization (under the polarization scheme assumed when constructing
+    `det_angles`).
+
+    Parameters
+    ----------
+    det_angles
+        Map between detectio angle and a list of pathways.
+    pl
+        Any peak list.
+    dll
+        A list of lists of pathways associated with each peak in `pl`.
+
+    Returns
+    -------
+    equiv_peaks_dict
+        Map between `det_angles` dict keys and peak lists constructed from `pl`.
+    """
+    equiv_peaks_dict = {}
+    for angle in det_angles:
+        equiv_peaks_dict[angle] = Peak2DList()
+        for pw1 in det_angles[angle]:
+            equiv_peaks_dict[angle].extend(equiv_peaks(pw1.leaf, pl, dll))
+        equiv_peaks_dict[angle].sort_by_sigs()
+
+    return equiv_peaks_dict
