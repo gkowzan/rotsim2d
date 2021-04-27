@@ -5,7 +5,6 @@ from numbers import Number
 import numpy as np
 import gkpywigxjpf.gkpywigxjpf as wig
 
-print('Loaded rotsim2d.couple')
 wig.table_init(1000, 9)
 wig.temp_init(1000)
 
