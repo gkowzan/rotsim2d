@@ -128,7 +128,7 @@ rfactors = {'PPR': (cos(phi - phj - phk + phl) + cos(phi - phj + phk - phl) + 6*
  'QQR': -((-3*J_i - 6)*cos(phi - phj - phk + phl) + (-3*J_i - 1)*cos(phi - phj + phk - phl) + (2*J_i - 1)*cos(phi + phj - phk - phl))/(60*(J_i + 1)*(2*J_i + 1)**(3/2)),
  'QRQ': -sqrt(J_i)*sqrt(J_i + 2)*(3*cos(phi - phj - phk + phl) - 2*cos(phi - phj + phk - phl) + 3*cos(phi + phj - phk - phl))/(60*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3))}
 
-# rfactors_dict = {k: rfactorize(gfactors[k], T00_exprs, cfac=False, coeffs=True) for k in gfactors.keys()}
+# rfactors_dict = {k: rfactorize(gfactors[k], T00_exprs, coeffs=True) for k in gfactors.keys()}
 rfactors_dict = {'PPR': {'c0': 1/(60*(2*J_i - 1)*sqrt(2*J_i + 1)),
   'c12': 6,
   'c13': 1,
@@ -224,7 +224,7 @@ rfactors_xxxx = {'PPR': 2/(15*(2*J_i - 1)*sqrt(2*J_i + 1)),
  'QRQ': -sqrt(J_i)*sqrt(J_i + 2)/(15*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3))}
 
 # ** R-factors relative to XXXX
-# rfactors_relative = {k: rfactorize(gfactors[k], T00_exprs, cfac=False, relative=True) for k in gfactors.keys()}
+# rfactors_relative = {k: rfactorize(gfactors[k], T00_exprs, relative=True) for k in gfactors.keys()}
 rfactors_relative = {'PPR': cos(phi - phj - phk + phl)/8 + cos(phi - phj + phk - phl)/8 + 3*cos(phi + phj - phk - phl)/4,
  'RRP': cos(phi - phj - phk + phl)/8 + cos(phi - phj + phk - phl)/8 + 3*cos(phi + phj - phk - phl)/4,
  'PRP': ((12*J_i**2 - 2)*cos(phi - phj + phk - phl) + (2*J_i**2 - 5*J_i + 3)*cos(phi - phj - phk + phl) + (2*J_i**2 + 5*J_i + 3)*cos(phi + phj - phk - phl))/(4*(4*J_i**2 + 1)),
@@ -248,7 +248,7 @@ rfactors_relative = {'PPR': cos(phi - phj - phk + phl)/8 + cos(phi - phj + phk -
 # ** High-J R-factors
 # These are already multiplied by common factor of (2*J_i+1)^(1.5) and there is
 # no common factor between all cosine terms (c0=1)
-# rfactors_highj = {k: rfactorize(gfactors_highj[k], T00_exprs, cfac=False) for k in gfactors_highj.keys()}
+# rfactors_highj = {k: rfactorize(gfactors_highj[k], T00_exprs) for k in gfactors_highj.keys()}
 rfactors_highj = {'PPR': cos(phi - phj - phk + phl)/60 + cos(phi - phj + phk - phl)/60 + cos(phi + phj - phk - phl)/10,
  'RRP': cos(phi - phj - phk + phl)/60 + cos(phi - phj + phk - phl)/60 + cos(phi + phj - phk - phl)/10,
  'PRP': cos(phi - phj - phk + phl)/60 + cos(phi - phj + phk - phl)/10 + cos(phi + phj - phk - phl)/60,

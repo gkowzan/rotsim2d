@@ -29,7 +29,7 @@ def test_rfactors():
             symr.rfactors[k]-rfactors[k]), deep=True) == symr.S(0)
 
 def test_rfactors_dict():
-    rfactors_dict = {k: sym.rfactorize(symr.gfactors[k], symr.T00_exprs, cfac=False, coeffs=True)
+    rfactors_dict = {k: sym.rfactorize(symr.gfactors[k], symr.T00_exprs, coeffs=True)
                      for k in symr.gfactors.keys()}
     for label in rfactors_dict.keys():
         for coeff_label in rfactors_dict[label].keys():
@@ -47,17 +47,17 @@ def test_rfactors_xxxx():
 
 def test_rfactors_relative():
     for k in symr.gfactors:
-        actual = sym.rfactorize(symr.gfactors[k], symr.T00_exprs, cfac=False, relative=True)
+        actual = sym.rfactorize(symr.gfactors[k], symr.T00_exprs, relative=True)
         assert symr.factor(symr.nsimplify(actual-symr.rfactors_relative[k]), deep=True) == symr.S(0)
 
 def test_rfactors_highj():
     for k in symr.gfactors_highj:
-        actual = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs, cfac=False)
+        actual = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs)
         assert symr.factor(symr.nsimplify(actual-symr.rfactors_highj[k]), deep=True) == symr.S(0)
 
 def test_rfactors_highj_dict():
     for k in symr.gfactors_highj:
-        expected = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs, cfac=False, coeffs=True)
+        expected = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs, coeffs=True)
         for kk in symr.rfactors_highj_dict[k]:
             assert expected[kk]-symr.rfactors_highj_dict[k][kk] == symr.S(0)
 

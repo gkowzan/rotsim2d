@@ -194,8 +194,6 @@ def rfactorize(gterm: Sequence, pterms: Sequence, cfac: bool=True, relative: boo
         Spherical components of G-factor.
     pterms: sequence
         Spherical components of four-fold polarization tensor.
-    cfac: bool
-        Separate the 1/(60*(2*J_i+1)**1.5) factor.
     relative: bool
         Return polarization-dependent R-factor relative to XXXX polarization.
     coeffs: bool
@@ -203,45 +201,44 @@ def rfactorize(gterm: Sequence, pterms: Sequence, cfac: bool=True, relative: boo
     """
     # factor out a term common to all J labels and write polarization in terms
     # of four-angles cosines
-    if cfac:
-        cfac = S(1)/(60*(2*J_i+1)**(S(3)/S(2)))
-    else:
-        cfac = S(1)
-    rfactor = sum(gterm[i]*FU['TR8'](pterms[i]) for i in range(3))/cfac
+    rfactor = sum(gterm[i]*FU['TR8'](pterms[i]) for i in range(3))
     if relative:
         rfactor = rfactor/simplify(rfactor.subs({phi: S(0), phj: S(0), phk: S(0), phl: S(0)}))
-    
-    # find common multiplicative factor for this specific J label
-    # substitution necessary to identify (un)common factor by checking free
-    # symbols
-    subs1 = dict(zip(T00_trigs, [x1, x2, x3]))
-    subs2 = dict(zip([x1, x2, x3], T00_trigs))
-    rfactor = rfactor.subs(subs1)
-    rfactor_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True), force=True)
-                    for k, v in collect(expand(rfactor), [x1, x2, x3], evaluate=False).items()}
-    rfactor = collect(factor(sum(k*v for k, v in rfactor_dict.items())), [x1, x2, x3])
 
-    if not coeffs:
-        return rfactor.subs(subs2)*cfac
+    return rfactor_simplify(rfactor, T00_trigs, coeffs=coeffs)
+
+
+def rfactor_simplify(expr, subterms: Sequence, coeffs: bool=False):
+    # Find common multiplicative factor for this specific J label.
+    # Substitution necessary to identify (un)common factor by checking free
+    # symbols.
+    subs1 = dict(zip(subterms, [x1, x2, x3]))
+    subs2 = dict(zip([x1, x2, x3], subterms))
+    expr = expr.subs(subs1)
+    expr_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True), force=True)
+                 for k, v in collect(expand(expr), [x1, x2, x3], evaluate=False).items()}
+    expr = collect(factor(sum(k*v for k, v in expr_dict.items())), [x1, x2, x3])
+
+    if not coeffs:              # back to cosines
+        return expr.subs(subs2)
 
     common, uncommon = S(1), []
-    for term in rfactor.args:
+    for term in expr.args:
         if {x1, x2, x3} & term.free_symbols:
             uncommon.append(term)
         else:
             common = common*term
-    # print(common, uncommon)
     # special case when common == 1
     # could also be dealt with by checking if top-level operator is Mul or Add
     if len(uncommon) > 1 and common == S(1):
         uncommon = [Add(*uncommon)]
-    common = cfac*common
 
     # `uncommon` is now a sum of >=3 cosines with individual non-factorable coeffs
     # collect terms corresponding to each of three cosines
     uncommon_dict = collect(uncommon[0], [x1, x2, x3], evaluate=False)
     return {'c0': common, 'c12': uncommon_dict[x1], 'c13': uncommon_dict[x2],
             'c14': uncommon_dict[x3]}
+
 
 # * Classify pathways with regards to R-factor
 # ** Functions
