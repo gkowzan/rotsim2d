@@ -178,8 +178,12 @@ def T00_phis(k, phis):
                     T1q(qp,phis[0])*T1q(q-qp,phis[1])*T1q(qpp,phis[2])*T1q(-q-qpp,phis[3])
     return pre*ret
 
-#: Cosines terms present in `T00_exprs`
+#: Cosines terms present in `T00_exprs` (dummy angles)
 T00_trigs = [cos(phi + phj - phk - phl), cos(phi - phj + phk - phl), cos(phi - phj - phk + phl)]
+#: Cosines terms present in `T00_exprs` (experimental angles)
+T00_theta_trigs = [cos(theta_i + theta_j - theta_k - theta_l),
+                   cos(theta_i - theta_j + theta_k - theta_l),
+                   cos(theta_i - theta_j - theta_k + theta_l)]
 
 # * R-factors
 # Combined polarization-angular momentum factors for four-fold dipole
@@ -281,7 +285,10 @@ def dl_T00s(dl):
 def classify_dls(dressed_pws: Sequence, rfactors: dict, states=False) -> dict:
     """Return a mapping between polarization expressions and pathways in `dressed_pws`.
 
-    If `states` is True, convert Pathways to lists of states."""
+    If `states` is True, convert Pathways to lists of states. `rfactors` are
+    R-factors as functions of experimental angles (thetas) not dummy angles
+    (phis), i.e. obtained by applying :func:`dl_to_rfactor`.
+    """
     classified = {}
     for dressed_leaf, cur_rfac in zip(dressed_pws, rfactors):
         found = False
