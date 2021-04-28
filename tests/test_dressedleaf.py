@@ -1,5 +1,6 @@
 # pylint: disable=redefined-outer-name
 import pytest
+from pprint import pprint
 from pathlib import Path
 from sqlalchemy import create_engine
 import rotsim2d.pathways as pw
@@ -17,6 +18,12 @@ def pws():
     pws = dl.Pathway.from_kb_list(kbs)
 
     return pws
+
+
+def test_pathway_equality(pws):
+    assert pws[0] == pws[0]
+    for pw2 in pws[1:]:
+        assert pws[0] != pw2
 
 
 def test_nineteen_geo_labels(pws):
@@ -48,6 +55,10 @@ def dressed_pws(ch3cl_mode):
 
     return dpws
 
+def test_dressedpathway_equality(dressed_pws):
+    assert dressed_pws[0] == dressed_pws[0]
+    for pw2 in dressed_pws[1:]:
+        assert dressed_pws[0] != pw2
 
 def test_gammas_are_positive(dressed_pws):
     for pw in dressed_pws:

@@ -7,6 +7,7 @@ TODO:
 from __future__ import annotations
 from typing import Optional, Iterable, Tuple, List, Sequence
 from collections import namedtuple
+from math import isclose
 import numpy as np
 import knickknacks.units as u
 import molspecutils.molecule as mol
@@ -53,6 +54,14 @@ class Pathway:
         self.angles = tuple(x[1] for x in wbras)
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
         self.peak = (kb_series[1].name, kb_series[3].name)
+
+    def __eq__(self, o):
+        if not isinstance(o, Pathway):
+            return NotImplemented
+        return tuple(self.leaf.to_statelist()) == tuple(o.leaf.to_statelist())
+
+    def __hash__(self):
+        return hash(tuple(self.leaf.to_statelist()))
 
     @property
     def geo_label(self):
@@ -154,8 +163,14 @@ class DressedPathway(Pathway):
             self.const *= vib_mode.mu(pair)
         self.const *= vib_mode.equilibrium_pop(self.leaf.root.ket, T)
 
+    def __eq__(self, o):
+        if not isinstance(o, DressedPathway):
+            return NotImplemented
+        return Pathway.__eq__(self, o) and isclose(self.T, o.T) and self.vib_mode == o.vib_mode
+        
     def nu(self, i: int) -> float:
         return self.vib_mode.nu(self.coherences[i])
+
     def gamma(self, i: int) -> float:
         return self.vib_mode.gamma(self.coherences[i])
 
