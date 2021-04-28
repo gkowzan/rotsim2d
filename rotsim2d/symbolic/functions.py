@@ -185,7 +185,7 @@ T00_trigs = [cos(phi + phj - phk - phl), cos(phi - phj + phk - phl), cos(phi - p
 # Combined polarization-angular momentum factors for four-fold dipole
 # interaction operator.
 # ** Simplify R-factor
-def rfactorize(gterm: Sequence, pterms: Sequence, cfac: bool=True, relative: bool=False, coeffs: bool=False):
+def rfactorize(gterm: Sequence, pterms: Sequence, relative: bool=False, coeffs: bool=False):
     """Produce a nice factorized expression for the R coefficient.
 
     Parameters
