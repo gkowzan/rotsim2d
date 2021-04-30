@@ -25,35 +25,14 @@ class Pathway:
 
     def __init__(self, leaf: KetBra):
         self.leaf = leaf
-        self.coherences = []
-        self.transitions = []
-        self.js = []
-        self.angles = []
-        self.const = np.complex128(1.0)
         self.isotropy = 1/np.sqrt(2*leaf.root.ket.j+1)
-
-        kb_series = leaf.ketbras()
-        wkets, wbras = [], []
-        for i in range(1, len(kb_series)):
-            kb, kbp = kb_series[i], kb_series[i-1]
-            if kb.parent.side is Side.KET:
-                pair = (kbp.ket, kb.ket)
-                wkets.insert(0, (kb.ket.j,  kb.parent.angle))
-            else:
-                pair = (kbp.bra, kb.bra)
-                wbras.append((kb.parent.parent.bra.j, kb.parent.angle))
-            self.transitions.append(pair)
-
-            if kb.parent.readout:
-                break
-            self.const *= 1.0j/C.hbar*kb.parent.side
-            self.coherences.append((kb.bra, kb.ket))
-
-        wbras.extend(wkets)
+        self.coherences, self.transitions, wbras = leaf._pathway_info()
         self.js = tuple(x[0] for x in wbras)
         self.angles = tuple(x[1] for x in wbras)
+        self.const = (1.0j/C.hbar)**(len(self.transitions)-1)*self.leaf.total_side()
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
-        self.peak = (kb_series[1].name, kb_series[3].name)
+        self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name, self.coherences[0][1].name),
+                     "|{:s}><{:s}|".format(self.coherences[2][0].name, self.coherences[2][1].name))
 
     def __eq__(self, o):
         if not isinstance(o, Pathway):
