@@ -10,6 +10,8 @@ import matplotlib.colors as colors
 import matplotlib.gridspec as grd
 import matplotlib.cm as cm
 from knickknacks.experiment import find_index
+import rotsim2d.dressedleaf as dl
+import molspecutils.molecule as mol
 
 # * Matplotlib visualization
 def make_extent(t1s, t2s, scale=1.0):
@@ -240,14 +242,13 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, abstract=None, hspa
             diag_rows.append(r"$|{:d},{:d}\rangle\langle {:d},{:d}|$\\".format(kb.ket.nu, kb.ket.j,
                                                                                kb.bra.nu, kb.bra.j))
         else:
-            taf = tikz_abstract_format
-            gnu, gj = abstract
-            knu, kj, bnu, bj = kb.ket.nu-gnu, kb.ket.j-gj, kb.bra.nu-gnu, kb.bra.j-gj
+            asl = dl.abstract_state_label
+            gstate = mol.DiatomState(*abstract)
             if i==0:
                 diag_rows.append(r"$|0\rangle\langle 0|$\\")
             else:
                 diag_rows.append(r"$|{:s}\rangle\langle {:s}|$\\".format(
-                    taf(knu, kj), taf(bnu, bj)))
+                    asl(kb.ket, gstate), asl(kb.bra, gstate)))
     diag_rows.reverse()
 
     diag_arrows = []
