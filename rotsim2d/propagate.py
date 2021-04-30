@@ -1,15 +1,9 @@
 """Propagate time evolution of coherences based on pathway trees.
 
-General idea is to dress up the tree with dipole couplings, pulse properties,
-dephasing and evolution times and then collapse the tree into a scalar.
+**TODO:**
 
-Concentration scales polarization linearly, there is no need to embed it in
-KetBra's or any structures/functions.
-
-TODO:
-- add selection of k
-- generate 2D spectra
-
+- refactor in terms of :class:`rotsim2d.dressedleaf.DressedPathway` and get rid
+  of `pop` attribute in `KetBra`.
 """
 import logging
 from typing import List, Union, Tuple, Optional, Sequence
