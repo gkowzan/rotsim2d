@@ -16,12 +16,30 @@ from rotsim2d.pathways import KetBra, Side, KSign
 from rotsim2d.couple import four_couple
 import rotsim2d.couple as cp
 
+#: Spectroscopic notation for transitions
+dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
+def abstract_format(dnu: int, dj: int):
+    if dnu==0 and dj==0:
+        return "0"
+    return str(dnu)+dj_to_letter[dj]
+
+
+def abstract_state_label(state: mol.RotState, ref_state: mol.RotState) -> str:
+    return abstract_format(state.nu-ref_state.nu, state.j-ref_state.j)
+
+
+def abstract_pair_label(pair: Tuple[mol.RotState], ref_state: mol.RotState) -> str:
+    return "|{:s}><{:s}|".format(
+        abstract_state_label(pair[0], ref_state),
+        abstract_state_label(pair[1], ref_state)
+    )
 
 class Pathway:
     """Collect information on a pathway based on KetBra tree leaf without
     specializing it to any specific vibrational mode of a molecule."""
     fields = ['leaf', 'coherences', 'transitions', 'js', 'angles', 'const',
-              'geo_label', 'trans_label', 'tw_coherence', 'peak']
+              'geo_label', 'trans_label', 'tw_coherence', 'peak', 'abstract_peak',
+              'experimental_label', 'colors']
 
     def __init__(self, leaf: KetBra):
         self.leaf = leaf
@@ -33,6 +51,8 @@ class Pathway:
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
         self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name, self.coherences[0][1].name),
                      "|{:s}><{:s}|".format(self.coherences[2][0].name, self.coherences[2][1].name))
+        self.abstract_peak = (abstract_pair_label(self.coherences[0], self.leaf.root.ket),
+                              abstract_pair_label(self.coherences[2], self.leaf.root.ket))
 
     def __eq__(self, o):
         if not isinstance(o, Pathway):
@@ -51,6 +71,21 @@ class Pathway:
     def trans_label(self):
         """Three-fold transition label (Murdock style)."""
         return ''.join((self._trans_label(i) for i in (0, 1, 2)))
+
+    @property
+    def experimental_label(self):
+        if self.leaf.is_esa():
+            return "Excited-state pump-probe"
+        if self.leaf.is_gshb():
+            return "Ground-state hole-burning"
+        if self.leaf.is_sep():
+            return "Stimulated-emission pumping"
+        if self.leaf.is_doublequantum():
+            return "Double quantum"
+
+    @property
+    def colors(self):
+        return self.leaf.color_tier()
 
     def _trans_label(self, i):
         labels = {-1: 'P', 0: 'Q', 1: 'R'}
@@ -112,20 +147,29 @@ class Pathway:
                 r = arr
         return l, r
 
-    def print_diagram(self):
+    def print_diagram(self, abstract=False):
         for kb in self.leaf.ketbras()[::-1]:
             l, r = Pathway._ketbra_symbols(kb)
-            print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
+            if abstract:
+                print("{l:s}|{ket:2s}><{bra:>2s}|{r:s}".format(
+                    l=l, r=r, ket=abstract_state_label(kb.ket, kb.root.ket),
+                    bra=abstract_state_label(kb.bra, kb.root.ket)))
+            else:
+                print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
     def _tw_pprint(self):
         print(f"Coherence during waiting time: {self.tw_coherence!r}")
 
-    def pprint(self):
+    def pprint(self, abstract=False):
         print("diagram:")
-        self.print_diagram()
+        self.print_diagram(abstract=abstract)
         print(f"G-factor label: {self.geo_label}")
         print(f"Transition chain label: {self.trans_label}")
-        print("Intensity relative to XXXX polarization: {}".format(self.geometric_factor(True)))
+        print(f"Experimental label: {self.experimental_label}")
+        print("Colors: {:d}".format(self.leaf.color_tier()))
+        pol = self.angles[0]
+        if not all((isclose(pol, x) for x in self.angles)):
+            print("Intensity relative to XXXX polarization: {}".format(self.geometric_factor(True)))
         self._tw_pprint()
 
     def __repr__(self):
@@ -377,6 +421,22 @@ def split_by_peaks(kbl: Iterable[DressedLeaf]):
     for dl in kbl:
         ret.setdefault(dl.peak, []).append(dl)
     return ret
+
+
+def pprint_dllist(dllist, abstract=False):
+    for i, dl in enumerate(dllist):
+        if i == 0:
+            print('-'*10)
+            if isinstance(dl, DressedPathway):
+                print('pump = {:.2f} cm-1, probe = {:.2f} cm-1'.format(
+                    u.nu2wn(dl.nu(0)), u.nu2wn(dl.nu(2))))
+            dl.pprint(abstract=abstract)
+        else:
+            print()
+            dl.pprint(abstract=abstract)
+        if i == len(dllist)-1:
+            print('-'*10)
+            print()
 
 
 def print_dl_dict(dldict, fields=None):
