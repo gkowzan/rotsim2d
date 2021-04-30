@@ -3,8 +3,8 @@ r"""Generate all Liouville pathways for nth order rovibrational excitation."""
 import enum
 from copy import deepcopy
 import operator as op
-from functools import reduce
-from typing import List, Union, Tuple, Dict, Iterable, Sequence, Optional, Callable
+from functools import reduce, lru_cache
+from typing import List, Union, Tuple, Iterable, Sequence, Optional, Callable
 import numpy as np
 
 import anytree as at
@@ -92,7 +92,7 @@ class KetBra(at.NodeMixin):
     Each KetBra is described by :attr:`ket` and :attr:`bra` which describes the
     density matrix element.
     """
-    def __init__(self, ket, bra, pop: float=1.0, parent=None, children=None):
+    def __init__(self, ket: RotState, bra: RotState, pop: float=1.0, parent=None, children=None):
         super(KetBra, self).__init__()
         self.ket = ket
         self.bra = bra
@@ -101,10 +101,13 @@ class KetBra(at.NodeMixin):
         self.parent = parent
         if children:
             self.children = children
+        self.to_statelist = lru_cache(None)(self.to_statelist)
+        self._pathway_info_cache = None
 
         self.pop = pop                # fractional occupancy
 
     def print_tree(self):
+        """Pretty print excitation tree."""
         for pre, _, node in at.RenderTree(self):
             treestr = "{:s}{:s}".format(pre, node.name)
             print(treestr)
@@ -118,8 +121,42 @@ class KetBra(at.NodeMixin):
     def __eq__(self, o):
         if not isinstance(o, KetBra):
             return NotImplemented
-        else:
-            return self.ket == o.ket and self.bra == o.bra
+        return self.ket == o.ket and self.bra == o.bra
+
+    def _pathway_info(self):
+        """Return transitions, coherences and 4-fold dipole for pathway."""
+        if self._pathway_info_cache is None:
+            kb_series = self.ketbras()
+            coherences, transitions = [], []
+            wkets, wbras = [], []
+            for i in range(1, len(kb_series)):
+                kb, kbp = kb_series[i], kb_series[i-1]
+                if kb.parent.side is Side.KET:
+                    pair = (kbp.ket, kb.ket)
+                    wkets.insert(0, (kb.ket.j,  kb.parent.angle))
+                else:
+                    pair = (kbp.bra, kb.bra)
+                    wbras.append((kb.parent.parent.bra.j, kb.parent.angle))
+                transitions.append(pair)
+
+                if kb.parent.readout:
+                    break
+                coherences.append((kb.bra, kb.ket))
+
+            wbras.extend(wkets)
+            _pathway_info_cache = (coherences, transitions, wbras)
+
+        return _pathway_info_cache
+
+    def transitions(self):
+        """Return list of transitions as a list of state pair."""
+        return self._pathway_info()[1]
+
+    def color_tier(self):
+        """Number of colors neede to create this pathway."""
+        if self.parent.readout:
+            return len(set((tuple(sorted(x)) for x in self.transitions()[:-1])))
+        return len(set((tuple(sorted(x)) for x in self.transitions())))
 
     def to_statelist(self, diatom=False, normalize=False) -> List[Tuple[RotState]]:
         """KetBras leading to this one as a list of state pairs.
@@ -142,6 +179,7 @@ class KetBra(at.NodeMixin):
         return deepcopy(self)
 
     def savepng(self, path):
+        """Save excitation tree as an image."""
         UniqueDotExporter(self, nodeattrfunc=nodeattrfunc).to_picture(str(path))
 
         return path
@@ -151,11 +189,10 @@ class KetBra(at.NodeMixin):
         return KetBra(self.bra, self.ket)
 
     def normalized(self):
-        """Return copy with ket being the lower nu, j level."""
+        """Return copy of self with ket being the lower nu, j level."""
         if self.ket.nu > self.bra.nu or (self.ket.nu == self.bra.nu and self.ket.j > self.bra.j):
             return self.conj()
-        else:
-            return self
+        return self
 
     def kb_ancestor(self, ancestor=None):
         """Return first KetBra ancestor."""
@@ -166,7 +203,7 @@ class KetBra(at.NodeMixin):
         else:
             return self.kb_ancestor(ancestor.ancestors[0])
 
-    def diagonals(self, sort=False, rot=True):
+    def diagonals(self, sort=False):
         """Collect diagonal leaves."""
         pops = [x for x in self.leaves if x.ket == x.bra]
         if sort:
@@ -216,12 +253,55 @@ class KetBra(at.NodeMixin):
             order = ('omg1', 'omg2', 'omg3')
         return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SIII'
 
+    def is_Pinitial(self):
+        r"""Check if initial excitation is P-branch."""
+        sl = self.to_statelist()
+        return any(x.j==sl[0][0].j-1 for x in sl[1])
+
     def is_esa(self):
-        return (self.ket.nu != self.root.ket.nu) and (self.bra.nu != self.root.ket.nu)
+        """Check if pathway corresponds to excited-state absorption.
+
+        Applies to two-color and three-color excitations and pathways not
+        starting from the ground state.
+        """
+        sl = self.to_statelist()
+        coh3 = sl[3]
+        rnu = sl[0][0].nu
+        return any((x.nu == rnu+1 for x in coh3)) and any((x.nu == rnu+2 for x in coh3))
 
     def is_sep(self):
-        return all((x.ket.nu-x.root.ket.nu)<2 and (x.bra.nu-x.root.ket.nu)<2 for x in self.ketbras())\
-            and not self.is_dfwm() and self.is_twocolor()
+        """Check if pathway corresponds to stimulated emission pumping.
+
+        Second coherence is either excited population of rotational coherence
+        state. Third coherence is between first excited state and ground state.
+        """
+        sl = self.to_statelist()
+        coh2, coh3 = sl[2], sl[3]
+        rnu = sl[0][0].nu
+        return coh2[0].nu == rnu+1 and coh2[1].nu == rnu+1\
+            and any(x.nu == rnu+1 for x in coh3)\
+            and any(x.nu == rnu for x in coh3)
+
+    def is_gshb(self):
+        """Check if pathway corresponds to ground-state hole-burning.
+
+        Second coherence is either ground population of rotational coherence
+        state. Third coherence is between first excited state and ground state.
+        """
+        sl = self.to_statelist()
+        coh2, coh3 = sl[2], sl[3]
+        rnu = sl[0][0].nu
+        return coh2[0].nu == rnu and coh2[1].nu == rnu\
+            and any(x.nu == rnu+1 for x in coh3)\
+            and any(x.nu == rnu for x in coh3)
+
+    def is_doublequantum(self):
+        sl = self.to_statelist()
+        return any(x.nu==sl[0][0].nu for x in sl[2])
+
+    def is_interstate(self):
+        """Check for coherent state after second interaction."""
+        return not self.ketbras()[2].is_diagonal()
 
     def is_overtone(self):
         return abs(self.ket.nu-self.bra.nu)>1
@@ -239,36 +319,17 @@ class KetBra(at.NodeMixin):
 
     def is_dfwm(self):
         """Check if this pathway contains only coherences corresponding to a single dipole transition."""
-        kbs = self.ketbras()
-        return all((kb.is_diagonal() or kb == kbs[1] or kb == kbs[1].conj() for kb in kbs))
+        return self.color_tier() == 1
 
-    def is_twocolor(self, same=None):
-        """Check if pathway is at most two-color.
+    is_onecolor = is_dfwm
 
-        By default interactions 'omg1' and 'omg2' are checked. If another pair
-        should be checked then the names should be listed as the argument.
-        """
-        chain = self.ancestors + (self,)
-        # find indices of interactions 
-        if same is None:
-            same = ('omg1', 'omg2')
-        i1 = [x[0] for x in enumerate(chain) if isinstance(x[1], LightInteraction) and x[1].name == same[0]][0]
-        i2 = [x[0] for x in enumerate(chain) if isinstance(x[1], LightInteraction) and x[1].name == same[1]][0]
+    def is_twocolor(self):
+        """Check if pathway is two-color."""
+        return self.color_tier() == 2
 
-        # get transitions
-        if chain[i1].side == Side.BRA:
-            trans1 = (chain[i1-1].bra, chain[i1+1].bra)
-        else:
-            trans1 = (chain[i1-1].ket, chain[i1+1].ket)
-        if chain[i2].side == Side.BRA:
-            trans2 = (chain[i2-1].bra, chain[i2+1].bra)
-        else:
-            trans2 = (chain[i2-1].ket, chain[i2+1].ket)
-
-        # check if transitions are between the same states
-        if trans1 == trans2 or trans1 == trans2[::-1]:
-            return True
-        return False
+    def is_threecolor(self):
+        """Check if pathway is three-color."""
+        return self.color_tier() == 3
 
     def is_equiv_pathway(self, o):
         """Check if other pathway is R-factor-equivalent.
@@ -326,69 +387,72 @@ class KetBra(at.NodeMixin):
         return reduce(op.mul, self.sides(), 1)
 
 # * Tree filtering functions
-def remove_nonrephasing(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if not l.is_rephasing():
-            l.parent = None
+def make_remove(func: Callable) -> Callable:
+    """Tree filtering function factory.
 
-    return prune(ketbra)
+    Parameters
+    ----------
+    func
+        Callable taking :class:`KetBra` instance and returning True of False.
 
+    Returns
+    -------
+    Function taking a `KetBra` excitation tree and removing all branches for
+    which `func` returns True.
+    """
+    def remove_func(ketbra):
+        for l in ketbra.leaves:
+            if func(l):
+                l.parent = None
 
-def remove_rephasing(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if l.is_rephasing():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def remove_nondiagonal(ketbra: KetBra) -> KetBra:
-    """Remove branches ending with non-diagonal leaves."""
-    for l in ketbra.leaves:
-        if not l.is_diagonal():
-            l.parent = None
-
-    return prune(ketbra)
+        return prune(ketbra)
+    return remove_func
 
 
-def remove_esa(ketbra: KetBra) -> KetBra:
-    """Remove excited state absorption."""
-    for l in ketbra.leaves:
-        if l.is_esa():
-            l.parent = None
+def make_only(func: Callable) -> Callable:
+    """Tree filtering function factory.
 
-    return prune(ketbra)
+    Parameters
+    ----------
+    func
+        Callable taking :class:`KetBra` instance and returning True or False.
+
+    Returns
+    -------
+    Function taking a `KetBra` excitation tree and leaving only branches for
+    which `func` returns True.
+    """
+    def only_func(ketbra):
+        for l in ketbra.leaves:
+            if not func(l):
+                l.parent = None
+
+        return prune(ketbra)
+    return only_func
 
 
-def remove_overtones(ketbra: KetBra) -> KetBra:
-    """Remove leaves with pathways containing overtone coherences."""
-    for l in ketbra.leaves:
-        if l.has_overtone():
-            l.parent = None
-
-    return prune(ketbra)
+only_SI = make_only(lambda kb: kb.is_SI())
+only_SII = make_only(lambda kb: kb.is_SII())
+only_SIII = make_only(lambda kb: kb.is_SIII())
+only_nonrephasing = make_remove(lambda kb: kb.is_rephasing())
+only_rephasing = make_only(lambda kb: kb.is_rephasing())
+remove_nondiagonal = make_only(lambda kb: kb.is_diagonal())
+remove_overtones = make_remove(lambda kb: kb.has_overtone())
+only_esa = make_only(lambda kb: kb.is_esa())
+only_sep = make_only(lambda kb: kb.is_sep())
+only_gshb = make_only(lambda kb: kb.is_gshb())
+only_dfwm = make_only(lambda kb: kb.is_dfwm())
+only_twocolor = make_only(lambda kb: kb.is_twocolor())
+only_threecolor = make_only(lambda kb: kb.is_threecolor())
+remove_threecolor = make_remove(lambda kb: kb.is_threecolor())
+remove_interstates = make_remove(lambda kb: kb.is_interstate())
+only_interstates = make_only(lambda kb: kb.is_interstate())
 
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
     """Limit tree to pathways bewteen `kb1` and `kb2`."""
     for l in ketbra.leaves:
         if not l.is_between(pump, probe):
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_dfwm(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if not l.is_dfwm():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_sep(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if not l.is_sep():
             l.parent = None
 
     return prune(ketbra)
@@ -402,60 +466,9 @@ def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
     return prune(ketbra)
 
 
-def only_SII(ketbra: KetBra) -> KetBra:
-    """SII are non-rephasing."""
-    for l in ketbra.leaves:
-        if not l.is_SII():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_SI(ketbra: KetBra) -> KetBra:
-    """SI are rephasing without overtone coherences."""
-    for l in ketbra.leaves:
-        if not l.is_SI():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_SIII(ketbra: KetBra) -> KetBra:
-    """SIII are rephasing with overtone coherences."""
-    for l in ketbra.leaves:
-        if not l.is_SIII():
-            l.parent = None
-
-    return prune(ketbra)
-
-
 def only_some_pathway(ketbra: KetBra, pathways: List[KetBra]) -> KetBra:
     for l in ketbra.leaves:
         if not l.is_some_pathway(pathways):
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def remove_interstates(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if not l.ketbras()[2].is_diagonal():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_interstates(ketbra: KetBra) -> KetBra:
-    for l in ketbra.leaves:
-        if l.ketbras()[2].is_diagonal():
-            l.parent = None
-
-    return prune(ketbra)
-
-
-def only_twocolor(ketbra: KetBra, same=None) -> KetBra:
-    for l in ketbra.leaves:
-        if not l.is_twocolor(same):
             l.parent = None
 
     return prune(ketbra)
