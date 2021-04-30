@@ -530,7 +530,7 @@ def split_by_equiv_peaks(det_angles: dict, pl: Peak2DList, dll: Sequence[Pathway
     Parameters
     ----------
     det_angles
-        Map between detectio angle and a list of pathways.
+        Map between detection angles and a list of pathways.
     pl
         Any peak list.
     dll
