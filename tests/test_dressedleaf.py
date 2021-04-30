@@ -2,12 +2,38 @@
 import pytest
 from pprint import pprint
 from pathlib import Path
+from functools import partial
 from sqlalchemy import create_engine
 import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.symbolic.functions as sym
 from molspecutils.alchemy.meta import hitran_cache
 from molspecutils.molecule import CH3ClAlchemyMode, DiatomState
+
+@pytest.fixture
+def partial_pws():
+    return partial(pw.gen_pathways, [5], [0]*4, rotor='symmetric',
+                   kiter_func=lambda x: [1], pump_overlap=False)
+
+def test_onecolor(partial_pws):
+    kbs = partial_pws(meths=[pw.only_dfwm])
+    assert all(x.is_dfwm() for x in kbs[0].leaves)
+    pws = dl.Pathway.from_kb_list(kbs)
+    assert all(x.leaf.color_tier() == 1 for x in pws)
+
+
+def test_twocolor(partial_pws):
+    kbs = partial_pws(meths=[pw.only_twocolor])
+    assert all(x.is_twocolor() for x in kbs[0].leaves)
+    pws = dl.Pathway.from_kb_list(kbs)
+    assert all(x.leaf.color_tier() == 2 for x in pws)
+
+
+def test_threecolor(partial_pws):
+    kbs = partial_pws(meths=[pw.only_threecolor])
+    assert all(x.is_threecolor() for x in kbs[0].leaves)
+    pws = dl.Pathway.from_kb_list(kbs)
+    assert all(x.leaf.color_tier() == 3 for x in pws)
 
 
 @pytest.fixture
