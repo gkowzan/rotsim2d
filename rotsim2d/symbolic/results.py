@@ -94,7 +94,7 @@ gfactors_highj = {'PPR': (0, 0, sqrt(5)/5),
  'QRQ': (0, -sqrt(3)/6, -sqrt(5)/10)}
 
 # * Linear polarization
-#: Expressions for isotropic four-fold polarization tensor components
+#: Expressions for isotropic four-fold polarization tensor components (dummy angles)
 T00_exprs = [
     cos(phi - phj)*cos(phk - phl)/3,
     sqrt(3)*sin(phi - phj)*sin(phk - phl)/6,
@@ -103,6 +103,14 @@ T00_exprs = [
              6*cos(phi + phj - phk - phl))/60
 ]
 
+#: Expressions for isotropic four-fold polarization tensor components (experimental angles)
+T00_theta_exprs = [
+    cos(theta_i - theta_j)*cos(theta_k - theta_l)/3,
+    sqrt(3)*sin(theta_i - theta_j)*sin(theta_k - theta_l)/6,
+    sqrt(5)*(cos(theta_i - theta_j - theta_k + theta_l) +
+             cos(theta_i - theta_j + theta_k - theta_l) +
+             6*cos(theta_i + theta_j - theta_k - theta_l))/60
+]
 # * R-factors
 # ** General expressions
 # rfactors = {k: rfactorize(gfactors[k], T00_exprs) for k in gfactors.keys()}

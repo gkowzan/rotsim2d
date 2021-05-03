@@ -5,8 +5,9 @@ TODO:
 - change sys_params and pops
 """
 from __future__ import annotations
-from typing import Optional, Iterable, Tuple, List, Sequence
+from typing import Optional, Iterable, Tuple, List, Sequence, Mapping
 from collections import namedtuple
+import collections.abc as abc
 from math import isclose
 import numpy as np
 import knickknacks.units as u
@@ -37,7 +38,7 @@ def abstract_pair_label(pair: Tuple[mol.RotState], ref_state: mol.RotState) -> s
 class Pathway:
     """Collect information on a pathway based on KetBra tree leaf without
     specializing it to any specific vibrational mode of a molecule."""
-    fields = ['leaf', 'coherences', 'transitions', 'js', 'angles', 'const',
+    fields = ['leaf', 'coherences', 'transitions', 'js', 'light_inds', 'const',
               'geo_label', 'trans_label', 'tw_coherence', 'peak', 'abstract_peak',
               'experimental_label', 'colors']
 
@@ -46,7 +47,7 @@ class Pathway:
         self.isotropy = 1/np.sqrt(2*leaf.root.ket.j+1)
         self.coherences, self.transitions, wbras = leaf._pathway_info()
         self.js = tuple(x[0] for x in wbras)
-        self.angles = tuple(x[1] for x in wbras)
+        self.light_inds = tuple(x[1] for x in wbras)
         self.const = (1.0j/C.hbar)**(len(self.transitions)-1)*self.leaf.total_side()
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
         self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name, self.coherences[0][1].name),
@@ -93,7 +94,17 @@ class Pathway:
 
         return labels[trans[1].j-trans[0].j]
 
-    def geometric_factor(self, relative: bool=False) -> float:
+    def _phi_angles(self, theta_angles: Union[Mapping, Sequence]) -> List[float]:
+        """Order pulse/detection angles to evaluate R-factor."""
+        if isinstance(theta_angles, abc.Sequence):
+            theta_angles = dict(zip(('omg1', 'omg2', 'omg3', 'mu'),
+                                    theta_angles))
+        ints = self.leaf.interactions()
+
+        return [theta_angles[ints[i].name] for i in self.light_inds]
+
+    def geometric_factor(self, relative: bool=False,
+                         angles: Optional[Union[Sequence, Dict]]=None) -> float:
         """Geometric factor for pathway intensity.
 
         Parameters
@@ -106,7 +117,9 @@ class Pathway:
         float
             Purely J- and polarization-dependent part of the response.
         """
-        ret = four_couple(self.js, self.angles)
+        if angles is None:
+            angles = [0.0]*4
+        ret = four_couple(self.js, self._phi_angles(angles))
         if relative:
             ret /= four_couple(self.js, [0.0]*4)
 
@@ -116,8 +129,8 @@ class Pathway:
         js = list(self.js)
         return (cp.G(*(js + [0])), cp.G(*(js + [1])), cp.G(*(js + [2])))
 
-    def T00s(self):
-        angles = list(self.angles)
+    def T00s(self, angles):
+        angles = self._phi_angles(angles)
         return (cp.T00(*(angles + [0])), cp.T00(*(angles + [1])), cp.T00(*(angles + [2])))
 
     @classmethod
@@ -167,9 +180,6 @@ class Pathway:
         print(f"Transition chain label: {self.trans_label}")
         print(f"Experimental label: {self.experimental_label}")
         print("Colors: {:d}".format(self.leaf.color_tier()))
-        pol = self.angles[0]
-        if not all((isclose(pol, x) for x in self.angles)):
-            print("Intensity relative to XXXX polarization: {}".format(self.geometric_factor(True)))
         self._tw_pprint()
 
     def __repr__(self):
@@ -197,8 +207,8 @@ class DressedPathway(Pathway):
     def gamma(self, i: int) -> float:
         return self.vib_mode.gamma(self.coherences[i])
 
-    def intensity(self, tw: Optional[float]=None) -> float:
-        ret = self.isotropy*self.const*self.geometric_factor()
+    def intensity(self, tw: Optional[float]=None, angles=None) -> float:
+        ret = self.isotropy*self.const*self.geometric_factor(angles=angles)
         if tw is not None:
             ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1) + self.gamma(1)))
 
@@ -483,7 +493,8 @@ class Peak2DList(list):
         self.sort(key=self._sort_func)
 
 
-def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: bool=False) -> Peak2DList:
+def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
+              return_dls: bool=False) -> Peak2DList:
     """Create a list of 2D peaks from a list of DressedLeaf's.
 
     Optionally return sorted list of DressedLeaf's corresponding to peaks.
@@ -496,7 +507,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: boo
         sig = 0.0
         for dl in dll:
             # with wigxjpf(300, 6):
-            sig += np.imag(dl.intensity(tw=tw))
+            sig += np.imag(dl.intensity(tw=tw, angles=angles))
         pl.append(Peak2D(pu, pr, sig, peak))
         if return_dls:
             dls.append(dll)
@@ -504,6 +515,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, return_dls: boo
         pairs = sorted(zip(pl, dls), key=lambda x: abs(x[0].sig))
         return Peak2DList([x[0] for x in pairs]), [x[1] for x in pairs]
 
+    pl.sort_by_sigs()
     return pl
 
 

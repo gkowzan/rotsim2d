@@ -4,14 +4,13 @@ import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.symbolic.functions as sym
 import rotsim2d.symbolic.results as symr
-plt.ion()
 
 # * Classify pathways
 # - add/remove pw.only_twocolor to switch between two-color and three-color
 # - pump_overlap=True gives additional time ordering (pump pulses overlapping in
 #   time, probe separate). The only effect on 2D spectra is that now we also have
 #   negative frequencies
-kbs = pw.gen_pathways([5], [0, 1, 2, 3], meths=[pw.only_SII, pw.only_twocolor],
+kbs = pw.gen_pathways([5], meths=[pw.only_SII],
                       rotor='symmetric', kiter_func=lambda x: [1], pump_overlap=False)
 pws = dl.Pathway.from_kb_list(kbs)
 rfactors = [sym.dl_to_rfactor(pw, symr.rfactors_highj) for pw in pws]
@@ -20,7 +19,7 @@ classified_states = {k: [pw.leaf.to_statelist(diatom=True, normalize=True) for p
                      for k, v in classified.items()}
 
 print("Polarization response expressions")
-dl.print_dl_dict(classified, fields=['peak', 'angles', 'geo_label', 'trans_label', 'tw_coherence'])
+dl.print_dl_dict(classified, fields=['peak', 'light_inds', 'geo_label', 'trans_label', 'tw_coherence'])
 print()
 
 # * Find zeroing angles
@@ -35,4 +34,4 @@ angles_pws_vaccaro = sym.classify_suppression(classified, zeroing_angles_vaccaro
 # this will print out expressions for polarization dependence and pathways which
 # correspond to each expression
 print("Suppression angles:")
-dl.print_dl_dict(angles_pws_vaccaro, fields=['peak', 'angles', 'geo_label', 'trans_label', 'tw_coherence'])
+dl.print_dl_dict(angles_pws_vaccaro, fields=['peak', 'light_inds', 'geo_label', 'trans_label', 'tw_coherence'])

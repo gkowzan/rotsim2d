@@ -4,7 +4,8 @@ related to polarization dependence and angular momentum dependence of four-fold
 dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.symbolic.results`."""
 # * Imports
-from typing import Sequence, Dict, Tuple, Optional 
+from typing import Sequence, Dict, Tuple, Optional
+from collections.abc import Mapping, Sequence
 import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
@@ -244,19 +245,64 @@ def rfactor_simplify(expr, subterms: Sequence, coeffs: bool=False):
             'c14': uncommon_dict[x3]}
 
 
+def coeff_dict_to_tuple(cdict):
+    return (cdict['c0'], cdict['c12'], cdict['c13'], cdict['c14'])
+
+
+def coeffs_to_expr(coeffs, T00_exprs):
+    """Convert dict or tuple of coeffs to SymPy expression."""
+    if isinstance(coeffs, Mapping):
+        return coeffs['c0']*(coeffs['c12']*T00_exprs[0] +
+                             coeffs['c13']*T00_exprs[1] +
+                             coeffs['c14']*T00_exprs[2])
+    elif len(coeffs) == 4:
+        return coeffs[0]*(coeffs[0]*T00_exprs[0] +
+                          coeffs[1]*T00_exprs[1] +
+                          coeffs[2]*T00_exprs[2])
+    elif len(coeffs) == 3:
+        return (coeffs[0]*T00_exprs[0] +
+                coeffs[1]*T00_exprs[1] +
+                coeffs[2]*T00_exprs[2])
+    else:
+        return ValueError("`coeffs` is not a valid data structure of R-factor coefficients.")
+
+
+    
 # * Classify pathways with regards to R-factor
 # ** Functions
-def dl_to_rfactor(dl, rfactors: dict):
+def dl_to_rfactor(dl, rfactors: dict, normalize=False, coeffs=False):
     """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
     
     Pathway polarization angles need to be indices (integers) from 0 to 3.
     `rfactors` is one of dicts from this module containing SymPy expressions.
+
+    If `normalize` is True, then make the sign of the common factor positive and
+    flip the signs of the coefficients if the `c12` coefficient is negative.
     """
-    return rfactors[dl.geo_label].subs(
-        {phi: thetas[dl.angles[0]],
-         phj: thetas[dl.angles[1]],
-         phk: thetas[dl.angles[2]],
-         phl: thetas[dl.angles[3]]})
+    phis = [phi, phj, phk, phl]
+    phi_angles = dl._phi_angles(thetas)
+    rfac = rfactors[dl.geo_label].subs(dict(zip(phis, phi_angles)))
+    # rfac = rfactors[dl.geo_label].subs(
+    #     {phi: thetas[dl.angles[0]],
+    #      phj: thetas[dl.angles[1]],
+    #      phk: thetas[dl.angles[2]],
+    #      phl: thetas[dl.angles[3]]})
+
+    if normalize or coeffs:
+        rfac_dict = rfactor_simplify(rfac, T00_theta_trigs, coeffs=True)
+        if normalize:
+            rfac_dict['c0'] = abs(rfac_dict['c0'])
+            if rfac_dict['c12'] < 0:
+                rfac_dict['c12'] = -rfac_dict['c12']
+                rfac_dict['c13'] = -rfac_dict['c13']
+                rfac_dict['c14'] = -rfac_dict['c14']
+
+        if not coeffs:
+            rfac = coeffs_to_expr(rfac_dict, T00_theta_trigs)
+        else:
+            rfac = rfac_dict
+
+    return rfac
 
 
 def dl_gfactors(dl):
@@ -267,9 +313,10 @@ def dl_gfactors(dl):
             gfactor_expr(*(js + [2])).evalf())
 
 
-def dl_T00s(dl):
+def dl_T00s(dl, angles):
     """Return polarization components a :class:`rotsim2d.dressedleaf.Pathway`."""
     phis = [phi, phj, phk, phl]
+    phi_angles = dl._phi_angles(angles)
     T00_exprs = [
         cos(phi - phj)*cos(phk - phl)/3,
         sqrt(3)*sin(phi - phj)*sin(phk - phl)/6,
@@ -277,24 +324,29 @@ def dl_T00s(dl):
                  cos(phi - phj + phk - phl) +
                  6*cos(phi + phj - phk - phl))/60]
 
-    return (T00_exprs[0].subs(dict(zip(phis, dl.angles))).evalf(),
-            T00_exprs[1].subs(dict(zip(phis, dl.angles))).evalf(),
-            T00_exprs[2].subs(dict(zip(phis, dl.angles))).evalf())
+    return (T00_exprs[0].subs(dict(zip(phis, phi_angles))).evalf(),
+            T00_exprs[1].subs(dict(zip(phis, phi_angles))).evalf(),
+            T00_exprs[2].subs(dict(zip(phis, phi_angles))).evalf())
     
 
-def classify_dls(dressed_pws: Sequence, rfactors: dict, states=False) -> dict:
+def classify_dls(dressed_pws: Sequence, rfactors: Sequence, states=False) -> dict:
     """Return a mapping between polarization expressions and pathways in `dressed_pws`.
 
     If `states` is True, convert Pathways to lists of states. `rfactors` are
     R-factors as functions of experimental angles (thetas) not dummy angles
     (phis), i.e. obtained by applying :func:`dl_to_rfactor`.
     """
+    if isinstance(rfactors[0], Basic): # SymPy base class
+        cmp = lambda x, y: factor(x-y) == S(0)
+    else:
+        cmp = lambda x, y: x==y
+
     classified = {}
     for dressed_leaf, cur_rfac in zip(dressed_pws, rfactors):
         found = False
         rfacs = list(classified.keys())
         for rfac in rfacs:
-            if factor(rfac-cur_rfac) == S(0):
+            if cmp(rfac, cur_rfac):
                 found = rfac
                 break
         if found:
@@ -351,7 +403,7 @@ def pathway_angles(pws: Sequence, angles: Sequence) -> dict:
     return ret
 
 
-def detection_angles(angles: Sequence):
+def detection_angles(angles: Sequence, meths=None):
     """Zeroing det. angles for a minimal complete set of pathways.
 
     Generate a minimal complete set of non-R-factor-equivalent pathways
@@ -364,14 +416,17 @@ def detection_angles(angles: Sequence):
     ----------
     angles
         Light beam polarizations.
+    meths
+        Filters for KetBra excitation tree, see
+        :func:`rotsim2d.pathways.gen_pathways`.
 
     Returns
     -------
     det_angles
         Dict from detection angles to symmetric top pathways.
-
     """
-    kbs = pw.gen_pathways([5], [0, 1, 2, 3], rotor='symmetric', kiter_func=lambda x: [1])
+    kbs = pw.gen_pathways([5], rotor='symmetric', kiter_func=lambda x: [1],
+                          meths=meths)
     pws = dl.Pathway.from_kb_list(kbs)
     det_angles = pathway_angles(pws, angles)
 

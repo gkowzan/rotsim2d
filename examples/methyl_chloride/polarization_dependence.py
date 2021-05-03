@@ -23,9 +23,13 @@ vac_angles = list(vac_angles_map.keys())
 #   the only effect on 2D spectra is that now we also have negative frequencies
 # HITRAN does not contain spectroscopic data for all k values, so I'm limiting
 # them with `kiter_func`
-kbs = pw.gen_pathways(range(1, 10), [0]*4, meths=[pw.only_SII, pw.only_twocolor],
-                      rotor='symmetric', kiter_func=lambda x: range(x if x<10 else 10),
-                      pump_overlap=False)
+kbs = pw.gen_pathways(
+    range(1, 10),
+    meths=[pw.only_SII, pw.only_twocolor],
+    rotor="symmetric",
+    kiter_func=lambda x: range(x if x < 10 else 10),
+    pump_overlap=False,
+)
 dressed_pws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, T)
 peaks, dls = dl.peak_list(dressed_pws, return_dls=True)
 fig_dict = vis.plot2d_scatter(peaks)
@@ -45,12 +49,19 @@ fig_dict['ax'].scatter(vac_peaks_by_angles[ang].probes, vac_peaks_by_angles[ang]
 # ** Some other detection angle
 # change last element of `pols` argument to some value from `angles` list to
 # zero some other class of pathways
-kbs = pw.gen_pathways(range(1, 10), pols=[np.pi/2, np.pi/4, np.pi/2, np.float64(ang)],
-                      meths=[pw.only_SII, pw.only_twocolor], rotor='symmetric',
-                      kiter_func=lambda x: range(x if x<10 else 10),
-                      pump_overlap=False)
+kbs = pw.gen_pathways(
+    range(1, 10),
+    meths=[pw.only_SII, pw.only_twocolor],
+    rotor="symmetric",
+    kiter_func=lambda x: range(x if x < 10 else 10),
+    pump_overlap=False,
+)
 dressed_pws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, T)
-peaks, dls = dl.peak_list(dressed_pws, return_dls=True)
+peaks, dls = dl.peak_list(
+    dressed_pws,
+    angles=[np.pi / 2, np.pi / 4, np.pi / 2, np.float64(ang)],
+    return_dls=True,
+)
 fig_dict = vis.plot2d_scatter(peaks)
 fig_dict['ax'].set(xlim=(714, 742), ylim=(722, 742))
 
@@ -61,7 +72,7 @@ gk_angles_map = s.detection_angles([0, s.pi/4, s.pi/2])
 gk_angles = list(gk_angles_map.keys())
 
 # ** XXXX
-kbs = pw.gen_pathways(range(1, 10), [0]*4, meths=[pw.only_SII, pw.only_twocolor],
+kbs = pw.gen_pathways(range(1, 10), meths=[pw.only_SII, pw.only_twocolor],
                       rotor='symmetric',
                       kiter_func=lambda x: range(x if x<10 else 10))
 dressed_pws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, T)
@@ -78,12 +89,17 @@ fig_dict['ax'].scatter(gk_peaks_by_angles[ang].probes, gk_peaks_by_angles[ang].p
 # ** Some other detection angle
 # change last element of `pols` argument to some value from `angles` list to
 # zero some other class of pathways
-kbs = pw.gen_pathways(range(1, 10), pols=[0.0, np.pi/4, np.pi/2, np.float64(ang)],
-                      meths=[pw.only_SII, pw.only_twocolor], rotor='symmetric',
-                      kiter_func=lambda x: range(x if x<10 else 10),
-                      pump_overlap=False)
+kbs = pw.gen_pathways(
+    range(1, 10),
+    meths=[pw.only_SII, pw.only_twocolor],
+    rotor="symmetric",
+    kiter_func=lambda x: range(x if x < 10 else 10),
+    pump_overlap=False,
+)
 dressed_pws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, T)
-peaks, dls = dl.peak_list(dressed_pws, return_dls=True)
+peaks, dls = dl.peak_list(
+    dressed_pws, angles=[0.0, np.pi / 4, np.pi / 2, np.float64(ang)], return_dls=True
+)
 fig_dict = vis.plot2d_scatter(peaks)
 fig_dict['ax'].set(xlim=(714, 742), ylim=(722, 742))
 plt.show()

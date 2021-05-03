@@ -8,8 +8,7 @@ import molspecutils.molecule as mol
 def kb2():
     kb2 = pw.KetBra(mol.DiatomState(nu=0, j=1), mol.DiatomState(nu=0, j=1))
     kb2 = pw.multi_excite(kb2, light_names=['omg1', 'omg2', 'omg3'],
-                          parts=['ket', 'both', 'both'],
-                          light_angles=[0]*3)
+                          parts=['ket', 'both', 'both'])
     return kb2
 
 

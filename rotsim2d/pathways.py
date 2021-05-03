@@ -78,6 +78,10 @@ class LightInteraction(at.NodeMixin):
         if children:
             self.children = children
 
+    @property
+    def tier(self):
+        return sum((1 for x in self.ancestors if isinstance(x, LightInteraction)))
+
     def __str__(self):
         return self.fullname
 
@@ -133,10 +137,10 @@ class KetBra(at.NodeMixin):
                 kb, kbp = kb_series[i], kb_series[i-1]
                 if kb.parent.side is Side.KET:
                     pair = (kbp.ket, kb.ket)
-                    wkets.insert(0, (kb.ket.j,  kb.parent.angle))
+                    wkets.insert(0, (kb.ket.j,  kb.parent.tier))
                 else:
                     pair = (kbp.bra, kb.bra)
-                    wbras.append((kb.parent.parent.bra.j, kb.parent.angle))
+                    wbras.append((kb.parent.parent.bra.j, kb.parent.tier))
                 transitions.append(pair)
 
                 if kb.parent.readout:
@@ -144,9 +148,9 @@ class KetBra(at.NodeMixin):
                 coherences.append((kb.bra, kb.ket))
 
             wbras.extend(wkets)
-            _pathway_info_cache = (coherences, transitions, wbras)
+            self._pathway_info_cache = (coherences, transitions, wbras)
 
-        return _pathway_info_cache
+        return self._pathway_info_cache
 
     def transitions(self):
         """Return list of transitions as a list of state pair."""
@@ -490,16 +494,15 @@ def prune(ketbra: KetBra) -> KetBra:
 
 
 # * Tree-modifying functions
-def readout(ketbra: KetBra, angle: Union[float, Tuple[float]]=0.0) -> KetBra:
+def readout(ketbra: KetBra) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
-        excite(kb, 'mu', 'ket', True, angle)
+        excite(kb, 'mu', 'ket', True)
 
     return prune(remove_nondiagonal(ketbra))
 
 
-def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False,
-           angle: Union[float, Tuple[float]]=0.0) -> KetBra:
+def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False) -> KetBra:
     """Generate all excitations of `ketbra`.
 
     Modifies `ketbra` in place. Only parallel transitions.
@@ -514,8 +517,6 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
         'ket', 'bra' or 'both', consider ket, bra or double-sided excitations.
     readout : bool, optional
         Readout or actual light interaction.
-    angle : float or tuple of float, optional
-        Either linear angle or a tuple of linear angle and circularity.
 
     Returns
     -------
@@ -548,9 +549,9 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
                     continue
                 children.append(KetBra(ketbra.ket._replace(nu=nnu, j=nj), ketbra.bra))
             if dnu > 0:             # ket absorption
-                LightInteraction(light_name, Side.KET, KSign.POS, readout, angle, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.KET, KSign.POS, readout, parent=ketbra, children=children)
             elif dnu < 0:           # ket emission
-                LightInteraction(light_name, Side.KET, KSign.NEG, readout, angle, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.KET, KSign.NEG, readout, parent=ketbra, children=children)
 
     if part == 'bra' or part == 'both':
         for dnu in dnus:
@@ -570,22 +571,21 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
                     continue
                 children.append(KetBra(ketbra.ket, ketbra.bra._replace(nu=nnu, j=nj)))
             if dnu > 0:         # bra absorption
-                LightInteraction(light_name, Side.BRA, KSign.NEG, readout, angle, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.BRA, KSign.NEG, readout, parent=ketbra, children=children)
             elif dnu < 0:       # bra emission
-                LightInteraction(light_name, Side.BRA, KSign.POS, readout, angle, parent=ketbra, children=children)
+                LightInteraction(light_name, Side.BRA, KSign.POS, readout, parent=ketbra, children=children)
 
     return ketbra
 
 
-def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=None,
-                 light_angles: Optional[Union[List[float], List[Tuple[float]]]]=None) -> KetBra:
+def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=None) -> KetBra:
     """Generate multiple excitations of `ketbra`.
 
     Parameters
     ----------
     ketbra : KetBra
         State to excite.
-    light_name : list of str
+    light_names : list of str
         Names of EM fields, length sets the number of excitations.
     parts : None or list
         None for first ket excitation and rest 'both' excitations.
@@ -596,15 +596,10 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=N
         parts = ['ket']
         parts.extend(['both']*(len(light_names)-1))
 
-    if light_angles is not None and len(light_angles) != len(light_names):
-        raise ValueError("len(light_angles) != len(light_names)")
-    if light_angles is None:
-        light_angles = [0.0]*len(light_names)
-
     if light_names:
-        excite(ketbra, light_names.pop(0), parts.pop(0), False, light_angles.pop(0))
+        excite(ketbra, light_names.pop(0), parts.pop(0), False)
         for kb in ketbra.leaves:
-            multi_excite(kb, light_names[:], parts[:], light_angles[:])
+            multi_excite(kb, light_names[:], parts[:])
 
     return ketbra.root
 
@@ -624,30 +619,28 @@ def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: Callable=None) -
     return roots
 
 
-def gen_excitations(root, light_names, parts, pols, meths=None) -> List[KetBra]:
-    root = multi_excite(root, light_names, parts=parts, light_angles=pols[:3])
+def gen_excitations(root, light_names, parts, meths=None) -> List[KetBra]:
+    root = multi_excite(root, light_names, parts=parts)
     if meths is not None:
         for meth in meths:
             root = meth(root)
-    root = readout(root, pols[3])
+    root = readout(root)
 
     return root
 
 
-def gen_pathways(jiter: Iterable, pols: Sequence,
-                 meths: Optional[Sequence[Callable]]=None,
+def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
                  rotor: str='linear', kiter_func: Callable=None,
                  pump_overlap: bool=False) -> List[KetBra]:
     roots = gen_roots(jiter, rotor, kiter_func)
     pws = [gen_excitations(root, ['omg1', 'omg2', 'omg3'],
-                           ['ket', 'both', 'both'], pols, meths)
+                           ['ket', 'both', 'both'], meths)
            for root in roots]
     if pump_overlap:
         roots = gen_roots(jiter, rotor, kiter_func)
         pws.extend(
             [gen_excitations(root, ['omg2', 'omg1', 'omg3'],
                              ['ket', 'both', 'both'],
-                             [pols[1], pols[0], pols[2], pols[3]],
                              meths)
              for root in roots])
 
@@ -663,9 +656,9 @@ def geometric_factor(leaf: KetBra):
     for i in range(1, len(kbs)):
         kb, kbp = kbs[i], kbs[i-1]
         if kb.parent.side is Side.KET:
-            wkets.insert(0, (kb.kj, kb.parent.angle))
+            wkets.insert(0, (kb.kj, kb.parent.tier))
         else:
-            wbras.append((kb.parent.parent.bj, kb.parent.angle))
+            wbras.append((kb.parent.parent.bj, kb.parent.tier))
         if kb.parent.readout:
             wbras.extend(wkets)
             break

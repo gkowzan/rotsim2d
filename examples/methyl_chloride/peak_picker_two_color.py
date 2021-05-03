@@ -14,7 +14,7 @@ T = 296.0
 
 # * Pathways
 print('Calculating peak list')
-pws = pw.gen_pathways(range(1, 37), [0]*4, meths=[pw.only_SII, pw.only_twocolor],
+pws = pw.gen_pathways(range(1, 37), meths=[pw.only_SII, pw.only_twocolor],
                       rotor='symmetric',
                       kiter_func=lambda x: range(x if x<10 else 10))
 dressed_pws = dl.DressedPathway.from_kb_list(pws, ch3cl_mode, T)
@@ -27,18 +27,8 @@ def scatter_onpick(event):
     """Show information about the peak pathway."""
     if event.artist != fig_dict['sc']:
         return
-    for i, dl in enumerate(dls[event.ind[0]]):
-        if i == 0:
-            print('-'*10)
-            print('pump = {:.2f} cm-1, probe = {:.2f} cm-1'.format(
-                u.nu2wn(dl.nu(0)), u.nu2wn(dl.nu(2))))
-            dl.pprint()
-        else:
-            print()
-            dl.pprint()
-        if i == len(dls[event.ind[0]])-1:
-            print('-'*10)
-            print()
+    dl.pprint_dllist(dls[event.ind[0]])
+
 
 fig_dict['fig'].canvas.mpl_connect('pick_event', scatter_onpick)
 plt.show()

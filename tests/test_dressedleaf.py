@@ -12,7 +12,7 @@ from molspecutils.molecule import CH3ClAlchemyMode, DiatomState
 
 @pytest.fixture
 def partial_pws():
-    return partial(pw.gen_pathways, [5], [0]*4, rotor='symmetric',
+    return partial(pw.gen_pathways, [5], rotor='symmetric',
                    kiter_func=lambda x: [1], pump_overlap=False)
 
 def test_onecolor(partial_pws):
@@ -39,7 +39,7 @@ def test_threecolor(partial_pws):
 @pytest.fixture
 def pws():
     """Generate a list of pathways for further testing."""
-    kbs = pw.gen_pathways([5], [0, 1, 2, 3], rotor='symmetric',
+    kbs = pw.gen_pathways([5], rotor='symmetric',
                           kiter_func=lambda x: [1], pump_overlap=False)
     pws = dl.Pathway.from_kb_list(kbs)
 
@@ -75,7 +75,7 @@ def ch3cl_mode():
 
 @pytest.fixture
 def dressed_pws(ch3cl_mode):
-    kbs = pw.gen_pathways([5], [0, 1, 2, 3], rotor='symmetric',
+    kbs = pw.gen_pathways([5], rotor='symmetric',
                           kiter_func=lambda x: [1], pump_overlap=False)
     dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
 

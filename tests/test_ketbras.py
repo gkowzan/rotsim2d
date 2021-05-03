@@ -6,7 +6,7 @@ import molspecutils.molecule as mol
 
 @pytest.fixture
 def kbs_tree():
-    return pw.gen_pathways([5], [0, 1, 2, 3], rotor='symmetric',
+    return pw.gen_pathways([5], rotor='symmetric',
                            kiter_func=lambda x: [1], pump_overlap=False)[0]
 
 
