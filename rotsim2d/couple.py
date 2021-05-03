@@ -49,7 +49,7 @@ def T00(phi: float, phj: float, phk: float, phl: float, k: int):
     elif k==2:
         return np.sqrt(5)/60*(np.cos(phi-phj-phk+phl)+np.cos(phi-phj+phk-phl)+6*np.cos(phi+phj-phk-phl))
     else:
-        return 0.0
+        raise ValueError(f'No spherical component for k={k!r}')
 
 def T00_circ(phi: float, phj: float, phk: float, phl: float,
              delti: float, deltj: float, deltk: float, deltl: float, k: int):
@@ -83,7 +83,7 @@ def T00_circ(phi: float, phj: float, phk: float, phl: float,
                  0.1*np.exp(1.0j*(deltl-delti))*np.sin(phi)*np.sin(phl)*np.cos(phj)*np.cos(phk)+\
                  0.1*np.exp(-1.0j*(delti+deltk))*np.sin(phi)*np.sin(phk)*np.cos(phj)*np.cos(phl)))
     else:
-        return 0.0
+        raise ValueError(f'No spherical component for k={k!r}')
 
 
 def four_couple(js: List[int], angles: Union[List[float], List[Tuple[float]]]):
