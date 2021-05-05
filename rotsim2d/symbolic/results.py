@@ -297,3 +297,12 @@ rfactors_highj_dict = {'PPR': {'c0': 1, 'c12': 1/10, 'c13': 1/60, 'c14': 1/60},
  'QQR': {'c0': 1, 'c12': -1/30, 'c13': 1/20, 'c14': 1/20},
  'QRQ': {'c0': 1, 'c12': -1/20, 'c13': 1/30, 'c14': -1/20}}
 
+#: Cosine coefficients in R-factors associated with pathways being in a coherent state during the waiting time
+magic_classes = [(Rational(1, 10), Rational(1, 60), Rational(1, 60)),
+                 (Rational(1, 20), Rational(1, 20), Rational(1, -30)),
+                 (Rational(1, 20), Rational(-1, 30), Rational(1, 20))]
+#: Cosine coefficients in R-factors associated with pathways being in a population state during the waiting time
+muggle_classes = [(Rational(1, 15), Rational(1, 15), Rational(1, 15)),
+                  (Rational(1, 60), Rational(1, 10), Rational(1, 60)),
+                  (Rational(1, 60), Rational(1, 60), Rational(1, 10)),
+                  (Rational(1, 30), Rational(-1, 20), Rational(-1, 20))]
