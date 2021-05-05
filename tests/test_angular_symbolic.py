@@ -22,44 +22,42 @@ def test_gfactors_highj():
                 symr.gfactors_highj[k][i]-gfactors_highj[k][i]), deep=True) == symr.S(0)
 
 def test_rfactors():
-    rfactors = {k: sym.rfactorize(symr.gfactors[k], symr.T00_exprs)
+    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
                 for k in symr.gfactors.keys()}
     for k in rfactors.keys():
         assert symr.factor(symr.nsimplify(
-            symr.rfactors[k]-rfactors[k]), deep=True) == symr.S(0)
+            symr.rfactors[k]-rfactors[k].expr), deep=True) == symr.S(0)
 
 def test_rfactors_dict():
-    rfactors_dict = {k: sym.rfactorize(symr.gfactors[k], symr.T00_exprs, coeffs=True)
-                     for k in symr.gfactors.keys()}
-    for label in rfactors_dict.keys():
-        for coeff_label in rfactors_dict[label].keys():
-            assert symr.factor(symr.nsimplify(
-                symr.rfactors_dict[label][coeff_label]-rfactors_dict[label][coeff_label]
-            ), deep=True) == symr.S(0)
+    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
+                for k in symr.gfactors.keys()}
+    for label in rfactors.keys():
+        print(label)
+        print(rfactors[label].dict)
+        assert rfactors[label] == symr.rfactors_dict[label]
 
 def test_rfactors_xxxx():
-    rfactors_xxxx = {k: symr.factor(symr.powdenest(
-        v.subs({symr.phi: symr.S(0), symr.phj: symr.S(0), symr.phk: symr.S(0), symr.phl: symr.S(0)}), force=True), deep=True)
-                     for k, v in symr.rfactors.items()}
-    for k in rfactors_xxxx.keys():
+    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
+                for k in symr.gfactors.keys()}
+    for k in rfactors.keys():
         assert symr.factor(symr.nsimplify(
-            symr.rfactors_xxxx[k]-rfactors_xxxx[k]), deep=True) == symr.S(0)
+            symr.rfactors_xxxx[k]-rfactors[k].expr_xxxx()), deep=True) == symr.S(0)
 
 def test_rfactors_relative():
     for k in symr.gfactors:
-        actual = sym.rfactorize(symr.gfactors[k], symr.T00_exprs, relative=True)
-        assert symr.factor(symr.nsimplify(actual-symr.rfactors_relative[k]), deep=True) == symr.S(0)
+        print(k)
+        actual = sym.RFactor.from_gterms(symr.gfactors[k]).expr_relative()
+        assert symr.simplify(symr.factor(symr.powdenest(symr.nsimplify(actual-symr.rfactors_relative[k]), force=True), deep=True)) == symr.S(0)
 
 def test_rfactors_highj():
     for k in symr.gfactors_highj:
-        actual = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs)
+        actual = sym.RFactor.from_gterms(symr.gfactors_highj[k]).expr
         assert symr.factor(symr.nsimplify(actual-symr.rfactors_highj[k]), deep=True) == symr.S(0)
 
 def test_rfactors_highj_dict():
     for k in symr.gfactors_highj:
-        expected = sym.rfactorize(symr.gfactors_highj[k], symr.T00_exprs, coeffs=True)
-        for kk in symr.rfactors_highj_dict[k]:
-            assert expected[kk]-symr.rfactors_highj_dict[k][kk] == symr.S(0)
+        expected = sym.RFactor.from_gterms(symr.gfactors_highj[k])
+        assert expected == symr.rfactors_highj_dict[k]
 
 
 def test_vaccaro_angles():

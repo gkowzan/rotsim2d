@@ -13,7 +13,7 @@ import rotsim2d.symbolic.results as symr
 kbs = pw.gen_pathways([5], meths=[pw.only_SII],
                       rotor='symmetric', kiter_func=lambda x: [1], pump_overlap=False)
 pws = dl.Pathway.from_kb_list(kbs)
-rfactors = [sym.dl_to_rfactor(pw, symr.rfactors_highj) for pw in pws]
+rfactors = [sym.RFactor.from_pathway(pw, True, True) for pw in pws]
 classified = sym.classify_dls(pws, rfactors)
 classified_states = {k: [pw.leaf.to_statelist(diatom=True, normalize=True) for pw in v]
                      for k, v in classified.items()}

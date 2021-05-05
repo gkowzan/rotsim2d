@@ -4,8 +4,7 @@ related to polarization dependence and angular momentum dependence of four-fold
 dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.symbolic.results`."""
 # * Imports
-from typing import Sequence, Dict, Tuple, Optional
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
@@ -13,7 +12,11 @@ from molspecutils.molecule import SymTopState, DiatomState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
 from rotsim2d.symbolic.common import *
-from rotsim2d.symbolic.results import rfactors_highj
+from rotsim2d.symbolic.results import rfactors_highj, gfactors, gfactors_highj, T00_exprs
+from typing import Sequence, Dict, List, Tuple, Optional, NewType, Any, Union
+
+#: Dummy type for any SymPy expressions, since SymPy is not annotated
+# Expr = NewType('Expr', Any)
 
 # ** Utilities
 def inf_syms():
@@ -190,123 +193,177 @@ T00_theta_trigs = [cos(theta_i + theta_j - theta_k - theta_l),
 # Combined polarization-angular momentum factors for four-fold dipole
 # interaction operator.
 # ** Simplify R-factor
-def rfactorize(gterm: Sequence, pterms: Sequence, relative: bool=False, coeffs: bool=False):
-    """Produce a nice factorized expression for the R coefficient.
+class RFactor:
+    def __init__(self, coeffs: Union[Mapping, Sequence], angles: str='dummy'):
+        """Expression describing polarization and angular momentum dependence of a pathway.
 
-    Parameters
-    ----------
-    gterm: sequence
-        Spherical components of G-factor.
-    pterms: sequence
-        Spherical components of four-fold polarization tensor.
-    relative: bool
-        Return polarization-dependent R-factor relative to XXXX polarization.
-    coeffs: bool
-         Return dict of coefficients instead of a SymPy expression.
-    """
-    # factor out a term common to all J labels and write polarization in terms
-    # of four-angles cosines
-    rfactor = sum(gterm[i]*FU['TR8'](pterms[i]) for i in range(3))
-    if relative:
-        rfactor = rfactor/simplify(rfactor.subs({phi: S(0), phj: S(0), phk: S(0), phl: S(0)}))
-
-    return rfactor_simplify(rfactor, T00_trigs, coeffs=coeffs)
-
-
-def rfactor_simplify(expr, subterms: Sequence, coeffs: bool=False):
-    # Find common multiplicative factor for this specific J label.
-    # Substitution necessary to identify (un)common factor by checking free
-    # symbols.
-    subs1 = dict(zip(subterms, [x1, x2, x3]))
-    subs2 = dict(zip([x1, x2, x3], subterms))
-    expr = expr.subs(subs1)
-    expr_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True), force=True)
-                 for k, v in collect(expand(expr), [x1, x2, x3], evaluate=False).items()}
-    expr = collect(factor(sum(k*v for k, v in expr_dict.items())), [x1, x2, x3])
-
-    if not coeffs:              # back to cosines
-        return expr.subs(subs2)
-
-    common, uncommon = S(1), []
-    for term in expr.args:
-        if {x1, x2, x3} & term.free_symbols:
-            uncommon.append(term)
+        Parameters
+        ----------
+        coeffs
+            Mapping or a sequence of `c0`, `c12`, `c13` and `c14` coefficients.
+        angles, optional
+            R-factor as a function of 'dummy' (phis) or 'experimental` (thetas)
+            angles.
+        """
+        if isinstance(coeffs, Sequence):
+            if len(coeffs) == 3:
+                coeffs = (1,) + tuple(coeffs)
+            elif len(coeffs) == 4:
+                self.dict = dict(zip(('c0', 'c12', 'c13', 'c14'),
+                                     coeffs))
+            else:
+                raise ValueError("coeffs has to be a Mapping or a Sequence with len=3 or len=4")
         else:
-            common = common*term
-    # special case when common == 1
-    # could also be dealt with by checking if top-level operator is Mul or Add
-    if len(uncommon) > 1 and common == S(1):
-        uncommon = [Add(*uncommon)]
+            self.dict = coeffs
 
-    # `uncommon` is now a sum of >=3 cosines with individual non-factorable coeffs
-    # collect terms corresponding to each of three cosines
-    uncommon_dict = collect(uncommon[0], [x1, x2, x3], evaluate=False)
-    return {'c0': common, 'c12': uncommon_dict[x1], 'c13': uncommon_dict[x2],
-            'c14': uncommon_dict[x3]}
+        if angles == 'dummy':
+            self.angles = (phi, phj, phk, phl)
+            self.trigs = T00_trigs
+        elif angles == 'experimental':
+            self.trigs = T00_theta_trigs
+            self.angles = thetas
+        else:
+            raise ValueError("angles has to be either 'dummy' or 'experimental'")
 
+        self.dict_to_expr()
 
-def coeff_dict_to_tuple(cdict):
-    return (cdict['c0'], cdict['c12'], cdict['c13'], cdict['c14'])
+    def __repr__(self):
+        return f"RFactor(coeffs={self.tuple!r}, angles={self.angles!r})"
 
+    @classmethod
+    def from_gterms(cls, gterms: Sequence[Basic], pterms: Sequence[Basic]=T00_exprs,
+                    angles: str='dummy'):
+        """Make :class:`RFactor` from G-factor and polarization terms.
 
-def coeffs_to_expr(coeffs, T00_exprs):
-    """Convert dict or tuple of coeffs to SymPy expression."""
-    if isinstance(coeffs, Mapping):
-        return coeffs['c0']*(coeffs['c12']*T00_exprs[0] +
-                             coeffs['c13']*T00_exprs[1] +
-                             coeffs['c14']*T00_exprs[2])
-    elif len(coeffs) == 4:
-        return coeffs[0]*(coeffs[0]*T00_exprs[0] +
-                          coeffs[1]*T00_exprs[1] +
-                          coeffs[2]*T00_exprs[2])
-    elif len(coeffs) == 3:
-        return (coeffs[0]*T00_exprs[0] +
-                coeffs[1]*T00_exprs[1] +
-                coeffs[2]*T00_exprs[2])
-    else:
-        return ValueError("`coeffs` is not a valid data structure of R-factor coefficients.")
+        Parameters
+        ----------
+        gterms
+            Spherical tensor components of G-factor.
+        pterms
+            Spherical tensor components of four-fold polarization tensor.
+        angles, optional
+            R-factor as a function of 'dummy' (phis) or 'experimental` (thetas)
+            angles, has to match `pterms`.
+        """
+        expr = sum(gterms[i]*FU['TR8'](pterms[i]) for i in range(3))
+        if angles == 'dummy':
+            trigs = T00_trigs
+        elif angles == 'experimental':
+            trigs = T00_theta_trigs
+        _, d = cls._simplify(expr, trigs)
 
+        return cls(d, angles=angles)
 
-    
-# * Classify pathways with regards to R-factor
-# TODO Define RFactor class with different representation and high-J variant
-# ** Functions
-def dl_to_rfactor(dl, rfactors: dict, normalize=False, coeffs=False):
-    """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
-    
-    Pathway polarization angles need to be indices (integers) from 0 to 3.
-    `rfactors` is one of dicts from this module containing SymPy expressions.
+    @classmethod
+    def from_pathway(cls, pw: dl.Pathway, highj: bool=False, normalize: bool=False):
+        """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
 
-    If `normalize` is True, then make the sign of the common factor positive and
-    flip the signs of the coefficients if the `c12` coefficient is negative.
-    """
-    phis = [phi, phj, phk, phl]
-    phi_angles = dl._phi_angles(thetas)
-    rfac = rfactors[dl.geo_label].subs(dict(zip(phis, phi_angles)))
-    # rfac = rfactors[dl.geo_label].subs(
-    #     {phi: thetas[dl.angles[0]],
-    #      phj: thetas[dl.angles[1]],
-    #      phk: thetas[dl.angles[2]],
-    #      phl: thetas[dl.angles[3]]})
+        Parameters
+        ----------
+        pw
+            Pathway or DressedPathway.
+        highj
+            Use high-J limit versions of G-factors.
+        normalize
+            Make the sign of the common factor positive and flip the signs of
+            the coefficients if the `c12` coefficient is negative.
+        """
+        if highj:
+            gterms = gfactors_highj[pw.geo_label]
+        else:
+            gterms = gfactors[pw.geo_label]
 
-    if normalize or coeffs:
-        rfac_dict = rfactor_simplify(rfac, T00_theta_trigs, coeffs=True)
+        subs_dict = dict(zip([phi, phj, phk, phl], pw._phi_angles(thetas)))
+        pterms = [e.subs(subs_dict) for e in T00_exprs[:]]
+        rfac = cls.from_gterms(gterms, pterms, 'experimental')
         if normalize:
-            rfac_dict['c0'] = abs(rfac_dict['c0'])
-            if rfac_dict['c12'] < 0:
-                rfac_dict['c12'] = -rfac_dict['c12']
-                rfac_dict['c13'] = -rfac_dict['c13']
-                rfac_dict['c14'] = -rfac_dict['c14']
+            rfac.dict['c0'] = abs(rfac.dict['c0'])
+            if rfac.dict['c12'] < 0:
+                rfac.dict['c12'] = -rfac.dict['c12']
+                rfac.dict['c13'] = -rfac.dict['c13']
+                rfac.dict['c14'] = -rfac.dict['c14']
+            rfac.dict_to_expr()
 
-        if not coeffs:
-            rfac = coeffs_to_expr(rfac_dict, T00_theta_trigs)
+        return rfac
+
+    def dict_to_expr(self):
+        """Regenerate expression from dict."""
+        self.expr = self.dict['c0']*(self.dict['c12']*self.trigs[0] +
+                                     self.dict['c13']*self.trigs[1] +
+                                     self.dict['c14']*self.trigs[2])
+
+    @property
+    def tuple(self):
+        """Return coefficients as a tuple."""
+        return (self.dict['c0'], self.dict['c12'], self.dict['c13'], self.dict['c14'])
+
+    @staticmethod
+    def _simplify(expr: Basic, subterms: Sequence[Basic]) -> Tuple[Basic, Dict]:
+        """Simplify RFactor SymPy expression.
+
+        Parameters
+        ----------
+        expr
+            Expression to simplify,
+        subterms
+            Collect coefficients for expressions in `subterms`
+
+        Returns
+        -------
+        Tuple factorized expression for R-factor and dict of coefficients.
+        """
+        subs1 = dict(zip(subterms, [x1, x2, x3]))
+        subs2 = dict(zip([x1, x2, x3], subterms))
+        expr = expr.subs(subs1)
+        expr_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True), force=True)
+                     for k, v in collect(expand(expr), [x1, x2, x3], evaluate=False).items()}
+        expr = collect(factor(sum(k*v for k, v in expr_dict.items())), [x1, x2, x3])
+        ret_expr  = expr.subs(subs2)
+
+        common, uncommon = S(1), []
+        for term in expr.args:
+            if {x1, x2, x3} & term.free_symbols:
+                uncommon.append(term)
+            else:
+                common = common*term
+        # special case when common == 1
+        # could also be dealt with by checking if top-level operator is Mul or Add
+        if len(uncommon) > 1 and common == S(1):
+            uncommon = [Add(*uncommon)]
+
+        # `uncommon` is now a sum of >=3 cosines with individual non-factorable coeffs
+        # collect terms corresponding to each of three cosines
+        uncommon_dict = collect(uncommon[0], [x1, x2, x3], evaluate=False)
+        ret_dict = {'c0': common, 'c12': uncommon_dict[x1], 'c13': uncommon_dict[x2],
+                    'c14': uncommon_dict[x3]}
+
+        return ret_expr, ret_dict
+
+    def expr_xxxx(self):
+        """Return R-factor expression for XXXX polarization."""
+        expr = self.expr.subs(dict(zip(self.angles, [0]*4)))
+
+        return simplify(factor(powdenest(expr, force=True), deep=True))
+
+    def expr_relative(self):
+        """Return R-factor expressions relative to XXXX polarization."""
+        return self._simplify(self.expr/self.expr_xxxx(), self.trigs)[0]
+
+    def __eq__(self, o):
+        if isinstance(o, RFactor):
+            return self == o.tuple
+        elif isinstance(o, Mapping):
+            return all(factor(self.dict[k]-o[k], deep=True) == S(0) for k in self.dict)
         else:
-            rfac = rfac_dict
+            return all(factor(st-ot, deep=True) == S(0) for st, ot in zip(self.tuple, o))
 
-    return rfac
+    def __hash__(self):
+        return hash(self.tuple)
 
 
-def dl_gfactors(dl):
+# * Classify pathways with regards to R-factor
+# ** Functions
+def dl_gfactors(dl: dl.Pathway):
     """Return G-factors for a :class:`rotsim2d.dressedleaf.Pathway`."""
     js = list(dl.js)
     return (gfactor_expr(*(js + [0])).evalf(),
@@ -314,7 +371,7 @@ def dl_gfactors(dl):
             gfactor_expr(*(js + [2])).evalf())
 
 
-def dl_T00s(dl, angles):
+def dl_T00s(dl: dl.Pathway, angles):
     """Return polarization components a :class:`rotsim2d.dressedleaf.Pathway`."""
     phis = [phi, phj, phk, phl]
     phi_angles = dl._phi_angles(angles)
@@ -330,24 +387,20 @@ def dl_T00s(dl, angles):
             T00_exprs[2].subs(dict(zip(phis, phi_angles))).evalf())
     
 
-def classify_dls(dressed_pws: Sequence, rfactors: Sequence, states=False) -> dict:
+def classify_dls(dressed_pws: Sequence[dl.Pathway], rfactors: Sequence[RFactor],
+                 states: bool=False) -> Dict[RFactor, dl.Pathway]:
     """Return a mapping between polarization expressions and pathways in `dressed_pws`.
 
     If `states` is True, convert Pathways to lists of states. `rfactors` are
     R-factors as functions of experimental angles (thetas) not dummy angles
-    (phis), i.e. obtained by applying :func:`dl_to_rfactor`.
+    (phis).
     """
-    if isinstance(rfactors[0], Basic): # SymPy base class
-        cmp = lambda x, y: factor(x-y) == S(0)
-    else:
-        cmp = lambda x, y: x==y
-
     classified = {}
     for dressed_leaf, cur_rfac in zip(dressed_pws, rfactors):
         found = False
         rfacs = list(classified.keys())
         for rfac in rfacs:
-            if cmp(rfac, cur_rfac):
+            if rfac == cur_rfac:
                 found = rfac
                 break
         if found:
@@ -362,7 +415,7 @@ def classify_dls(dressed_pws: Sequence, rfactors: Sequence, states=False) -> dic
     return classified
 
 
-def solve_det_angle(rexpr, angles: Optional[Sequence]=None):
+def solve_det_angle(rexpr: RFactor, angles: Optional[Sequence]=None) -> Basic:
     """Return expr. for `tan(theta_l)` which zeroes `rexpr`.
 
     `angles` contains linear polarization angles of up to three pulses in
@@ -370,13 +423,14 @@ def solve_det_angle(rexpr, angles: Optional[Sequence]=None):
     """
     if angles is None:
         angles = [0]
-    expr = expand_trig(rexpr).subs(dict(zip(thetas, angles))).subs(
+    expr = expand_trig(rexpr.expr).subs(dict(zip(thetas, angles))).subs(
         {sin(theta_l): x1, cos(theta_l): x2}).subs({x1: x1x2*x2, x2: x1/x1x2})
 
     return atan(factor(expand_trig(solve(expr, x1x2)[0]), deep=True))
 
 
-def suppression_angles(exprs: Sequence, angles: Optional[Sequence]=None) -> dict:
+def suppression_angles(exprs: Sequence[RFactor],
+                       angles: Optional[Sequence[Basic]]=None) -> Dict[Basic, Basic]:
     """Return roots of expressions in `exprs` with respect to detection angle.
 
     `angles` contains linear polarization angles of up to three pulses in
@@ -385,7 +439,7 @@ def suppression_angles(exprs: Sequence, angles: Optional[Sequence]=None) -> dict
     return {k: solve_det_angle(k, angles=angles) for k in exprs}
 
 
-def dummify_angle_expr(angle_expr):
+def dummify_angle_expr(angle_expr: Basic) -> Basic:
     """Substitute dummy variables for tangents of angles.
 
     SymPy struggles with solving equations involving several trigonometric
@@ -397,7 +451,7 @@ def dummify_angle_expr(angle_expr):
     return angle_expr
 
 
-def common_angles(exprs: Sequence) -> dict:
+def common_angles(exprs: Sequence[Basic]) -> Dict[Basic, Basic]:
     """Find angles simultaneously zeroing all in `exprs`.
 
     Uses :func:`sympy.solve`.
@@ -410,7 +464,8 @@ def common_angles(exprs: Sequence) -> dict:
     return sols
 
 
-def classify_suppression(classified: dict, angles: dict) -> dict:
+def classify_suppression(classified: Dict[RFactor, dl.Pathway],
+                         angles: Dict[RFactor, Basic]) -> Dict[Basic, dl.Pathway]:
     """Return a map between suppression angles and pathways.
 
     `classified` is the map between expressions and pathways returned by
@@ -423,7 +478,7 @@ def classify_suppression(classified: dict, angles: dict) -> dict:
     return angles_to_pws
 
 
-def pathway_angles(pws: Sequence, angles: Sequence) -> dict:
+def pathway_angles(pws: Sequence[dl.Pathway], angles: Sequence) -> Dict[Basic, List[dl.Pathway]]:
     """Return a map between detection angles and elements of `pws` they suppress.
 
     Parameters
@@ -433,7 +488,8 @@ def pathway_angles(pws: Sequence, angles: Sequence) -> dict:
     angles
         Linear polarization angles of three interacting pulses in sequence.
     """
-    pws_rfactors = [dl_to_rfactor(pw, rfactors_highj) for pw in pws]
+    pws_rfactors = [RFactor.from_pathway(pw, True, True) for pw in pws]
+    # pws_rfactors = [dl_to_rfactor(pw, rfactors_highj) for pw in pws]
     classified = classify_dls(pws, pws_rfactors)
     zeroing_angles = suppression_angles(classified.keys(), angles)
     ret = classify_suppression(classified, zeroing_angles)
