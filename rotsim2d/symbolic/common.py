@@ -10,4 +10,5 @@ thetas_dict = dict(zip(('omg1', 'omg2', 'omg3', 'mu'),
                        thetas))
 #: Pulse and detection angles
 theta_i, theta_j, theta_k, theta_l = thetas
-x0, x1, x2, x3 = symbols("x0 x1 x2 x3", real=True)
+#: Dummy variables for derivations
+x0, x1, x2, x3, x4, x1x2, x3x4 = symbols("x0 x1 x2 x3 x4 x1x2 x3x4", real=True)

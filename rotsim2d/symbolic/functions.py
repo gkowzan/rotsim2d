@@ -269,6 +269,7 @@ def coeffs_to_expr(coeffs, T00_exprs):
 
     
 # * Classify pathways with regards to R-factor
+# TODO Define RFactor class with different representation and high-J variant
 # ** Functions
 def dl_to_rfactor(dl, rfactors: dict, normalize=False, coeffs=False):
     """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
@@ -361,15 +362,52 @@ def classify_dls(dressed_pws: Sequence, rfactors: Sequence, states=False) -> dic
     return classified
 
 
-def suppression_angles(exprs: Sequence, angles: Sequence) -> dict:
+def solve_det_angle(rexpr, angles: Optional[Sequence]=None):
+    """Return expr. for `tan(theta_l)` which zeroes `rexpr`.
+
+    `angles` contains linear polarization angles of up to three pulses in
+    sequence. If `angles` is None, then the first angle is set to 0.
+    """
+    if angles is None:
+        angles = [0]
+    expr = expand_trig(rexpr).subs(dict(zip(thetas, angles))).subs(
+        {sin(theta_l): x1, cos(theta_l): x2}).subs({x1: x1x2*x2, x2: x1/x1x2})
+
+    return atan(factor(expand_trig(solve(expr, x1x2)[0]), deep=True))
+
+
+def suppression_angles(exprs: Sequence, angles: Optional[Sequence]=None) -> dict:
     """Return roots of expressions in `exprs` with respect to detection angle.
 
-    `angles` contains linear polarization angles of three pulses in sequence.
+    `angles` contains linear polarization angles of up to three pulses in
+    sequence. If `angles` is None, then the first angle is set to 0.
     """
-    return {k: solve(expand_trig(k.subs({theta_i: angles[0],
-                                         theta_j: angles[1],
-                                         theta_k: angles[2]})), theta_l)[0]
-            for k in exprs}
+    return {k: solve_det_angle(k, angles=angles) for k in exprs}
+
+
+def dummify_angle_expr(angle_expr):
+    """Substitute dummy variables for tangents of angles.
+
+    SymPy struggles with solving equations involving several trigonometric
+    functions.  Simplify the task by solving for tangents of angles.
+    """
+    angle_expr = factor(angle_expr.subs({sin(theta_j): x1, cos(theta_j): x2}).subs({x1: x1x2*x2, x2: x1/x1x2}))
+    angle_expr = factor(angle_expr.subs({sin(theta_k): x3, cos(theta_k): x4}).subs({x3: x3x4*x4, x4: x3/x3x4}))
+
+    return angle_expr
+
+
+def common_angles(exprs: Sequence) -> dict:
+    """Find angles simultaneously zeroing all in `exprs`.
+
+    Uses :func:`sympy.solve`.
+    """
+    back_subs = {x0: tan(theta_l), x1x2: tan(theta_j), x3x4: tan(theta_k)}
+    system = [dummify_angle_expr(v)-x0 for v in exprs]
+    sols = solve(system, [x1x2, x3x4, x0], dict=True)
+    sols = [{k.subs(back_subs): v.subs(back_subs) for k, v in s.items()} for s in sols]
+
+    return sols
 
 
 def classify_suppression(classified: dict, angles: dict) -> dict:
