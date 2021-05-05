@@ -17,7 +17,7 @@ print('Calculating peak list')
 pws = pw.gen_pathways(range(1, 37), meths=[pw.only_SII], rotor='symmetric',
                       kiter_func=lambda x: range(x if x<10 else 10))
 dressed_pws = dl.DressedPathway.from_kb_list(pws, ch3cl_mode, T)
-peaks, dls = dl.peak_list(dressed_pws, return_dls=True)
+peaks, dls = dl.peak_list(dressed_pws, return_dls=True, tw=1.0e-12)
 
 # * Visualize
 fig_dict = vis.plot2d_scatter(peaks, scatter_kwargs=dict(picker=True))
