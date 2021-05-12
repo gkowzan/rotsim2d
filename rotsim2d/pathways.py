@@ -12,8 +12,6 @@ from anytree.exporter import UniqueDotExporter
 
 from molspecutils.molecule import DiatomState, SymTopState, RotState
 
-dnus = [-1, +1] #: Possible changes of vibrational state
-
 #: Right-circular polarized light
 right_pol = (5/4*np.pi, -np.pi/2)
 #: Left-circular polarized light
@@ -109,6 +107,13 @@ class KetBra(at.NodeMixin):
         self._pathway_info_cache = None
 
         self.pop = pop                # fractional occupancy
+
+    def get(self, side: Side) -> RotState:
+        """Index KetBra by Side enum."""
+        if side == Side.KET:
+            return self.ket
+        elif side == Side.BRA:
+            return self.bra
 
     def print_tree(self):
         """Pretty print excitation tree."""
@@ -502,7 +507,67 @@ def readout(ketbra: KetBra) -> KetBra:
     return prune(remove_nondiagonal(ketbra))
 
 
-def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False) -> KetBra:
+def excited_states_symtop(state: SymTopState, dnu: int) -> List[int]:
+    """Return states reachable from `state` by dipole interaction."""
+    djs = (-1, 0, 1)
+    states = []
+
+    if state.nu+dnu>=0:
+        for dj in djs:
+            if (state.k==0 or state.j==0) and dj==0:
+                continue
+            if state.j+dj < state.k:
+                continue
+            if state.j+dj>=0:
+                states.append(SymTopState(state.nu+dnu, state.j+dj, state.k))
+
+    return states
+
+
+def excited_states_diatom(state: DiatomState, dnu: int) -> List[int]:
+    """Return states reachable from `state` by dipole interaction."""
+    djs = (-1, 1)
+    states = []
+
+    if state.nu+dnu >= 0:
+        for dj in djs:
+            if state.j+dj >=0:
+                states.append(DiatomState(state.nu+dnu, state.j+dj))
+
+    return states
+
+
+#: Poor man's polymorphism
+excited_states = {
+    DiatomState: excited_states_diatom,
+    SymTopState: excited_states_symtop
+}
+
+ksigns = {
+    (Side.BRA, 1): KSign.NEG,
+    (Side.BRA, -1): KSign.POS,
+    (Side.KET, 1): KSign.POS,
+    (Side.KET, -1): KSign.NEG
+}
+
+def _excite(ketbra: KetBra, light_name: str, side: Side=Side.KET,
+            readout: bool=False) -> KetBra:
+    for dnu in (-1, 1):
+        states = excited_states[type(ketbra.get(side))](ketbra.get(side), dnu)
+        if states:
+            li = LightInteraction(light_name, side, ksigns[(side, dnu)],
+                                  readout, parent=ketbra)
+            for state in states:
+                if side==Side.KET:
+                    KetBra(state, ketbra.bra, parent=li)
+                elif side==Side.BRA:
+                    KetBra(ketbra.ket, state, parent=li)
+
+    return ketbra
+
+
+def excite(ketbra: KetBra, light_name: str, part: str='ket',
+           readout: bool=False) -> KetBra:
     """Generate all excitations of `ketbra`.
 
     Modifies `ketbra` in place. Only parallel transitions.
@@ -525,55 +590,10 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket', readout: bool=False
     # ket excitation
     if part not in ('ket', 'bra', 'both'):
         raise ValueError("`part` has to be either 'ket', 'bra' or 'both'")
-    if isinstance(ketbra.ket, DiatomState):
-        djs = [-1, 1]
-    elif isinstance(ketbra.ket, SymTopState):
-        djs = [-1, 0, 1]
-    else:
-        raise TypeError("`ketbra.ket` is neither DiatomState nor SymtopState")
-    if part == 'ket' or part == 'both':
-        for dnu in dnus:
-            children = []
-            nnu = ketbra.ket.nu+dnu
-            if nnu < 0:
-                continue
-            for dj in djs:
-                if ketbra.ket.j == 0 and dj == 0:
-                    continue
-                if isinstance(ketbra.ket, SymTopState) and ketbra.ket.k == 0 and dj == 0:
-                    continue
-                nj = ketbra.ket.j+dj
-                if nj < 0:
-                    continue
-                if isinstance(ketbra.ket, SymTopState) and ketbra.ket.k > nj:
-                    continue
-                children.append(KetBra(ketbra.ket._replace(nu=nnu, j=nj), ketbra.bra))
-            if dnu > 0:             # ket absorption
-                LightInteraction(light_name, Side.KET, KSign.POS, readout, parent=ketbra, children=children)
-            elif dnu < 0:           # ket emission
-                LightInteraction(light_name, Side.KET, KSign.NEG, readout, parent=ketbra, children=children)
-
-    if part == 'bra' or part == 'both':
-        for dnu in dnus:
-            children = []
-            nnu = ketbra.bra.nu+dnu
-            if nnu < 0:
-                continue
-            for dj in djs:
-                if ketbra.bra.j == 0 and dj == 0:
-                    continue
-                if isinstance(ketbra.bra, SymTopState) and ketbra.bra.k == 0 and dj == 0:
-                    continue
-                nj = ketbra.bra.j+dj
-                if nj < 0:
-                    continue
-                if isinstance(ketbra.bra, SymTopState) and ketbra.bra.k > nj:
-                    continue
-                children.append(KetBra(ketbra.ket, ketbra.bra._replace(nu=nnu, j=nj)))
-            if dnu > 0:         # bra absorption
-                LightInteraction(light_name, Side.BRA, KSign.NEG, readout, parent=ketbra, children=children)
-            elif dnu < 0:       # bra emission
-                LightInteraction(light_name, Side.BRA, KSign.POS, readout, parent=ketbra, children=children)
+    if part in ('ket', 'both'):
+        ketbra = _excite(ketbra, light_name, Side.KET, readout)
+    if part in ('bra', 'both'):
+        ketbra = _excite(ketbra, light_name, Side.BRA, readout)
 
     return ketbra
 
