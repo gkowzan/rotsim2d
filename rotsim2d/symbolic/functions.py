@@ -208,7 +208,7 @@ class RFactor:
         if isinstance(coeffs, Sequence):
             if len(coeffs) == 3:
                 coeffs = (1,) + tuple(coeffs)
-            elif len(coeffs) == 4:
+            if len(coeffs) == 4:
                 self.dict = dict(zip(('c0', 'c12', 'c13', 'c14'),
                                      coeffs))
             else:
