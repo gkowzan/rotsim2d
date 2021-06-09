@@ -72,13 +72,10 @@ html_static_path = ['_static']
 # -- Intersphinx
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
-    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'iris': ('http://scitools.org.uk/iris/docs/latest/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'numba': ('https://numba.pydata.org/numba-doc/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
-    'molspecutils': ('file://D:/python/packages/molspecutils/docs/_build/html/index.html', None)
+    'molspecutils': ('/home/grz/python/packages/molspecutils/docs/_build/html/', None)
 }
 
 # -- pygments

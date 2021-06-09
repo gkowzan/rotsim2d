@@ -1,8 +1,35 @@
 r"""Associate polarizations, angular momentum factors and pathways amplitudes
-with pathways, i.e. everything but line shapes.
+with pathways. The time- and frequency-dependent signals are calculated in
+:mod:`rotsim2d.propagate`.
 
-TODO:
-- change sys_params and pops
+:class:`Pathway` represents a double-sided Feynmann pathway for third-order
+rovibrational excitation, without associating it to any specific
+molecule. :class:`DressedPathway` specializes the object to specific vibrational
+mode at a given temperature.  The main quantity, calculable with
+:meth:`DressedPathway.amplitude`, is the pathway amplitude given by:
+
+.. math::
+
+    A(\widetilde{\theta}, \widetilde{J}) = (-1)^\kappa \left(\frac{i}{2\hbar}\right)^n \frac{N_{\eta_i J_i}}{N} \langle O_{ijkl}\rangle = (-1)^\kappa \left(\frac{i}{2\hbar}\right)^n \frac{N_{\eta_i J_i}}{N} \langle T^{(0)}_0(\eta_iJ_i)^\dagger\rangle R^{(0)}_0(\widetilde{\theta}, \widetilde{J}) \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle,
+
+where :math:`\widetilde{\theta}` and :math:`\widetilde{J}` are the sequences of
+polarization angles and J values for the pathway. :math:`N_{\eta_i J_i}`
+includes all relevant degeneracy factors (nuclear spin, rovibrational symmetry).
+
+The macroscopic polarization is related to the pathway amplitude by:
+
+.. math::
+
+    \vec{\epsilon}_4\cdot P^{(n)} =  N |E_1||E_2||E_3| A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}),
+
+where :math:`N` is the number density and
+:math:`\mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t})` determines the
+n-dimensional frequency- or time-domain response. The absorption coefficient for the probe (in the Lambert-Beer law sense) is then given by:
+
+.. math::
+
+    \alpha_{\mathrm{probe}} = N \frac{k^{\mathrm{probe}}_0}{\epsilon_0}|E_1||E_2| A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}).
+
 """
 from __future__ import annotations
 from typing import Optional, Iterable, Tuple, List, Sequence, Mapping
@@ -20,24 +47,65 @@ import rotsim2d.couple as cp
 #: Spectroscopic notation for transitions
 dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
 def abstract_format(dnu: int, dj: int):
+    ":meta private:"
     if dnu==0 and dj==0:
         return "0"
     return str(dnu)+dj_to_letter[dj]
 
 
 def abstract_state_label(state: mol.RotState, ref_state: mol.RotState) -> str:
+    ":meta private:"
     return abstract_format(state.nu-ref_state.nu, state.j-ref_state.j)
 
 
 def abstract_pair_label(pair: Tuple[mol.RotState], ref_state: mol.RotState) -> str:
+    ":meta private:"
     return "|{:s}><{:s}|".format(
         abstract_state_label(pair[0], ref_state),
-        abstract_state_label(pair[1], ref_state)
-    )
+        abstract_state_label(pair[1], ref_state))
 
 class Pathway:
-    """Collect information on a pathway based on KetBra tree leaf without
-    specializing it to any specific vibrational mode of a molecule."""
+    r"""Collect information on a pathway based on KetBra tree leaf without
+    specializing it to any specific vibrational mode of a molecule.
+
+    Attributes
+    ----------
+    leaf: rotsim2d.pathways.KetBra
+        The leaf used to construct this pathway.
+    coherences: list of tuple
+        Coherences created by light-matter interactions as a list of pairs of
+        :class:`molspecutils.molecule.RotState`.
+    transitions: list of tuple
+        List of pairs of :class:`molspecutils.molecule.RotState` representing
+        transitions between states.
+    js: tuple of int
+        Arguments of G factor.
+    light_inds: tuple of int
+        Ordering of polarization vectors in four-fold dipole operator.
+    const: complex
+        :math:`(-1)^\kappa\left(\frac{i}{2\hbar}\right)^n`, where `n` is the
+        order of interaction (usually 3) and :math:`\kappa` is the sign factor
+        due to multiple interactions on either ket- or bra-side of the density
+        matrix.
+    geo_label: str
+        Short hand notation for `js`, see module-level description.
+    trans_label: str
+        Short hand notation for series of transitions in the pathway.
+    tw_coherence: bool
+        Whether the molecule is in coherent state after second interaction.
+    peak: tuple of str
+        Pair of strings representing coherences created by first and third
+        interaction (2D peak label).
+    abstract_peak: tuple of str
+        Same as `peak` but using P-, Q-, R-branch notation instead of absolute
+        `J` numbers.
+    experimental_label: str
+        The kind of interaction: ground-state hole-burning, excited-states
+        absorption, etc.
+    colors: int
+        Number of different optical frequencies requried to produce this
+        pathway.
+    """
     fields = ['leaf', 'coherences', 'transitions', 'js', 'light_inds', 'const',
               'geo_label', 'trans_label', 'tw_coherence', 'peak', 'abstract_peak',
               'experimental_label', 'colors']
@@ -65,16 +133,17 @@ class Pathway:
 
     @property
     def geo_label(self):
-        """G-factor label."""
+        ":meta private:"
         return geometric_labels[tuple(j-self.js[0] for j in self.js)]
 
     @property
     def trans_label(self):
-        """Three-fold transition label (Murdock style)."""
+        ":meta private:"
         return ''.join((self._trans_label(i) for i in (0, 1, 2)))
 
     @property
     def experimental_label(self):
+        ":meta private:"
         if self.leaf.is_esa():
             return "Excited-state pump-probe"
         if self.leaf.is_gshb():
@@ -86,6 +155,7 @@ class Pathway:
 
     @property
     def colors(self):
+        ":meta private:"
         return self.leaf.color_tier()
 
     def _trans_label(self, i):
@@ -105,7 +175,12 @@ class Pathway:
 
     def geometric_factor(self, relative: bool=False,
                          angles: Optional[Union[Sequence, Dict]]=None) -> float:
-        """Geometric factor for pathway intensity.
+        r"""Geometric R-factor for pathway intensity for isotropic initial density
+        matrix:
+
+        .. math::
+
+            R^{(0)}_0(\epsilon_i^\ast, \epsilon_j, \epsilon_k^\ast, \epsilon_l; J_i, J_j, J_k, J_l) = \sum_{k=0}^2  T^{(0)}_0(\epsilon_i^\ast, \epsilon_j, \epsilon_k^\ast, \epsilon_l; k)G(J_i, J_j, J_k, J_l; k)
 
         Parameters
         ----------
@@ -126,10 +201,18 @@ class Pathway:
         return ret
 
     def gfactors(self):
+        r"""Geometric factors for `k=0,1,2`:
+
+        .. math::
+
+            G(J_i, J_j, J_k, J_l; k) = (2k+1)\begin{Bmatrix} k & k & 0\\ J_i & J_i & J_k \end{Bmatrix} \begin{Bmatrix} 1 & 1 & k\\ J_k & J_i & J_j \end{Bmatrix} \begin{Bmatrix} 1 & 1 & k\\ J_k & J_i & J_l \end{Bmatrix}.
+        """
         js = list(self.js)
         return (cp.G(*(js + [0])), cp.G(*(js + [1])), cp.G(*(js + [2])))
 
     def T00s(self, angles):
+        r"""Polarization tensor components :math:`T^{(0)}_0(\epsilon_i^{\ast}, \epsilon_j, \epsilon_k^{\ast}, \epsilon_l; k)` for `k=0,1,2`
+        """
         angles = self._phi_angles(angles)
         return (cp.T00(*(angles + [0])), cp.T00(*(angles + [1])), cp.T00(*(angles + [2])))
 
@@ -161,6 +244,14 @@ class Pathway:
         return l, r
 
     def print_diagram(self, abstract=False):
+        """Pretty print double-sided Feynmann diagram.
+
+        Parameters
+        ----------
+        abstract: bool
+            Use spectroscopic transition notation (P, Q, R) instead of absolute
+            J values.
+        """
         for kb in self.leaf.ketbras()[::-1]:
             l, r = Pathway._ketbra_symbols(kb)
             if abstract:
@@ -174,6 +265,14 @@ class Pathway:
         print(f"Coherence during waiting time: {self.tw_coherence!r}")
 
     def pprint(self, abstract=False):
+        """Pretty print this pathway.
+
+        Parameters
+        ----------
+        abstract: bool
+            Use spectroscopic transition notation (P, Q, R) instead of absolute
+            J values.
+        """
         print("diagram:")
         self.print_diagram(abstract=abstract)
         print(f"G-factor label: {self.geo_label}")
@@ -187,7 +286,30 @@ class Pathway:
 
 
 class DressedPathway(Pathway):
-    """Excitation pathway specialized to a vibrational mode."""
+    r"""Excitation pathway specialized to a vibrational mode.
+
+    Parameters
+    ----------
+    leaf
+        Leaf of :class:`rotsim2d.pathways.KetBra` excitation tree.
+    vib_mode
+        Object implementing :class:`molspecutils.molecule.VibrationalMode`
+        interface.
+    T
+        Temperature in Kelvin.
+
+    Attributes
+    ----------
+    const: complex
+        The `const` factor of :class:`Pathway` multiplied by the fractional
+        population of the initial state of the pathway in thermal equilibrium,
+        :meth:`molspecutils.molecule.VibrationalMode.equilibrium_pop`, and by the
+        four-fold reduced matrix element, :math:`\langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle`:
+
+        .. math::
+
+            \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle = \langle \nu_i J_i\|\mu_1\|\nu_1 J_1\rangle \langle \nu_1 J_1\|\mu_2\|\nu_2 J_2\rangle \langle \nu_2 J_2\|\mu_3\|\nu_3 J_3\rangle \langle \nu_3 J_3\|\mu_4\|\nu_i J_i\rangle
+    """
     def __init__(self, leaf: KetBra, vib_mode: mol.VibrationalMode, T: float):
         Pathway.__init__(self, leaf)
         self.vib_mode = vib_mode
@@ -202,12 +324,18 @@ class DressedPathway(Pathway):
         return Pathway.__eq__(self, o) and isclose(self.T, o.T) and self.vib_mode == o.vib_mode
         
     def nu(self, i: int) -> float:
+        """Frequency of `i`-th coherence."""
         return self.vib_mode.nu(self.coherences[i])
 
     def gamma(self, i: int) -> float:
+        """Pressure-broadening coefficient of `i`-th coherence."""
         return self.vib_mode.gamma(self.coherences[i])
 
     def intensity(self, tw: Optional[float]=None, angles=None) -> float:
+        r"""Amplitude of the pathway, given by the product of isotropic coefficient of
+        the initial density matrix, :math:`\langle T^{(0)}_0(\eta_i
+        J_i)^\dagger\rangle=(2J_i+1)^{-1/2}`, :attr:`const` and :meth:`Pathway.geometric_factor`.
+        """
         ret = self.isotropy*self.const*self.geometric_factor(angles=angles)
         if tw is not None:
             ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1) + self.gamma(1)))
@@ -475,14 +603,19 @@ class Peak2DList(list):
     intensities."""
     @property
     def pumps(self):
+        """List of pump frequencies."""
         return [peak.pump_wl for peak in self]
 
     @property
     def probes(self):
+        """List of probe frequencies."""
         return [peak.probe_wl for peak in self]
 
     @property
     def sigs(self):
+        """Peak amplitude--sum of :meth:`DressedPathway.intensity` over all pathways
+        contributing to a 2D peak.
+        """
         return [peak.sig for peak in self]
 
     @staticmethod
@@ -490,12 +623,16 @@ class Peak2DList(list):
         return abs(peak.sig)
 
     def sort_by_sigs(self):
+        """Sort peaks by amplitude.
+
+        Ensures that strong peaks are not covered by weak ones in scatter plot.
+        """
         self.sort(key=self._sort_func)
 
 
 def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
               return_dls: bool=False) -> Peak2DList:
-    """Create a list of 2D peaks from a list of DressedLeaf's.
+    """Create a list of 2D peaks from a list of :class:`DressedPatway`.
 
     Optionally return sorted list of DressedLeaf's corresponding to peaks.
     """
