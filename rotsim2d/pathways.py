@@ -94,7 +94,7 @@ class KetBra(at.NodeMixin):
     Each KetBra is described by :attr:`ket` and :attr:`bra` which describes the
     density matrix element.
     """
-    def __init__(self, ket: RotState, bra: RotState, pop: float=1.0, parent=None, children=None):
+    def __init__(self, ket: RotState, bra: RotState, parent=None, children=None):
         super(KetBra, self).__init__()
         self.ket = ket
         self.bra = bra
@@ -105,8 +105,6 @@ class KetBra(at.NodeMixin):
             self.children = children
         self.to_statelist = lru_cache(None)(self.to_statelist)
         self._pathway_info_cache = None
-
-        self.pop = pop                # fractional occupancy
 
     def get(self, side: Side) -> RotState:
         """Index KetBra by Side enum."""
