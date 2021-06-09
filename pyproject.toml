@@ -22,7 +22,8 @@ sympy = "^1.8"
 gkpywigxjpf = {version="^0.1.0", allow-prereleases=true}
 molspecutils = {version="^0.1.2a0", allow-prereleases=true}
 matplotlib = {version = "^3.3.4", optional = true}
-ipython = {version = "<=7.1.0", optional = true}
+ipython = {version = ">=7.2.0", optional = true}
+prompt-toolkit = {version = "<3.0.0", optional = true}
 PyQt5 = {version = "^5.15.4", optional = true}
 Sphinx = {version = "^3.5.4", optional = true}
 
@@ -30,7 +31,7 @@ Sphinx = {version = "^3.5.4", optional = true}
 pytest = "*"
 
 [tool.poetry.extras]
-interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks"]
+interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks", "prompt-toolkit"]
 doc = ["Sphinx"]
 
 [[tool.poetry.source]]
