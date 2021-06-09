@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.gridspec as grd
 import matplotlib.cm as cm
-from knickknacks.experiment import find_index
+from rotsim2d.utils import find_index
 import rotsim2d.dressedleaf as dl
 import molspecutils.molecule as mol
 

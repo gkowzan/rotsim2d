@@ -10,7 +10,7 @@ from collections import namedtuple
 import collections.abc as abc
 from math import isclose
 import numpy as np
-import knickknacks.units as u
+import rotsim2d.utils as u
 import molspecutils.molecule as mol
 import scipy.constants as C
 from rotsim2d.pathways import KetBra, Side, KSign
