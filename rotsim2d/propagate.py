@@ -9,7 +9,12 @@ import logging
 from typing import List, Union, Tuple, Optional, Sequence
 import numpy as np
 import scipy.constants as C
-import pyfftw.interfaces.scipy_fftpack as fftp
+try:
+    import pyfftw
+    pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
+    import pyfftw.interfaces.scipy_fftpack as fftp
+except ModuleNotFoundError:
+    import scipy.fftpack as fftp
 from rotsim2d import pathways as pw
 from rotsim2d.couple import four_couple
 import rotsim2d.dressedleaf as dl
@@ -218,7 +223,7 @@ class Propagator(CrossSectionMixin):
         dt = times[-1][1]-times[-1][0]
         xs = self.cross_section(kb, times)
         if isinstance(xs, (list, tuple, np.ndarray)):
-            xs_spectrum = fftp.fft(xs, planner_effort='FFTW_ESTIMATE')*dt
+            xs_spectrum = fftp.fft(xs)*dt
         else:
             xs_spectrum = 0.0
 
@@ -275,7 +280,7 @@ class MultiPropagator:
         dt = times[-1][1]-times[-1][0]
         xs = self.cross_section(times)
         if isinstance(xs, (list, tuple, np.ndarray)):
-            xs_spectrum = fftp.fft(xs, planner_effort='FFTW_ESTIMATE')*dt
+            xs_spectrum = fftp.fft(xs)*dt
         else:
             xs_spectrum = 0.0
 
