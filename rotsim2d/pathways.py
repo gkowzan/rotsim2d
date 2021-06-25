@@ -454,6 +454,7 @@ only_threecolor = make_only(lambda kb: kb.is_threecolor())
 remove_threecolor = make_remove(lambda kb: kb.is_threecolor())
 remove_interstates = make_remove(lambda kb: kb.is_interstate())
 only_interstates = make_only(lambda kb: kb.is_interstate())
+only_ketside = make_only(lambda kb: all(s == Side.KET for s in kb.sides()[:3]))
 
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
