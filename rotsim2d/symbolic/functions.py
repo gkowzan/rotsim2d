@@ -358,8 +358,10 @@ class RFactor:
             return all(factor(st-ot, deep=True) == S(0) for st, ot in zip(self.tuple, o))
 
     def __hash__(self):
-        """Won't work for symbolic coefficients."""
-        return hash(tuple([float(x) for x in self.tuple]))
+        # could also convert expressions to str but I'm not sure if the strings
+        # will be unambiguous
+        return hash(tuple([float(x.subs(J_i, 100) if isinstance(x, Basic) else x)
+                           for x in self.tuple]))
 
 
 # * Classify pathways with regards to R-factor
