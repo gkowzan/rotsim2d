@@ -66,9 +66,7 @@ def test_nineteen_trans_labels(pws):
 
 @pytest.fixture(scope='module')
 def ch3cl_mode():
-    sql_path = Path(hitran_cache) / 'CH3Cl.sqlite3'
-    engine = create_engine("sqlite:///" + str(sql_path))
-    ch3cl_mode = CH3ClAlchemyMode(engine)
+    ch3cl_mode = CH3ClAlchemyMode()
 
     return ch3cl_mode
 
