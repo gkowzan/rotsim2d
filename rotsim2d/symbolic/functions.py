@@ -245,14 +245,29 @@ class RFactor:
             R-factor as a function of 'dummy' (phis) or 'experimental` (thetas)
             angles, has to match `pterms`.
         """
-        expr = sum(gterms[i]*FU['TR8'](pterms[i]) for i in range(3))
+        rexpr = sum(gterms[i]*FU['TR8'](pterms[i]) for i in range(3))
+        return cls.from_expr(rexpr, angles)
+
+    @classmethod
+    def from_expr(cls, rexpr: Basic, angles: str='dummy'):
+        """Make :class:`RFactor` from R-factor expression.
+
+        Parameters
+        ----------
+        rexpr
+            SymPy expression for R-factor.
+        angles, optional
+            R-factor as a function of 'dummy' (phis) or 'experimental` (thetas)
+            angles, has to match `rexpr`.
+        """
         if angles == 'dummy':
             trigs = T00_trigs
         elif angles == 'experimental':
             trigs = T00_theta_trigs
-        _, d = cls._simplify(expr, trigs)
+        _, d = cls._simplify(rexpr, trigs)
 
         return cls(d, angles=angles)
+
 
     @classmethod
     def from_pathway(cls, pw: dl.Pathway, highj: bool=False, normalize: bool=False):
