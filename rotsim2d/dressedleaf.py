@@ -91,6 +91,8 @@ class Pathway:
         Short hand notation for `js`, see module-level description.
     trans_label: str
         Short hand notation for series of transitions in the pathway.
+    trans_label_deg: str
+        Ambiguous version of `trans_label`.
     tw_coherence: bool
         Whether the molecule is in coherent state after second interaction.
     peak: tuple of str
@@ -142,6 +144,11 @@ class Pathway:
         return ''.join((self._trans_label(i) for i in (0, 1, 2)))
 
     @property
+    def trans_label_deg(self):
+        ":meta private:"
+        return ''.join((self._trans_label(i, False) for i in (0, 1, 2)))
+
+    @property
     def experimental_label(self):
         ":meta private:"
         if self.leaf.is_esa():
@@ -158,11 +165,19 @@ class Pathway:
         ":meta private:"
         return self.leaf.color_tier()
 
-    def _trans_label(self, i):
+    def _trans_label(self, i: int, unique: bool=True):
         labels = {-1: 'P', 0: 'Q', 1: 'R'}
         trans = sorted(self.transitions[i], key=lambda x: x.nu)
+        side = self.leaf.sides()[i]
 
-        return labels[trans[1].j-trans[0].j]
+        label = labels[trans[1].j-trans[0].j]
+        if unique:
+            if trans[1].nu > 1:
+                label = str(trans[1].nu)+label
+            if side == Side.BRA:
+                label = '('+ label +')'
+
+        return label
 
     def _phi_angles(self, theta_angles: Union[Mapping, Sequence]) -> List[float]:
         """Order pulse/detection angles to evaluate R-factor."""
