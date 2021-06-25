@@ -1,6 +1,8 @@
 """Visualization procedures."""
 # * Imports
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Sequence, List, Mapping
+from copy import deepcopy
+import re
 from pathlib import Path
 import subprocess as subp
 import numpy as np
@@ -11,6 +13,8 @@ import matplotlib.gridspec as grd
 import matplotlib.cm as cm
 from rotsim2d.utils import find_index
 import rotsim2d.dressedleaf as dl
+import rotsim2d.symbolic.functions as sym
+from rotsim2d.visual.latexprinter import latex
 import molspecutils.molecule as mol
 
 # * Matplotlib visualization
@@ -331,3 +335,106 @@ def latex_compile(path, doc):
     doc_path.write_text(doc)
 
     subp.run(['pdflatex', doc_path.name], cwd=doc_dir, check=True)
+
+
+# * LaTeX table of coefficients
+def trans_label2latex(label: str):
+    """Write `label` with underline instead of parentheses."""
+    return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\textoverline{\1}', label)
+
+
+def classified_table_prep(classified: Dict[sym.RFactor, dl.Pathway], highj: bool=False) -> List[List]:
+    """Convert dict of R-factors and pathways to a table of coefficients.
+
+    Returns a list of rows. First element of a row is a list of `trans_label`s,
+    remaining elements of a row are `c` coefficients.
+    """
+    def labels(l: Sequence[dl.Pathway], highj: bool=False):
+        l1 = [pw.trans_label for pw in l]
+        if highj:
+            l1 = list(set([re.sub(r'[)(0-9]', '', x) for x in l1]))
+            l1.sort()
+            l1 = [r'\textbf{{{:s}}}'.format(v) for v in l1]
+        else:
+            l1.sort(key=lambda x: re.sub(r'[)(0-9]', '', x))
+            l1 = [trans_label2latex(v) for v in l1]
+        return l1
+
+    # represent pathways with transition labels
+    classified = {k: labels(v, highj) for k, v in classified.items()}
+    table = []
+    for k, v in classified.items():
+        if highj:
+            table.append([v] + list(k.tuple[1:]))
+        else:
+            table.append([v] + list(k.tuple))
+
+    return table
+
+
+def merge_tables(dtable: Mapping[str, List[List]]) -> List[List]:
+    """Merge different tables of coefficients into one.
+
+    Duplicate `trans_label`s are distinguished by subscripted `dtable` keys.
+    """
+    dtable = deepcopy(dtable)
+    table = []
+    keys = list(dtable.keys())
+    # uniquify labels
+    uniquify = set()
+    for row in dtable[keys[0]]:
+        labels, coeffs = row[0], row[1:]
+        for il in range(len(labels)):
+            # loop over other tables, rows, find labels to uniquify
+            for fkey in keys[1:]:
+                for frow in dtable[fkey]:
+                    flabels, fcoeffs = frow[0], frow[1:]
+                    for ifl in range(len(flabels)):
+                        if labels[il] == flabels[ifl] and coeffs != fcoeffs:
+                            uniquify.add(labels[il])
+    # actually uniquify the labels
+    for label in uniquify:
+        for key in keys:
+            for row in dtable[key]:
+                labels = row[0]
+                for il in range(len(labels)):
+                    if labels[il] == label:
+                        row[0][il] = labels[il]+r'\textsubscript{{{:s}}}'.format(key)
+    # now that labels are either unique or mean the same thing, merge the tables
+    while len(dtable[keys[0]]):
+        row = dtable[keys[0]].pop()
+        labels, coeffs = set(row[0]), row[1:]
+        for fkey in keys[1:]:
+            for ifrow in range(len(dtable[fkey])):
+                if coeffs == dtable[fkey][ifrow][1:]:
+                    frow = dtable[fkey].pop(ifrow)
+                    labels.update(frow[0])
+                    break
+        labels = list(labels)
+        labels.sort()
+        table.append([labels] + coeffs)
+
+    for key in keys:
+        assert len(dtable[key]) == 0
+
+    return table
+
+
+def classified_table_render(table: List[List]) -> str:
+    """Render table of coefficients as LaTeX table body."""
+    table = [' & '.join([', '.join(x[0])] + [latex(xx, mode='inline') for xx in x[1:]])
+             for x in table]
+    table.sort()
+
+    return '\\\\\n'.join(table)
+
+
+def classified_table(classified: Dict[sym.RFactor, dl.Pathway], highj: bool=False) -> str:
+    """Format dict of R-factors and pathways as a table of coefficients.
+
+    Uses custom LaTeX printer from `.latexprinter` module. With `highj` True
+    don't print the first coefficient.
+    """
+    table = classified_table_prep(classified, highj)
+
+    return classified_table_render(table)
