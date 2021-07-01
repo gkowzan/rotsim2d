@@ -406,8 +406,8 @@ def dl_T00s(dl: dl.Pathway, angles):
     
 
 def classify_dls(dressed_pws: Sequence[dl.Pathway], rfactors: Sequence[RFactor],
-                 states: bool=False) -> Dict[RFactor, dl.Pathway]:
-    """Return a mapping between polarization expressions and pathways in `dressed_pws`.
+                 states: bool=False) -> Dict[RFactor, List[dl.Pathway]]:
+    """Return a mapping between R-factors and pathways in `dressed_pws`.
 
     If `states` is True, convert Pathways to lists of states. `rfactors` are
     R-factors as functions of experimental angles (thetas) not dummy angles
@@ -454,7 +454,8 @@ def suppression_angles(exprs: Sequence[RFactor],
     `angles` contains linear polarization angles of up to three pulses in
     sequence. If `angles` is None, then the first angle is set to 0.
     """
-    return {k: solve_det_angle(k, angles=angles) for k in exprs}
+    return {k: solve_det_angle(k, angles=angles)
+            for k in exprs}
 
 
 def dummify_angle_expr(angle_expr: Basic) -> Basic:
@@ -521,8 +522,8 @@ def detection_angles(angles: Sequence, meths=None):
     Generate a minimal complete set of non-R-factor-equivalent pathways
     including Q-branch transitions. The resulting dict can be used with
     :func:`rotsim2d.dressedleaf.equiv_peaks` or
-    :func:`rotsim2d.dressedleaf.split_by_equiv_peaks` to identify other pathways that are
-    also zeroed by any of the detection angles.
+    :func:`rotsim2d.dressedleaf.split_by_equiv_peaks` to identify other pathways
+    that are also zeroed by any of the detection angles.
 
     Parameters
     ----------

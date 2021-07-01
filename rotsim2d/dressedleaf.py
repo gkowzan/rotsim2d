@@ -118,12 +118,17 @@ class Pathway:
         self.coherences, self.transitions, wbras = leaf._pathway_info()
         self.js = tuple(x[0] for x in wbras)
         self.light_inds = tuple(x[1] for x in wbras)
-        self.const = (1.0j/2/C.hbar)**(len(self.transitions)-1)*self.leaf.total_side()
+        self.const = (1.0j/2/C.hbar)**(len(self.transitions)-1)*\
+            self.leaf.total_side()
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
-        self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name, self.coherences[0][1].name),
-                     "|{:s}><{:s}|".format(self.coherences[2][0].name, self.coherences[2][1].name))
-        self.abstract_peak = (abstract_pair_label(self.coherences[0], self.leaf.root.ket),
-                              abstract_pair_label(self.coherences[2], self.leaf.root.ket))
+        self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name,
+                                           self.coherences[0][1].name),
+                     "|{:s}><{:s}|".format(self.coherences[2][0].name,
+                                           self.coherences[2][1].name))
+        self.abstract_peak = (abstract_pair_label(self.coherences[0],
+                                                  self.leaf.root.ket),
+                              abstract_pair_label(self.coherences[2],
+                                                  self.leaf.root.ket))
 
     def __eq__(self, o):
         if not isinstance(o, Pathway):

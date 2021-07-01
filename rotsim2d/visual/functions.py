@@ -343,7 +343,8 @@ def trans_label2latex(label: str):
     return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\textoverline{\1}', label)
 
 
-def classified_table_prep(classified: Dict[sym.RFactor, dl.Pathway], highj: bool=False) -> List[List]:
+def classified_table_prep(classified: Dict[sym.RFactor, dl.Pathway],
+                          highj: bool=False) -> List[List]:
     """Convert dict of R-factors and pathways to a table of coefficients.
 
     Returns a list of rows. First element of a row is a list of `trans_label`s,
@@ -422,14 +423,16 @@ def merge_tables(dtable: Mapping[str, List[List]]) -> List[List]:
 
 def classified_table_render(table: List[List]) -> str:
     """Render table of coefficients as LaTeX table body."""
-    table = [' & '.join([', '.join(x[0])] + [latex(xx, mode='inline') for xx in x[1:]])
+    table = [' & '.join([', '.join(x[0])] +
+                        [latex(xx, mode='inline') for xx in x[1:]])
              for x in table]
     table.sort()
 
     return '\\\\\n'.join(table)
 
 
-def classified_table(classified: Dict[sym.RFactor, dl.Pathway], highj: bool=False) -> str:
+def classified_table(classified: Dict[sym.RFactor, dl.Pathway],
+                     highj: bool=False) -> str:
     """Format dict of R-factors and pathways as a table of coefficients.
 
     Uses custom LaTeX printer from `.latexprinter` module. With `highj` True
