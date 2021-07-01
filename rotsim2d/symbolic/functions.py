@@ -5,6 +5,7 @@ dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.symbolic.results`."""
 # * Imports
 from collections.abc import Mapping
+import inspect
 import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
@@ -13,7 +14,9 @@ import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
 from rotsim2d.symbolic.common import *
 from rotsim2d.symbolic.results import rfactors_highj, gfactors, gfactors_highj, T00_exprs
-from typing import Sequence, Dict, List, Tuple, Optional, NewType, Any, Union
+from typing import (Sequence, Dict, List, Tuple, Optional, NewType, Any, Union,
+                    Callable)
+import re
 
 #: Dummy type for any SymPy expressions, since SymPy is not annotated
 # Expr = NewType('Expr', Any)
@@ -217,14 +220,18 @@ class RFactor:
             self.dict = coeffs
 
         if angles == 'dummy':
-            self.angles = (phi, phj, phk, phl)
             self.trigs = T00_trigs
+            self.angles = (phi, phj, phk, phl)
+            self.angles_type = angles
         elif angles == 'experimental':
             self.trigs = T00_theta_trigs
             self.angles = thetas
+            self.angles_type = angles
         else:
             raise ValueError("angles has to be either 'dummy' or 'experimental'")
 
+        self._numeric = None
+        self._numeric_rel = None
         self.dict_to_expr()
 
     def __repr__(self):
@@ -364,6 +371,53 @@ class RFactor:
         """Return R-factor expressions relative to XXXX polarization."""
         return self._simplify(self.expr/self.expr_xxxx(), self.trigs)[0]
 
+    def numeric(self, thetai, thetaj, thetak, thetal, Ji=None):
+        """Try to efficiently evaluate R-factor with NumPy.
+
+        It is always safe to pass `Ji` argument. It will be ignored if it's not
+        needed. This is because even fully general R-factors sometimes do not
+        depend on `J_i`.
+        """
+        if self._numeric is None:
+            args = list(self.angles)
+            if J_i in self.expr.free_symbols:
+                args = args + [J_i]
+            self._numeric = lambdify(args, self.expr)
+            self._numeric_nargs = len(inspect.signature(
+                self._numeric).parameters)
+
+        args = (thetai, thetaj, thetak, thetal, Ji)
+
+        return self._numeric(*args[:self._numeric_nargs])
+
+    def numeric_rel(self, thetai, thetaj, thetak, thetal, Ji=None):
+        """Try to efficiently evaluate relative R-factor with NumPy.
+
+        It is always safe to pass `Ji` argument. It will be ignored if it's not
+        needed. This is because even fully general R-factors sometimes do not
+        depend on `J_i`.
+        """
+        if self._numeric_rel is None:
+            args = list(self.angles)
+            expr = self.expr_relative()
+            if J_i in expr.free_symbols:
+                args = args + [J_i]
+            self._numeric_rel = lambdify(args, expr)
+            self._numeric_rel_nargs = len(inspect.signature(
+                self._numeric_rel).parameters)
+
+        args = (thetai, thetaj, thetak, thetal, Ji)
+
+        return self._numeric_rel(*args[:self._numeric_rel_nargs])
+
+    def det_angle(self, angles: Optional[Sequence]=None) -> Basic:
+        """Return expr. for `tan(theta_l)` which zeroes `rexpr`.
+
+        `angles` contains linear polarization angles of up to three pulses in
+        sequence. If `angles` is None, then the first angle is set to 0.
+        """
+        return solve_det_angle(self, angles)
+    
     def __eq__(self, o):
         if isinstance(o, RFactor):
             return self == o.tuple
@@ -441,10 +495,14 @@ def solve_det_angle(rexpr: RFactor, angles: Optional[Sequence]=None) -> Basic:
     """
     if angles is None:
         angles = [0]
-    expr = expand_trig(rexpr.expr).subs(dict(zip(thetas, angles))).subs(
-        {sin(theta_l): x1, cos(theta_l): x2}).subs({x1: x1x2*x2, x2: x1/x1x2})
+    expr = expand_trig(rexpr.expr).subs(dict(zip(rexpr.angles, angles))).subs(
+        {sin(rexpr.angles[3]): x1, cos(rexpr.angles[3]): x2}).subs({x1: x1x2*x2, x2: x1/x1x2})
+    sol = solve(expr, x1x2)
 
-    return atan(factor(expand_trig(solve(expr, x1x2)[0]), deep=True))
+    if sol:
+        return atan(factor(expand_trig(sol[0]), deep=True))
+    else:
+        return None
 
 
 def suppression_angles(exprs: Sequence[RFactor],
@@ -458,33 +516,43 @@ def suppression_angles(exprs: Sequence[RFactor],
             for k in exprs}
 
 
-def dummify_angle_expr(angle_expr: Basic) -> Basic:
+def dummify_angle_expr(angle_expr: Basic,
+                       angles_vars: Optional[Sequence[Basic]]=thetas) -> Basic:
     """Substitute dummy variables for tangents of angles.
 
     SymPy struggles with solving equations involving several trigonometric
     functions.  Simplify the task by solving for tangents of angles.
     """
-    angle_expr = factor(angle_expr.subs({sin(theta_j): x1, cos(theta_j): x2}).subs({x1: x1x2*x2, x2: x1/x1x2}))
-    angle_expr = factor(angle_expr.subs({sin(theta_k): x3, cos(theta_k): x4}).subs({x3: x3x4*x4, x4: x3/x3x4}))
+    angle_expr = factor(
+        angle_expr.\
+        subs({sin(angles_vars[1]): x1, cos(angles_vars[1]): x2}).\
+        subs({x1: x1x2*x2, x2: x1/x1x2}))
+    angle_expr = factor(
+        angle_expr.\
+        subs({sin(angles_vars[2]): x3, cos(angles_vars[2]): x4}).\
+        subs({x3: x3x4*x4, x4: x3/x3x4}))
 
     return angle_expr
 
 
-def common_angles(exprs: Sequence[Basic]) -> Dict[Basic, Basic]:
-    """Find angles simultaneously zeroing all in `exprs`.
+def common_angles(exprs: Sequence[Basic],
+                  angles_vars: Optional[Sequence[Basic]]=thetas) -> Dict[Basic, Basic]:
+    r"""Find angles simultaneously zeroing all in `exprs`.
 
-    Uses :func:`sympy.solve`.
+    The expressions in `exprs` should be formulas for detection angle,
+    :math:`\theta_l`, zeroing some pathways, as obtained by calling
+    :func:`solve_det_angle`. Uses :func:`sympy.solve`.
     """
-    back_subs = {x0: tan(theta_l), x1x2: tan(theta_j), x3x4: tan(theta_k)}
-    system = [dummify_angle_expr(v)-x0 for v in exprs]
+    back_subs = {x0: tan(angles_vars[3]), x1x2: tan(angles_vars[1]), x3x4: tan(angles_vars[2])}
+    system = [dummify_angle_expr(v, angles_vars)-x0 for v in exprs]
     sols = solve(system, [x1x2, x3x4, x0], dict=True)
     sols = [{k.subs(back_subs): v.subs(back_subs) for k, v in s.items()} for s in sols]
 
     return sols
 
 
-def classify_suppression(classified: Dict[RFactor, dl.Pathway],
-                         angles: Dict[RFactor, Basic]) -> Dict[Basic, dl.Pathway]:
+def classify_suppression(classified: Dict[RFactor, Sequence[dl.Pathway]],
+                         angles: Dict[RFactor, Basic]) -> Dict[Basic, List[dl.Pathway]]:
     """Return a map between suppression angles and pathways.
 
     `classified` is the map between expressions and pathways returned by
@@ -497,7 +565,8 @@ def classify_suppression(classified: Dict[RFactor, dl.Pathway],
     return angles_to_pws
 
 
-def pathway_angles(pws: Sequence[dl.Pathway], angles: Sequence) -> Dict[Basic, List[dl.Pathway]]:
+def pathway_angles(pws: Sequence[dl.Pathway], angles: Sequence,
+                   angles_vars: Optional[Sequence[Basic]]=thetas) -> Dict[Basic, List[dl.Pathway]]:
     """Return a map between detection angles and elements of `pws` they suppress.
 
     Parameters
@@ -510,13 +579,15 @@ def pathway_angles(pws: Sequence[dl.Pathway], angles: Sequence) -> Dict[Basic, L
     pws_rfactors = [RFactor.from_pathway(pw, True, True) for pw in pws]
     # pws_rfactors = [dl_to_rfactor(pw, rfactors_highj) for pw in pws]
     classified = classify_dls(pws, pws_rfactors)
-    zeroing_angles = suppression_angles(classified.keys(), angles)
+    zeroing_angles = suppression_angles(classified.keys(), angles,
+                                        angles_vars)
     ret = classify_suppression(classified, zeroing_angles)
 
     return ret
 
 
-def detection_angles(angles: Sequence, meths=None):
+def detection_angles(angles: Sequence, meths: Optional[Sequence[Callable]]=None,
+                     angles_vars: Optional[Sequence[Basic]]=thetas):
     """Zeroing det. angles for a minimal complete set of pathways.
 
     Generate a minimal complete set of non-R-factor-equivalent pathways
@@ -541,6 +612,77 @@ def detection_angles(angles: Sequence, meths=None):
     kbs = pw.gen_pathways([5], rotor='symmetric', kiter_func=lambda x: [1],
                           meths=meths)
     pws = dl.Pathway.from_kb_list(kbs)
-    det_angles = pathway_angles(pws, angles)
+    det_angles = pathway_angles(pws, angles, angles_vars)
 
     return det_angles
+
+
+# ** RFactorPathways
+class RFactorPathways:
+    """Container for :class:`RFactor` and associated
+    :class:`rotsim2d.dressedleaf.Pathway`s.
+
+    Attributes
+    ----------
+    rfactor: RFactor
+        R-factor associated with these pathways.
+    pws: list of :class:`rotsim2d.dressedleaf.Pathway`
+        List of pathways.
+    trans_labels: list of str
+        Combined transition labels for all included pathways.
+    trans_labels_deg: list of str
+        Combined degenerate transition labels for all included pathways.
+    peak_labels: list of str
+        Combined 2D peak labels for all included pathways.
+    """
+    def __init__(self, rfactor: RFactor, pws: List[dl.Pathway]):
+        self.rfactor = rfactor
+        self.pws = pws
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "RFactorPathways(rfactor={rfac!r}, peak_labels={pl!r}, trans_labels_deg={tld!r})".format(
+            rfac=self.rfactor.tuple, tld=self.trans_labels_deg, pl=self.peak_labels
+        )
+    
+    @classmethod
+    def from_pwlist(cls, pwlist: Sequence[dl.Pathway], highj: bool=False,
+                    normalize: bool=False) -> List['RFactorPathways']:
+        rfactors = [RFactor.from_pathway(pw, highj, normalize) for pw in pwlist]
+        classified_pws = classify_dls(pwlist, rfactors)
+
+        return [cls(rfactor, pws) for rfactor, pws in classified_pws.items()]
+
+    @property
+    def trans_labels(self) -> List[str]:
+        ":meta private:"
+        labels = [pw.trans_label for pw in self.pws]
+        labels.sort(key=lambda x: re.sub(r'[)(0-9)]', '', x))
+
+        return labels
+
+    @property
+    def trans_labels_deg(self) -> List[str]:
+        ":meta private:"
+        labels = list(set([pw.trans_label_deg for pw in self.pws]))
+        labels.sort()
+
+        return labels
+
+    @property
+    def peak_labels(self) -> List[str]:
+        ":meta private:"
+        labels = list(set([pw.peak_label for pw in self.pws]))
+        labels.sort()
+
+        return labels
+
+
+def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
+                      rfpws_max: Sequence[RFactorPathways]):
+    """Optimize contrast between two sets of R-factors.
+
+    This is useful in case there are no analytical angles that simultaneously
+    zero all R-factors in `rfpws_min`."""
