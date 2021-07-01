@@ -46,6 +46,16 @@ import rotsim2d.couple as cp
 
 #: Spectroscopic notation for transitions
 dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
+def abstract_line_label(pair: Tuple[mol.RotState]) -> str:
+    ":meta private:"
+    pair = sorted(pair, key=lambda x: x.nu)
+    dnu = abs(pair[1].nu-pair[0].nu)
+    label = str(dnu) if dnu>1 else ""
+    label += dj_to_letter[pair[1].j-pair[0].j]
+
+    return label
+
+
 def abstract_format(dnu: int, dj: int):
     ":meta private:"
     if dnu==0 and dj==0:
@@ -152,6 +162,12 @@ class Pathway:
     def trans_label_deg(self):
         ":meta private:"
         return ''.join((self._trans_label(i, False) for i in (0, 1, 2)))
+
+    @property
+    def peak_label(self):
+        ":meta private:"
+        return abstract_line_label(self.coherences[0])+\
+            abstract_line_label(self.coherences[2])
 
     @property
     def experimental_label(self):
