@@ -9,7 +9,7 @@ import inspect
 import itertools as it
 from sympy import *
 import sympy.physics.quantum.cg as cg
-from molspecutils.molecule import SymTopState, DiatomState
+from molspecutils.molecule import RotState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
 from rotsim2d.symbolic.common import *
@@ -776,3 +776,20 @@ def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
 
     This is useful in case there are no analytical angles that simultaneously
     zero all R-factors in `rfpws_min`."""
+# * Rotational coherence
+# Retrieve rotational coherence expressions from Pathways.
+def rot_expression(state: RotState, jref: int) -> Basic:
+    """Rotational energy expression relative to `jref`."""
+    dj = state.j-jref
+    expr = (J_i+dj)*(J_i+dj+1)
+    globs = globals()
+    expr = globs['nu'+str(state.nu)] + \
+        globs['B'+str(state.nu)]*(J_i+dj)*(J_i+dj+1)
+
+    return expr
+
+
+def rcs_expression(pair: Tuple[RotState], jref: int) -> Basic:
+    """Return rotational beat expression."""
+    return factor(rot_expression(pair[1], jref)-
+                  rot_expression(pair[0], jref), deep=True)
