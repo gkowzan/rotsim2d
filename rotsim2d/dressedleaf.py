@@ -108,6 +108,8 @@ class Pathway:
     peak: tuple of str
         Pair of strings representing coherences created by first and third
         interaction (2D peak label).
+    peak_label: str
+        Two-letter identifier of the 2D peak.
     abstract_peak: tuple of str
         Same as `peak` but using P-, Q-, R-branch notation instead of absolute
         `J` numbers.
@@ -119,8 +121,9 @@ class Pathway:
         pathway.
     """
     fields = ['leaf', 'coherences', 'transitions', 'js', 'light_inds', 'const',
-              'geo_label', 'trans_label', 'tw_coherence', 'peak', 'abstract_peak',
-              'experimental_label', 'colors']
+              'geo_label', 'trans_label', 'trans_label_deg', 'tw_coherence',
+              'peak', 'peak_label', 'abstract_peak', 'experimental_label',
+              'colors']
 
     def __init__(self, leaf: KetBra):
         self.leaf = leaf
