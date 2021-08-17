@@ -377,7 +377,7 @@ class DressedPathway(Pathway):
         """
         ret = self.isotropy*self.const*self.geometric_factor(angles=angles)
         if tw is not None:
-            ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1) + self.gamma(1)))
+            ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1)))
 
         return ret
 
@@ -458,7 +458,7 @@ class DressedLeaf:
         """Intensity of the pathway."""
         ret = self.isotropy*self.const*four_couple(self.js, self.pols)
         if tw is not None and self.tw_coherence:
-            ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1) + self.gamma(1)))
+            ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1)))
 
         return ret
 
