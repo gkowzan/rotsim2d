@@ -371,17 +371,17 @@ class KetBra(at.NodeMixin):
         """Interactions which generated this KetBra."""
         return [x for x in self.ancestors if isinstance(x, LightInteraction)]
 
-    def interaction(self, name: str) -> LightInteraction:
+    def interaction(self, name: str) -> Optional[LightInteraction]:
         """Return :class:`LightInteraction` with given name."""
         for x in self.ancestors:
             if isinstance(x, LightInteraction) and x.name == name:
                 return x
 
-    def ksigns(self) -> Tuple[KSign]:
+    def ksigns(self) -> Tuple[KSign, ...]:
         """Return signs of wavevectors of interactions."""
         return tuple(i.sign for i in self.interactions())
 
-    def sides(self) -> Tuple[Side]:
+    def sides(self) -> Tuple[Side, ...]:
         """Return sides of DM on which interactions acted."""
         return tuple(i.side for i in self.interactions())
 
@@ -638,7 +638,7 @@ def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: Callable=None) -
     return roots
 
 
-def gen_excitations(root, light_names, parts, meths=None) -> List[KetBra]:
+def gen_excitations(root, light_names, parts, meths=None) -> KetBra:
     root = multi_excite(root, light_names, parts=parts)
     if meths is not None:
         for meth in meths:
