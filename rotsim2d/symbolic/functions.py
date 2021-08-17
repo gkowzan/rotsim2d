@@ -277,7 +277,8 @@ class RFactor:
 
 
     @classmethod
-    def from_pathway(cls, pw: dl.Pathway, highj: bool=False, normalize: bool=False):
+    def from_pathway(cls, pw: dl.Pathway, highj: bool=False, normalize: bool=False,
+                     only_angles: bool=False):
         """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
 
         Parameters
@@ -289,6 +290,8 @@ class RFactor:
         normalize
             Make the sign of the common factor positive and flip the signs of
             the coefficients if the `c12` coefficient is negative.
+        only_angles
+            Set 'c00' to 1.
         """
         if highj:
             gterms = gfactors_highj[pw.geo_label]
@@ -298,6 +301,9 @@ class RFactor:
         subs_dict = dict(zip([phi, phj, phk, phl], pw._phi_angles(thetas)))
         pterms = [e.subs(subs_dict) for e in T00_exprs[:]]
         rfac = cls.from_gterms(gterms, pterms, 'experimental')
+        if only_angles:
+            rfac.dict['c0'] = 1
+            rfac.dict_to_expr()
         if normalize:
             rfac.dict['c0'] = abs(rfac.dict['c0'])
             if rfac.dict['c12'] < 0:
