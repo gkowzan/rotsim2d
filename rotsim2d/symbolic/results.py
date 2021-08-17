@@ -1,7 +1,7 @@
 """Derived symbolic expressions for angular momentum dependence and polarization
 dependence of four-fold dipole interaction operator.
 
-All the contents can obtained by using :mod:`rotsim2d.angular.symbolic` functions.  See
+All the contents can obtained by using :mod:`rotsim2d.symbolic.functions` functions.  See
 :download:`examples/generate_angular.symbolic_results.py <../../examples/generate_angular.symbolic_results.py>`.
 """
 # * Imports
