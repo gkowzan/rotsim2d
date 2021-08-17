@@ -272,7 +272,10 @@ class RFactor:
             trigs = T00_trigs
         elif angles == 'experimental':
             trigs = T00_theta_trigs
-        _, d = cls._simplify(rexpr, trigs)
+        else:
+            raise ValueError("`trigs` has to be either 'experimental' or 'dummy'")
+        _, d = cls._simplify(rexpr, trigs) # 2nd run gets rid of last two dups
+        _, d = cls._simplify(_, trigs)
 
         return cls(d, angles=angles)
 
