@@ -1,6 +1,9 @@
+import pytest
 from rotsim2d.dressedleaf import geometric_labels
 import rotsim2d.symbolic.results as symr
 import rotsim2d.symbolic.functions as sym
+import rotsim2d.pathways as pw
+import rotsim2d.dressedleaf as dl
 
 def test_gfactors():
     for js, label in geometric_labels.items():
@@ -21,56 +24,26 @@ def test_gfactors_highj():
             assert symr.factor(symr.nsimplify(
                 symr.gfactors_highj[k][i]-gfactors_highj[k][i]), deep=True) == symr.S(0)
 
-def test_rfactors():
-    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
-                for k in symr.gfactors.keys()}
-    for k in rfactors.keys():
-        assert symr.factor(symr.nsimplify(
-            symr.rfactors[k]-rfactors[k].expr), deep=True) == symr.S(0)
+@pytest.fixture
+def pws():
+    """Generate a list of pathways for further testing."""
+    kbs = pw.gen_pathways([5], rotor='symmetric',
+                          kiter_func=lambda x: [1], pump_overlap=False)
+    pws = dl.Pathway.from_kb_list(kbs)
 
-def test_rfactors_dict():
-    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
-                for k in symr.gfactors.keys()}
-    for label in rfactors.keys():
-        print(label)
-        print(rfactors[label].dict)
-        assert rfactors[label] == symr.rfactors_dict[label]
-
-def test_rfactors_xxxx():
-    rfactors = {k: sym.RFactor.from_gterms(symr.gfactors[k])
-                for k in symr.gfactors.keys()}
-    for k in rfactors.keys():
-        assert symr.factor(symr.nsimplify(
-            symr.rfactors_xxxx[k]-rfactors[k].expr_xxxx()), deep=True) == symr.S(0)
-
-def test_rfactors_relative():
-    for k in symr.gfactors:
-        print(k)
-        actual = sym.RFactor.from_gterms(symr.gfactors[k]).expr_relative()
-        assert symr.simplify(symr.factor(symr.powdenest(symr.nsimplify(actual-symr.rfactors_relative[k]), force=True), deep=True)) == symr.S(0)
-
-def test_rfactors_highj():
-    for k in symr.gfactors_highj:
-        actual = sym.RFactor.from_gterms(symr.gfactors_highj[k]).expr
-        assert symr.factor(symr.nsimplify(actual-symr.rfactors_highj[k]), deep=True) == symr.S(0)
-
-def test_rfactors_highj_dict():
-    for k in symr.gfactors_highj:
-        expected = sym.RFactor.from_gterms(symr.gfactors_highj[k])
-        assert expected == symr.rfactors_highj_dict[k]
+    return pws
 
 
-def test_vaccaro_angles():
-    expected = [-sym.atan(sym.Rational(3, 4)), sym.atan(sym.Rational(1, 2)),
-                -sym.atan(2), -sym.atan(sym.Rational(1, 3))]
-    actual = sym.detection_angles([sym.pi/2, sym.pi/4, sym.pi/2])
+def test_rfactors(pws):
+    for p in pws:
+        rfactor = sym.RFactor.from_pathway(p)
+        assert rfactor == sym.RFactor(symr.rfactors_dict[p.trans_label],
+                                      angles='experimental')
 
-    assert expected == list(actual.keys())
+def test_rfactors_highj(pws):
+    for p in pws:
+        rfactor = sym.RFactor.from_pathway(p, highj=True)
+        assert rfactor == sym.RFactor(symr.rfactors_highj_dict[p.trans_label],
+                                      angles='experimental')
 
 
-def test_gk_angles():
-    expected = [sym.atan(sym.Rational(3, 2)), sym.atan(4), -sym.pi/4,
-                sym.atan(sym.Rational(1, 4)), sym.atan(sym.Rational(2, 3))]
-    actual = sym.detection_angles([0, sym.pi/4, sym.pi/2])
-
-    assert expected == list(actual.keys())

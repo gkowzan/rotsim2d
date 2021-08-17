@@ -101,18 +101,6 @@ def test_coherence_frequencies_are_real(dressed_pws):
             assert pw.nu(i).imag == 0
 
 
-def test_split_by_equiv_peaks(dressed_pws):
-    vac_angles_map = sym.detection_angles([sym.pi/2, sym.pi/4, sym.pi/2])
-    peaks, dls = dl.peak_list(dressed_pws, return_dls=True)
-    vac_peaks_by_angles = dl.split_by_equiv_peaks(vac_angles_map, peaks, dls)
-    expected = {-sym.atan(sym.Rational(3, 4)): 32,
-                sym.atan(sym.Rational(1, 2)): 80,
-                -sym.atan(2): 32,
-                -sym.atan(sym.Rational(1, 3)): 8}
-
-    assert expected == {k: len(v) for k, v in vac_peaks_by_angles.items()}
-
-
 @pytest.fixture
 def peak_list(dressed_pws):
     return dl.peak_list(dressed_pws)
