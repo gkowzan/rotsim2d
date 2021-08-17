@@ -60,7 +60,7 @@ def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
 
 
 def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarray]],
-                          domains: Sequence[str], freq_shifts: Optional[Sequence[float]]) -> np.ndarray:
+                          domains: Sequence[str], freq_shifts: Optional[Sequence[float]]=None, p: float=1.0) -> np.ndarray:
     """Calculate response for a single DressedLeaf."""
     # validate inputs
     if len(coords) != len(domains):
@@ -82,7 +82,7 @@ def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarr
         else:
             nu = dl.nu(i)
 
-        resps.append(leaf_term(nu, dl.gamma(i), coord, domains[i]))
+        resps.append(leaf_term(nu, dl.gamma(i)*p, coord, domains[i]))
 
     resp = resps[0]*dl.intensity()
     if len(resps) > 1:
