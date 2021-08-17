@@ -521,12 +521,18 @@ def solve_det_angle(rexpr: RFactor, angles: Optional[Sequence]=None) -> Basic:
         angles = [0]
     expr = expand_trig(rexpr.expr).subs(dict(zip(rexpr.angles, angles))).subs(
         {sin(rexpr.angles[3]): x1, cos(rexpr.angles[3]): x2}).subs({x1: x1x2*x2, x2: x1/x1x2})
-    sol = solve(expr, x1x2)
 
+    sol = solve(expr, x1x2)
     if sol:
         return atan(factor(expand_trig(sol[0]), deep=True))
-    else:
-        return None
+
+    sol = solve(expr, x1)
+    if sol:
+        return asin(factor(expand_trig(sol[0]), deep=True))
+
+    sol = solve(expr, x2)
+    if sol:
+        return acos(factor(expand_trig(sol[0]), deep=True))
 
 
 def suppression_angles(exprs: Sequence[RFactor],
