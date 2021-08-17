@@ -668,6 +668,8 @@ class RFactorPathways:
     def __init__(self, rfactor: RFactor, pws: List[dl.Pathway]):
         self.rfactor = rfactor
         self.pws = pws
+        self.props = {}
+        self.det_angle = None
 
     def __repr__(self):
         return str(self)
@@ -684,6 +686,10 @@ class RFactorPathways:
         classified_pws = classify_dls(pwlist, rfactors)
 
         return [cls(rfactor, pws) for rfactor, pws in classified_pws.items()]
+
+    def calc_det_angle(self, angles: Optional[Sequence]=None):
+        """Calculate zeroing detection angle for this R-factor."""
+        self.det_angle = solve_det_angle(self.rfactor, angles)
 
     @property
     def trans_labels(self) -> List[str]:
@@ -709,7 +715,60 @@ class RFactorPathways:
 
         return labels
 
+    def add_property(self, name: str, d: Mapping):
+        assert len(d) == len(self.pws)
+        self.props[name] = d
 
+
+def calc_rfactors(rf_pw: RFactorPathways, *args, **kwargs):
+    """Calculate J-dependent R-factors and uniquify them."""
+    rf_pw.add_property(
+        'rfactors', [RFactor.from_pathway(pw, *args, **kwargs)
+                     for pw in rf_pw.pws])
+
+
+def calc_angle_funcs(rf_pw: RFactorPathways, angles: Sequence):
+    """Generate J-dependent zeroing angle functions."""
+    angle_funcs, angle_exprs = [], []
+    for rf in rf_pw.props['rfactors']:
+        rf_det_angle = tan(solve_det_angle(rf, angles=angles[:3]))
+        angle_exprs.append(rf_det_angle)
+        if J_i in rf_det_angle.free_symbols:
+            angle_funcs.append(
+                lambdify(J_i, simplify(rf_det_angle)))
+        else:
+                angle_funcs.append(None)
+
+    rf_pw.add_property('angle_funcs', angle_funcs)
+    rf_pw.add_property('angle_exprs', angle_exprs)
+
+
+def calc_angle_amps(rf_pw: RFactorPathways, angles_num: Sequence[float],
+                    js: Sequence[int]):
+    """Calculate geometric amplitudes for specific angles and J_i values."""
+    amps = []
+    for rf in rf_pw.props['rfactors']:
+        d = np.atleast_1d(rf.numeric_rel(*(angles_num+[js])))
+        if len(d) == 1:
+            d = np.full(len(js), d[0])
+        amps.append(d)
+
+    rf_pw.add_property('angle_amps', amps)
+
+
+def calc_relative_exprs(rf_pw: RFactorPathways, angles: Sequence):
+    """Calculate relative amplitudes for specified angles."""
+    exprs = []
+    for rf in rf_pw.props['rfactors']:
+        expr = rf.expr_relative()
+        expr = expr.subs(dict(zip(rf.angles, angles)))
+        expr = fu(expr)     # sym.FU['TR11'] might be enough
+
+        exprs.append(expr)
+
+    rf_pw.add_property('exprs_relative', exprs)
+
+    
 def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
                       rfpws_max: Sequence[RFactorPathways]):
     """Optimize contrast between two sets of R-factors.
