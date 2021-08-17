@@ -452,15 +452,19 @@ class RFactor:
 
 # * Classify pathways with regards to R-factor
 # ** Functions
-def dl_gfactors(dl: dl.Pathway):
+def dl_gfactors(dl: dl.Pathway, evalf: bool=True):
     """Return G-factors for a :class:`rotsim2d.dressedleaf.Pathway`."""
     js = list(dl.js)
-    return (gfactor_expr(*(js + [0])).evalf(),
-            gfactor_expr(*(js + [1])).evalf(),
-            gfactor_expr(*(js + [2])).evalf())
+    gfactors = (gfactor_expr(*(js + [0])),
+                gfactor_expr(*(js + [1])),
+                gfactor_expr(*(js + [2])))
+    if evalf:
+        gfactors = tuple(gfactor.evalf() for gfactor in gfactors)
+
+    return gfactors
 
 
-def dl_T00s(dl: dl.Pathway, angles):
+def dl_T00s(dl: dl.Pathway, angles, evalf: bool=True):
     """Return polarization components a :class:`rotsim2d.dressedleaf.Pathway`."""
     phis = [phi, phj, phk, phl]
     phi_angles = dl._phi_angles(angles)
@@ -470,10 +474,13 @@ def dl_T00s(dl: dl.Pathway, angles):
         sqrt(5)*(cos(phi - phj - phk + phl) +
                  cos(phi - phj + phk - phl) +
                  6*cos(phi + phj - phk - phl))/60]
+    T00_exprs = tuple(T00_expr.subs(dict(zip(phis, phi_angles)))
+                      for T00_expr in T00_exprs)
 
-    return (T00_exprs[0].subs(dict(zip(phis, phi_angles))).evalf(),
-            T00_exprs[1].subs(dict(zip(phis, phi_angles))).evalf(),
-            T00_exprs[2].subs(dict(zip(phis, phi_angles))).evalf())
+    if evalf:
+        T00_exprs = tuple(T00_expr.evalf() for T00_expr in T00_exprs)
+
+    return T00_exprs
     
 
 def classify_dls(dressed_pws: Sequence[dl.Pathway], rfactors: Sequence[RFactor],
