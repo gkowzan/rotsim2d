@@ -198,7 +198,8 @@ T00_theta_trigs = [cos(theta_i + theta_j - theta_k - theta_l),
 # ** Simplify R-factor
 class RFactor:
     def __init__(self, coeffs: Union[Mapping, Sequence], angles: str='dummy'):
-        """Expression describing polarization and angular momentum dependence of a pathway.
+        """Expression describing polarization and angular momentum dependence of a
+        pathway.
 
         Parameters
         ----------
@@ -343,8 +344,10 @@ class RFactor:
         subs1 = dict(zip(subterms, [x1, x2, x3]))
         subs2 = dict(zip([x1, x2, x3], subterms))
         expr = expr.subs(subs1)
-        expr_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True), force=True)
-                     for k, v in collect(expand(expr), [x1, x2, x3], evaluate=False).items()}
+        expr_dict = {k: powdenest(factor(powdenest(v, force=True), deep=True),
+                                  force=True)
+                     for k, v in collect(expand(expr), [x1, x2, x3],
+                                         evaluate=False).items()}
         expr = collect(factor(sum(k*v for k, v in expr_dict.items())), [x1, x2, x3])
         ret_expr  = expr.subs(subs2)
 
@@ -359,10 +362,13 @@ class RFactor:
         if len(uncommon) > 1 and common == S(1):
             uncommon = [Add(*uncommon)]
 
-        # `uncommon` is now a sum of >=3 cosines with individual non-factorable coeffs
+        # `uncommon` is now a sum of >=3 cosines with individual non-factorable
+        # coeffs
         # collect terms corresponding to each of three cosines
         uncommon_dict = collect(uncommon[0], [x1, x2, x3], evaluate=False)
-        ret_dict = {'c0': common, 'c12': uncommon_dict[x1], 'c13': uncommon_dict[x2],
+        ret_dict = {'c0': common,
+                    'c12': uncommon_dict[x1],
+                    'c13': uncommon_dict[x2],
                     'c14': uncommon_dict[x3]}
 
         return ret_expr, ret_dict
@@ -428,9 +434,11 @@ class RFactor:
         if isinstance(o, RFactor):
             return self == o.tuple
         elif isinstance(o, Mapping):
-            return all(factor(self.dict[k]-o[k], deep=True) == S(0) for k in self.dict)
+            return all(factor(self.dict[k]-o[k], deep=True) == S(0)
+                       for k in self.dict)
         else:
-            return all(factor(st-ot, deep=True) == S(0) for st, ot in zip(self.tuple, o))
+            return all(factor(st-ot, deep=True) == S(0)
+                       for st, ot in zip(self.tuple, o))
 
     def __hash__(self):
         # could also convert expressions to str but I'm not sure if the strings
