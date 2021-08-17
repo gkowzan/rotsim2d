@@ -31,14 +31,18 @@ def aid(x):
 
 
 def pws_autospan(pws: Sequence[dl.DressedPathway], margin: float=5.0*30e9,
-                 conv: float=1.0) -> Tuple[Tuple[float]]:
+                 conv: float=1.0) -> Tuple[Tuple[float, ...], ...]:
     """Return min/max pump/probe frequencies from `pws`."""
     pump_freqs, probe_freqs = [pw.nu(0) for pw in pws], [pw.nu(2) for pw in pws]
     pump_min, pump_max = min(pump_freqs), max(pump_freqs)
     probe_min, probe_max = min(probe_freqs), max(probe_freqs)
 
-    return ((pump_min*conv - margin, pump_max*conv + margin, 2*margin + conv*(pump_max-pump_min)),
-            (probe_min*conv - margin, probe_max*conv + margin, 2*margin + conv*(probe_max-probe_min)))
+    return ((pump_min*conv - margin,
+             pump_max*conv + margin,
+             2*margin + conv*(pump_max-pump_min)),
+            (probe_min*conv - margin,
+             probe_max*conv + margin,
+             2*margin + conv*(probe_max-probe_min)))
 
 
 def aligned_fs(fsmin: float, fsmax: float, df: float):
@@ -47,7 +51,8 @@ def aligned_fs(fsmin: float, fsmax: float, df: float):
     Align endpoints if they're not separated by a multiple of `df`.
     """
     def align(f: float):
-        return np.ceil(f/df).astype(np.int) if f < 0 else np.floor(f/df).astype(np.int)
+        return np.ceil(f/df).astype(np.int64) if f < 0\
+            else np.floor(f/df).astype(np.int64)
     return np.arange(align(fsmin), align(fsmax)+1)*df
 
 
