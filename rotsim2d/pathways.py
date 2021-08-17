@@ -265,6 +265,16 @@ class KetBra(at.NodeMixin):
         sl = self.to_statelist()
         return any(x.j==sl[0][0].j-1 for x in sl[1])
 
+    def is_Rinitial(self):
+        r"""Check if initial excitation is R-branch."""
+        sl = self.to_statelist()
+        return any(x.j==sl[0][0].j+1 for x in sl[1])
+
+    def is_Qinitial(self):
+        r"""Check if initial excitation is Q-branch."""
+        sl = self.to_statelist()
+        return all(x.j==sl[0][0].j for x in sl[1])
+
     def is_esa(self):
         """Check if pathway corresponds to excited-state absorption.
 
@@ -455,6 +465,10 @@ remove_threecolor = make_remove(lambda kb: kb.is_threecolor())
 remove_interstates = make_remove(lambda kb: kb.is_interstate())
 only_interstates = make_only(lambda kb: kb.is_interstate())
 only_ketside = make_only(lambda kb: all(s == Side.KET for s in kb.sides()[:3]))
+remove_ketside = make_remove(lambda kb: all(s == Side.KET for s in kb.sides()[:3]))
+only_Pinitial = make_only(lambda kb: kb.is_Pinitial())
+only_Rinitial = make_only(lambda kb: kb.is_Rinitial())
+only_Qinitial = make_only(lambda kb: kb.is_Qinitial())
 
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
