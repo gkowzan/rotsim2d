@@ -34,11 +34,17 @@ importlib-metadata = {version=">=1.0", python="<3.8"}
 pytest = "*"
 tox = "*"
 jedi-language-server = "*"
+yapf = "*"
 
 [tool.poetry.extras]
 interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks", "prompt-toolkit"]
 doc = ["Sphinx"]
 pyfftw = ["pyfftw"]
+
+[tool.yapf]
+based_on_style = "pep8"
+no_spaces_around_selected_binary_operators = true
+spaces_around_power_operator = false
 
 [[tool.poetry.source]]
 name = "local"
