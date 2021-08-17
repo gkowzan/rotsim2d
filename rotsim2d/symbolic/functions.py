@@ -7,16 +7,19 @@ dipole interaction operator. The derived expressions are in
 from collections.abc import Mapping
 import inspect
 import itertools as it
+import numpy as np
+from scipy.optimize import minimize
 from sympy import *
 import sympy.physics.quantum.cg as cg
 from molspecutils.molecule import RotState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
+from rotsim2d.couple import T00
 from rotsim2d.symbolic.common import *
 from rotsim2d.symbolic.results import (gfactors, gfactors_highj,
                                        gfactors_highj_numeric, T00_exprs)
 from typing import (Sequence, Dict, List, Tuple, Optional, NewType, Any, Union,
-                    Callable)
+                    Callable, Iterable)
 import re
 
 #: Dummy type for any SymPy expressions, since SymPy is not annotated
@@ -771,11 +774,47 @@ def calc_relative_exprs(rf_pw: RFactorPathways, angles: Sequence):
 
     
 def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
-                      rfpws_max: Sequence[RFactorPathways]):
+                      rfpws_max: Sequence[RFactorPathways],
+                      initial_guess: Sequence[float],
+                      **min_kwargs):
     """Optimize contrast between two sets of R-factors.
 
     This is useful in case there are no analytical angles that simultaneously
-    zero all R-factors in `rfpws_min`."""
+    zero all R-factors in `rfpws_min`. Keyword arguments are passed to
+    scipy.optimize.minimize. Returns OptimizeResult object.
+    """
+    min_pws = sum((rfpw.pws for rfpw in rfpws_min), [])
+    min_pws = list(dl.split_by_peaks(min_pws).values())
+    max_pws = sum((rfpw.pws for rfpw in rfpws_max), [])
+    max_pws = list(dl.split_by_peaks(max_pws).values())
+
+    def sum_rfactors(peaks: Iterable[dl.Pathway], angles: Sequence[float]):
+        angles = list(angles)
+        sum_geo = 0.0
+        for peak_pws in peaks:
+            peak_sum = 0.0
+            for pw in peak_pws:
+                thetas = pw._phi_angles([0.0] + angles)
+                gfacs = gfactors_highj_numeric[pw.geo_label]
+                for k in (0, 1, 2):
+                    peak_sum += gfacs[k]*T00(*(thetas + [k]))
+            sum_geo += abs(peak_sum)
+
+        return sum_geo
+
+    def opt_func(thetas):
+        min_geo = sum_rfactors(min_pws, thetas)
+        max_geo = sum_rfactors(max_pws, thetas)
+        print("max_geo={:f}, min_geo={:f}".format(max_geo, min_geo))
+
+        return -(max_geo-min_geo)
+
+    return minimize(opt_func, initial_guess,
+                    bounds=[(-np.pi/2, np.pi/2)]*3,
+                    **min_kwargs)
+
+    
+    
 # * Rotational coherence
 # Retrieve rotational coherence expressions from Pathways.
 def rot_expression(state: RotState, jref: int) -> Basic:
