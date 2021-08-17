@@ -258,7 +258,7 @@ class Pathway:
         return [cls(leaf) for leaf in kb_tree.root.leaves]
 
     @classmethod
-    def from_kb_list(cls, kb_list: KetBra) -> List[Pathway]:
+    def from_kb_list(cls, kb_list: Sequence[KetBra]) -> List[Pathway]:
         """Make a list of Pathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), [])
 
@@ -393,7 +393,7 @@ class DressedPathway(Pathway):
         return [cls(leaf, vib_mode, T) for leaf in kb_tree.root.leaves]
 
     @classmethod
-    def from_kb_list(cls, kb_list: KetBra, vib_mode: mol.VibrationalMode,
+    def from_kb_list(cls, kb_list: Sequence[KetBra], vib_mode: mol.VibrationalMode,
                      T: float) -> List[DressedPathway]:
         """Make a list of DressedPathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list), [])
@@ -590,7 +590,7 @@ def split_by_pols_highjs(kbl: Iterable[DressedLeaf]):
     return ret
 
 
-def split_by_peaks(kbl: Iterable[DressedLeaf]):
+def split_by_peaks(kbl: Iterable[Pathway]):
     ret = {}
     for dl in kbl:
         ret.setdefault(dl.peak, []).append(dl)
