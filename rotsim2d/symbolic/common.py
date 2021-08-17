@@ -12,3 +12,5 @@ thetas_dict = dict(zip(('omg1', 'omg2', 'omg3', 'mu'),
 theta_i, theta_j, theta_k, theta_l = thetas
 #: Dummy variables for derivations
 x0, x1, x2, x3, x4, x1x2, x3x4 = symbols("x0 x1 x2 x3 x4 x1x2 x3x4", real=True)
+#: Rotational constants
+nu0, nu1, nu2, B0, B1, B2 = symbols(r"\nu_0 \nu_1 \nu_2 B_0 B_1 B_2", real=True, nonnegative=True)
