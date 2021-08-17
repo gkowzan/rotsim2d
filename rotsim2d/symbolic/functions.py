@@ -13,7 +13,8 @@ from molspecutils.molecule import SymTopState, DiatomState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
 from rotsim2d.symbolic.common import *
-from rotsim2d.symbolic.results import rfactors_highj, gfactors, gfactors_highj, T00_exprs
+from rotsim2d.symbolic.results import (gfactors, gfactors_highj,
+                                       gfactors_highj_numeric, T00_exprs)
 from typing import (Sequence, Dict, List, Tuple, Optional, NewType, Any, Union,
                     Callable)
 import re
