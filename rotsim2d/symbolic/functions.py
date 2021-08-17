@@ -569,8 +569,8 @@ def common_angles(exprs: Sequence[Basic],
                   angles_vars: Optional[Sequence[Basic]]=thetas) -> Dict[Basic, Basic]:
     r"""Find angles simultaneously zeroing all in `exprs`.
 
-    The expressions in `exprs` should be formulas for detection angle,
-    :math:`\theta_l`, zeroing some pathways, as obtained by calling
+    The expressions in `exprs` should be formulas for the tan of detection
+    angle, :math:`\theta_l`, zeroing some pathways, as obtained by calling
     :func:`solve_det_angle`. Uses :func:`sympy.solve`.
     """
     back_subs = {x0: tan(angles_vars[3]), x1x2: tan(angles_vars[1]), x3x4: tan(angles_vars[2])}
