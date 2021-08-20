@@ -131,7 +131,24 @@ class KetBra(at.NodeMixin):
         return self.ket == o.ket and self.bra == o.bra
 
     def _pathway_info(self):
-        """Return transitions, coherences and 4-fold dipole for pathway."""
+        """Return transitions, coherences and 4-fold dipole for pathway.
+
+        The key task of this function is to prepare arguments for evaluation of
+        G-factors and polarization tensors. At the end, `wbras` contains j
+        values (`wbras[i][0]`) and depths of LightInteraction objects
+        (`wbras[i][1]). Depths are counted by ignoring KetBra nodes and give
+        information which of the four LightInteraction's acting on the system in
+        sequence produced the j-state on the left (if the whole sequence is read
+        from right to left). `wbras` can then be used to construct the four-fold
+        dipole interaction operator::
+
+            <wbras[0][0]|wbras[0][1]|wbras[1][0]><wbras[1][0]|wbras[1][1]|wbras[2][0]>\
+            <wbras[2][0]|wbras[2][1]|wbras[3][0]><wbras[3][0]|wbras[3][1]|wbras[0][0]>
+
+        The edge j-states are the same by definition of the process. Having
+        defined this four-fold operator, we can then use spherical tensor
+        operator decomposition and calculate polarization tensors and G-factors.
+        """
         if self._pathway_info_cache is None:
             kb_series = self.ketbras()
             coherences, transitions = [], []
