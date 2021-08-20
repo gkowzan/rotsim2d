@@ -286,7 +286,7 @@ class RFactor:
 
     @classmethod
     def from_pathway(cls, pw: dl.Pathway, highj: bool=False, normalize: bool=False,
-                     only_angles: bool=False):
+                     only_angles: bool=False, rotated: Optional[str]=None):
         """Return R-factor corresponding to :class:`rotsim2d.dressedleaf.Pathway`.
 
         Parameters
@@ -305,6 +305,17 @@ class RFactor:
             gterms = gfactors_highj[pw.geo_label]
         else:
             gterms = gfactors[pw.geo_label]
+        if rotated is not None:
+            if rotated == 'forward':
+                deltaj = pw.js[0]-pw.js[-1] # Jj-Ji, Jj = Ji + (Jj-Ji)
+                gterms = tuple([(S(gterm).subs(J_i, J_j)*sqrt((2*J_j+1)/(2*J_i+1)))\
+                                .subs(J_j, J_i+deltaj) for gterm in gterms])
+            elif rotated == 'backward':
+                deltaj = pw.js[0]-pw.js[1] # Jl-Ji, Jl = Ji + (Jl-Ji)
+                gterms = tuple([(S(gterm).subs(J_i, J_l)*sqrt((2*J_l+1)/(2*J_i+1)))\
+                                .subs(J_l, J_i+deltaj) for gterm in gterms])
+            else:
+                raise ValueError("`rotated` needs to be either 'forward' or 'backward'")
 
         subs_dict = dict(zip([phi, phj, phk, phl], pw._phi_angles(thetas)))
         pterms = [e.subs(subs_dict) for e in T00_exprs[:]]
