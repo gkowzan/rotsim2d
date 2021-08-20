@@ -456,9 +456,12 @@ class RFactor:
 
 # * Classify pathways with regards to R-factor
 # ** Functions
-def dl_gfactors(dl: dl.Pathway, evalf: bool=True):
+def dl_gfactors(dl: dl.Pathway, evalf: bool=True, abstract: bool=False):
     """Return G-factors for a :class:`rotsim2d.dressedleaf.Pathway`."""
     js = list(dl.js)
+    if abstract:
+        evalf = False
+        js = [J_i+(j-js[0]) for j in js]
     gfactors = (gfactor_expr(*(js + [0])),
                 gfactor_expr(*(js + [1])),
                 gfactor_expr(*(js + [2])))
