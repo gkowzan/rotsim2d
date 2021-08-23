@@ -292,6 +292,11 @@ class KetBra(at.NodeMixin):
         sl = self.to_statelist()
         return all(x.j==sl[0][0].j for x in sl[1])
 
+    def is_Qbranch(self):
+        r"""Check if pump or probe axis involves Q-branch coherence."""
+        sl = self.to_statelist()
+        return sl[1][0].j == sl[1][1].j or sl[3][0].j == sl[3][1].j
+
     def is_esa(self):
         """Check if pathway corresponds to excited-state absorption.
 
@@ -488,6 +493,8 @@ remove_ketside = make_remove(lambda kb: all(s == Side.KET for s in kb.sides()[:3
 only_Pinitial = make_only(lambda kb: kb.is_Pinitial())
 only_Rinitial = make_only(lambda kb: kb.is_Rinitial())
 only_Qinitial = make_only(lambda kb: kb.is_Qinitial())
+only_Qbranch = make_only(lambda kb: kb.is_Qbranch())
+remove_Qbranch = make_remove(lambda kb: kb.is_Qbranch())
 
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
