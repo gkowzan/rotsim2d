@@ -668,6 +668,14 @@ class Peak2DList(list):
         """
         self.sort(key=self._sort_func)
 
+    def get_by_peak(self, peak: Tuple[str, str]) -> Peak2D:
+        """Return peak with `peak` attribute equal to `peak` argument."""
+        for p in self:
+            if p.peak == peak:
+                return p
+        else:
+            raise IndexError("'{!s}' not found in the list".format(peak))
+
 
 def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
               return_dls: bool=False) -> Peak2DList:
