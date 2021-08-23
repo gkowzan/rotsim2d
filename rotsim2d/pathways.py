@@ -435,11 +435,12 @@ def make_remove(func: Callable) -> Callable:
     which `func` returns True.
     """
     def remove_func(ketbra):
+        maxdepth = max(leaf.depth for leaf in ketbra.leaves)
         for l in ketbra.leaves:
             if func(l):
                 l.parent = None
 
-        return prune(ketbra)
+        return prune(ketbra, depth=maxdepth)
     return remove_func
 
 
@@ -457,11 +458,12 @@ def make_only(func: Callable) -> Callable:
     which `func` returns True.
     """
     def only_func(ketbra):
+        maxdepth = max(leaf.depth for leaf in ketbra.leaves)
         for l in ketbra.leaves:
             if not func(l):
                 l.parent = None
 
-        return prune(ketbra)
+        return prune(ketbra, depth=maxdepth)
     return only_func
 
 
@@ -490,38 +492,41 @@ only_Qinitial = make_only(lambda kb: kb.is_Qinitial())
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
     """Limit tree to pathways bewteen `kb1` and `kb2`."""
+    maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_between(pump, probe):
             l.parent = None
 
-    return prune(ketbra)
+    return prune(ketbra, depth=maxdepth)
 
 
 def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
+    maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_pathway(pathway):
             l.parent = None
 
-    return prune(ketbra)
+    return prune(ketbra, depth=maxdepth)
 
 
 def only_some_pathway(ketbra: KetBra, pathways: List[KetBra]) -> KetBra:
+    maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_some_pathway(pathways):
             l.parent = None
 
-    return prune(ketbra)
+    return prune(ketbra, depth=maxdepth)
 
 
-def prune(ketbra: KetBra) -> KetBra:
-    """Remove leaves whose depth is less than maximum."""
-    maxdepth = max(leaf.depth for leaf in ketbra.leaves)
-
+def prune(ketbra: KetBra, depth: int) -> KetBra:
+    """Remove leaves whose depth is less than `depth`."""
     found = True
     while found:
         found = False
         for leaf in ketbra.leaves:
-            if leaf.depth < maxdepth:
+            if leaf.is_root:
+                return leaf
+            if leaf.depth < depth:
                 found = True
                 leaf.parent = None
 
@@ -533,8 +538,9 @@ def readout(ketbra: KetBra) -> KetBra:
     """Generate populations from excitations."""
     for kb in ketbra.leaves:
         excite(kb, 'mu', 'ket', True)
+    maxdepth = max(leaf.depth for leaf in ketbra.leaves)
 
-    return prune(remove_nondiagonal(ketbra))
+    return prune(remove_nondiagonal(ketbra), depth=maxdepth)
 
 
 def excited_states_symtop(state: SymTopState, dnu: int) -> List[int]:
@@ -693,6 +699,7 @@ def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
                              ['ket', 'both', 'both'],
                              meths)
              for root in roots])
+    pws = [p for p in pws if len(p.children)]
 
     return pws
 
