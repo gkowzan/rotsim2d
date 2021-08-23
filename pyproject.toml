@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rotsim2d"
-version = "0.4.1-alpha.0"
+version = "0.4.1-alpha.1"
 description = "Simulate 2D rovibrational spectra of gas-phase molecular samples"
 authors = ["Grzegorz Kowzan <grzegorz@kowzan.eu>"]
 readme = "README.md"
@@ -36,6 +36,7 @@ tox = "*"
 jedi-language-server = "*"
 yapf = "*"
 isort = "*"
+bump2version = "*"
 
 [tool.poetry.extras]
 interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks", "prompt-toolkit"]

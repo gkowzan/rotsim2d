@@ -4,6 +4,7 @@
 
 - refactor in terms of :class:`rotsim2d.dressedleaf.DressedPathway` and get rid
   of `pop` attribute in `KetBra`.
+- add pressure and polarization dependence here
 """
 import logging
 from typing import List, Union, Tuple, Optional, Sequence
