@@ -387,6 +387,18 @@ class KetBra(at.NodeMixin):
                 return False
         return True
 
+    def is_same_branch(self, o):
+        """Check if other pathway belongs to the same branch."""
+        s = self.to_statelist(diatom=True, normalize=True)
+        if isinstance(o, KetBra):
+            o = o.to_statelist(diatom=True, normalize=True)
+        res = s[1][0].j == o[1][0].j and s[1][1].j == o[1][1].j and\
+            s[1][0].nu == o[1][0].nu and s[1][1].nu == o[1][1].nu
+        res = res and s[3][0].j == o[3][0].j and s[3][1].j == o[3][1].j and\
+            s[3][0].nu == o[3][0].nu and s[3][1].nu == o[3][1].nu
+
+        return res
+
     def is_pathway(self, *kbs):
         """Match self to pathway consisting of `kbs`."""
         return tuple(self.ketbras()) == kbs
