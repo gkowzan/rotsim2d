@@ -808,7 +808,7 @@ reference = "local"
 
 [[package]]
 name = "knickknacks"
-version = "0.1.4a2"
+version = "0.2.1"
 description = "Miscellaneous Python, NumPy, SciPy, Matplotlib, xarray functions"
 category = "main"
 optional = true
@@ -890,7 +890,7 @@ reference = "local"
 
 [[package]]
 name = "molspecutils"
-version = "0.1.5a1"
+version = "0.1.5a2"
 description = "Modules for working with molecular spectroscopy data"
 category = "main"
 optional = false
@@ -2056,7 +2056,7 @@ pyfftw = ["pyfftw"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7, <3.9"
-content-hash = "04c4033a91ae16cb267954cd173f199a9fc7b791e321a2d2a07b7d593315eb91"
+content-hash = "e9724ff371b5576ce373a370b5b9ebd7f186ff23bb3578597360fafb4029b162"
 
 [metadata.files]
 alabaster = [
@@ -2451,8 +2451,8 @@ kiwisolver = [
     {file = "kiwisolver-1.3.1.tar.gz", hash = "sha256:950a199911a8d94683a6b10321f9345d5a3a8433ec58b217ace979e18f16e248"},
 ]
 knickknacks = [
-    {file = "knickknacks-0.1.4a2-py3-none-any.whl", hash = "md5:5be5475e0b5e48315dc9c4d1cce8ccd0"},
-    {file = "knickknacks-0.1.4a2.tar.gz", hash = "md5:94a4759aa8de2a7a3bc5bca3a125bf7f"},
+    {file = "knickknacks-0.2.1-py3-none-any.whl", hash = "md5:6da4354f6fd46bf14aee8e34ca27f276"},
+    {file = "knickknacks-0.2.1.tar.gz", hash = "md5:84ea80ff0eeb3d4aba3d80b225917acf"},
 ]
 markupsafe = [
     {file = "MarkupSafe-2.0.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f9081981fe268bd86831e5c75f7de206ef275defcb82bc70740ae6dc507aee51"},
@@ -2522,8 +2522,8 @@ mistune = [
     {file = "mistune-0.8.4.tar.gz", hash = "sha256:59a3429db53c50b5c6bcc8a07f8848cb00d7dc8bdb431a4ab41920d201d4756e"},
 ]
 molspecutils = [
-    {file = "molspecutils-0.1.5a1-py3-none-any.whl", hash = "md5:f7b76acabcbdc02792edce55bd70251f"},
-    {file = "molspecutils-0.1.5a1.tar.gz", hash = "md5:43ca19eb0711cdc93a2d04aeaeb85f60"},
+    {file = "molspecutils-0.1.5a2-py3-none-any.whl", hash = "md5:3e8f437dc505295924237e1791b5cafd"},
+    {file = "molspecutils-0.1.5a2.tar.gz", hash = "md5:edc89da232b5e96cd50418408f5df8b7"},
 ]
 mpmath = [
     {file = "mpmath-1.2.1-py3-none-any.whl", hash = "sha256:604bc21bd22d2322a177c73bdb573994ef76e62edd595d17e00aff24b0667e5c"},
