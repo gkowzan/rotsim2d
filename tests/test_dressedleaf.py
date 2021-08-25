@@ -8,7 +8,7 @@ import rotsim2d.pathways as pw
 import rotsim2d.dressedleaf as dl
 import rotsim2d.symbolic.functions as sym
 from molspecutils.alchemy.meta import hitran_cache
-from molspecutils.molecule import CH3ClAlchemyMode, DiatomState
+from molspecutils.molecule import CH3ClAlchemyMode, DiatomState, SymTopState
 
 @pytest.fixture
 def partial_pws():
@@ -89,7 +89,6 @@ def test_gammas_are_positive(dressed_pws):
         for i in range(3):
             assert pw.gamma(i) >= 0.0
 
-
 def test_intensities_are_nonzero(dressed_pws):
     for pw in dressed_pws:
         assert abs(pw.intensity()) >= 0.0
@@ -100,6 +99,10 @@ def test_coherence_frequencies_are_real(dressed_pws):
         for i in range(3):
             assert pw.nu(i).imag == 0
 
+def test_missing_level_handling(ch3cl_mode):
+    kbs = pw.gen_pathways([20], rotor='symmetric',
+                          kiter_func=lambda x: [20])
+    dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
 
 @pytest.fixture
 def peak_list(dressed_pws):

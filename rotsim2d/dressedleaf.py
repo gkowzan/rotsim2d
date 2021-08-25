@@ -32,17 +32,20 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
 
 """
 from __future__ import annotations
-from typing import Optional, Iterable, Tuple, List, Sequence, Mapping
-from collections import namedtuple
+
 import collections.abc as abc
+from collections import namedtuple
 from math import isclose
-import numpy as np
-import rotsim2d.utils as u
+from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
+
 import molspecutils.molecule as mol
+import numpy as np
 import scipy.constants as C
-from rotsim2d.pathways import KetBra, Side, KSign
-from rotsim2d.couple import four_couple
+
 import rotsim2d.couple as cp
+import rotsim2d.utils as u
+from rotsim2d.couple import four_couple
+from rotsim2d.pathways import KetBra, KSign, Side
 
 #: Spectroscopic notation for transitions
 dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
@@ -393,7 +396,14 @@ class DressedPathway(Pathway):
     def from_kb_tree(cls, kb_tree: KetBra, vib_mode: mol.VibrationalMode,
                      T: float) -> List[DressedPathway]:
         """Make a list of DressedPathway's from KetBra tree."""
-        return [cls(leaf, vib_mode, T) for leaf in kb_tree.root.leaves]
+        dp_list = []
+        for leaf in kb_tree.root.leaves:
+            try:
+                dp_list.append(cls(leaf, vib_mode, T))
+            except mol.MissingStateError:
+                continue
+
+        return dp_list
 
     @classmethod
     def from_kb_list(cls, kb_list: Sequence[KetBra], vib_mode: mol.VibrationalMode,
