@@ -303,8 +303,14 @@ class Pathway:
             else:
                 print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
-    def _tw_pprint(self):
-        print(f"Coherence during waiting time: {self.tw_coherence!r}")
+    def _tw_pprint(self, end='\n'):
+        if self.tw_coherence:
+            import rotsim2d.symbolic.functions as sym
+            tw_coherence = sym.rcs_expression(
+                self.coherences[1], self.leaf.root.ket.j)
+        else:
+            tw_coherence = False
+        print(f"Coherence during waiting time: {tw_coherence!r}", end=end)
 
     def pprint(self, abstract=False):
         """Pretty print this pathway.
@@ -385,7 +391,7 @@ class DressedPathway(Pathway):
         return ret
 
     def _tw_pprint(self):
-        print(f"Coherence during waiting time: {self.tw_coherence!r}", end='')
+        Pathway._tw_pprint(self, end='')
         if self.tw_coherence:
             print(", {:.2f} cm-1".format(u.nu2wn(self.nu(1))))
         else:
