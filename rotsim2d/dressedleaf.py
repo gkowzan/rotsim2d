@@ -312,7 +312,7 @@ class Pathway:
             tw_coherence = False
         print(f"Coherence during waiting time: {tw_coherence!r}", end=end)
 
-    def pprint(self, abstract=False):
+    def pprint(self, abstract=False, angles=None):
         """Pretty print this pathway.
 
         Parameters
@@ -325,6 +325,8 @@ class Pathway:
         self.print_diagram(abstract=abstract)
         print(f"G-factor label: {self.geo_label}")
         print(f"Transition chain label: {self.trans_label}")
+        if angles is not None:
+            print("R-factor value: {:f}".format(self.geometric_factor(angles=angles)))
         print(f"Experimental label: {self.experimental_label}")
         print("Colors: {:d}".format(self.leaf.color_tier()))
         self._tw_pprint()
@@ -616,17 +618,17 @@ def split_by_peaks(kbl: Iterable[Pathway]):
     return ret
 
 
-def pprint_dllist(dllist, abstract=False):
+def pprint_dllist(dllist, abstract=False, angles=None):
     for i, dl in enumerate(dllist):
         if i == 0:
             print('-'*10)
             if isinstance(dl, DressedPathway):
                 print('pump = {:.2f} cm-1, probe = {:.2f} cm-1'.format(
                     u.nu2wn(dl.nu(0)), u.nu2wn(dl.nu(2))))
-            dl.pprint(abstract=abstract)
+            dl.pprint(abstract=abstract, angles=angles)
         else:
             print()
-            dl.pprint(abstract=abstract)
+            dl.pprint(abstract=abstract, angles=angles)
         if i == len(dllist)-1:
             print('-'*10)
             print()
