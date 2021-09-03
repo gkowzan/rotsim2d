@@ -11,7 +11,7 @@ classifiers=[
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics']
-include = ['README.md', "rotsim2d/py.typed"]
+include = ["rotsim2d/py.typed"]
 
 [tool.poetry.dependencies]
 python = ">=3.7, <3.9"
