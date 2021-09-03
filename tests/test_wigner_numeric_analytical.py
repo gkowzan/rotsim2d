@@ -22,8 +22,8 @@ def gfactors_xjpf(js: Sequence[int]) -> Tuple[float]:
 @pytest.fixture
 def pws():
     """Generate a list of pathways for further testing."""
-    kbs = pw.gen_pathways([5], rotor='symmetric',
-                          kiter_func=lambda x: [1], pump_overlap=False)
+    kbs = pw.gen_pathways([0, 1, 2], rotor='symmetric',
+                          kiter_func=lambda x: range(x+1), pump_overlap=False)
     pws = dl.Pathway.from_kb_list(kbs)
 
     return pws
@@ -32,10 +32,14 @@ def pws():
 def test_wigner_numeric_symbolic(pws):
     """Compare G-factor `evalf`ed and numpy'ed."""
     for pw in pws:
-        numeric = pw.gfactors()
-        analytical = sym.dl_gfactors(pw)
-        for n, a in zip(numeric, analytical):
-            assert n == pytest.approx(a) 
+        try:
+            analytical = sym.dl_gfactors(pw)
+            numeric = pw.gfactors()
+            for n, a in zip(numeric, analytical):
+                assert n == pytest.approx(a)
+        except ZeroDivisionError:
+            pw.pprint()
+            raise
 
 
 def test_wigner_wigxjpf_numeric(pws):
@@ -43,10 +47,15 @@ def test_wigner_wigxjpf_numeric(pws):
     wig.table_init(1000, 9)
     wig.temp_init(1000)
     for pw in pws:
-        wigxjpf = gfactors_xjpf(pw.js)
-        numeric = pw.gfactors()
-        for w, n in zip(wigxjpf, numeric):
-            assert n == pytest.approx(w)
+        try:
+            wigxjpf = gfactors_xjpf(pw.js)
+            numeric = pw.gfactors()
+            for w, n in zip(wigxjpf, numeric):
+                assert n == pytest.approx(w)
+        except ZeroDivisionError:
+            pw.pprint()
+            print(wigxjpf)
+            raise
     wig.temp_free()
     wig.table_free()
 

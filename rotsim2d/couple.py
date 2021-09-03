@@ -18,6 +18,8 @@ def wigner6j1_nn(j1: int, j2: int, j3: int, sqrt: Callable=np.sqrt) -> float:
     s = j1+j2+j3
     nom = 2*(j1*(j1+1)-j2*(j2+1)-j3*(j3+1))
     denom = sqrt( 2*j2*(2*j2+1)*(2*j2+2)*2*j3*(2*j3+1)*(2*j3+2) )
+    if denom == 0.0:
+        return 0.0
     return (-1)**s*nom/denom
 
 
@@ -27,6 +29,8 @@ def wigner6j1_nm(j1: int, j2: int, j3: int, sqrt: Callable=np.sqrt) -> float:
     s = j1+j2+j3
     nom = 2*(s+1)*(s-2*j1)*(s-2*j2)*(s-2*j3+1)
     denom = 2*j2*(2*j2+1)*(2*j2+2)*(2*j3-1)*(2*j3)*(2*j3+1)
+    if denom == 0.0:
+        return 0.0
     return (-1)**s*sqrt(nom/denom)
 
 
@@ -36,6 +40,8 @@ def wigner6j1_mm(j1: int, j2: int, j3: int, sqrt: Callable=np.sqrt) -> float:
     s = j1+j2+j3
     nom = s*(s+1)*(s-2*j1-1)*(s-2*j1)
     denom = (2*j2-1)*2*j2*(2*j2+1)*(2*j3-1)*2*j3*(2*j3+1)
+    if denom == 0.0:
+        return 0.0
     return (-1)**s*sqrt(nom/denom)
 
 
@@ -45,6 +51,8 @@ def wigner6j1_pm(j1: int, j2: int, j3: int, sqrt: Callable=np.sqrt) -> float:
     s = j1+j2+j3
     nom = (s-2*j2-1)*(s-2*j2)*(s-2*j3+1)*(s-2*j3+2)
     denom = (2*j2+1)*(2*j2+2)*(2*j2+3)*(2*j3-1)*2*j3*(2*j3+1)
+    if denom == 0.0:
+        return 0.0
     return (-1)**s*sqrt(nom/denom)
 
 
