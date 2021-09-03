@@ -14,7 +14,7 @@ import sympy.physics.quantum.cg as cg
 from molspecutils.molecule import RotState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
-from rotsim2d.couple import T00
+from rotsim2d.couple import T00, G
 from rotsim2d.symbolic.common import *
 from rotsim2d.symbolic.results import (gfactors, gfactors_highj,
                                        gfactors_highj_numeric, T00_exprs)
@@ -25,7 +25,7 @@ import re
 #: Dummy type for any SymPy expressions, since SymPy is not annotated
 # Expr = NewType('Expr', Any)
 
-# ** Utilities
+# * Utilities
 def inf_syms():
     i = 0
     while True:
@@ -33,135 +33,9 @@ def inf_syms():
         i += 1
 
 # * Analytical Wigner-6j functions
-# Analytical formulas for Wigner-6j coefficients for arguments differing by
-# small factors. Based on formulas from "Microwave molecular spectra" by Gordy
-# and Cook.
-def wigner6j0(j1, j2, j3):
-    s = j1+j2+j3
-    return (-1)**s/sqrt((2*j2+1)*(2*j3+1))
-
-
-def wigner6j1_nn(j1, j2, j3):
-    """{j1, j2, j3}
-       { 1, j3, j2}"""
-    s = j1+j2+j3
-    nom = 2*(j1*(j1+1)-j2*(j2+1)-j3*(j3+1))
-    denom = sqrt( 2*j2*(2*j2+1)*(2*j2+2)*2*j3*(2*j3+1)*(2*j3+2) )
-    return (-1)**s*nom/denom
-
-
-def wigner6j1_nm(j1, j2, j3):
-    """{j1,   j2, j3}
-       { 1, j3-1, j2}"""
-    s = j1+j2+j3
-    nom = 2*(s+1)*(s-2*j1)*(s-2*j2)*(s-2*j3+1)
-    denom = 2*j2*(2*j2+1)*(2*j2+2)*(2*j3-1)*(2*j3)*(2*j3+1)
-    return (-1)**s*sqrt(nom/denom)
-
-
-# def wigner6j1_mn(j1, j2, j3):
-#     """{j1,   j2, j3}
-#        { 1, j3, j2-1}"""
-#     return wigner6j1_nm(j1, j3, j2)
-
-
-# def wigner6j1_pn(j1, j2, j3):
-#     """{j1,   j2, j3}
-#        { 1, j3, j2+1}"""
-#     return wigner6j1_mn(j1, j2+1, j3)
-
-
-# def wigner6j1_np(j1, j2, j3):
-#     """{j1,   j2, j3}
-#        { 1, j3+1, j2}"""
-#     return wigner6j1_pn(j1, j3, j2)
-
-
-def wigner6j1_mm(j1, j2, j3):
-    """{j1,   j2,   j3}
-       { 1, j3-1, j2-1}"""
-    s = j1+j2+j3
-    nom = s*(s+1)*(s-2*j1-1)*(s-2*j1)
-    denom = (2*j2-1)*2*j2*(2*j2+1)*(2*j3-1)*2*j3*(2*j3+1)
-    return (-1)**s*sqrt(nom/denom)
-
-
-# def wigner6j1_pp(j1, j2, j3):
-#     """{j1,   j2,   j3}
-#        { 1, j3+1, j2+1}"""
-#     return wigner6j1_mm(j1, j2+1, j3+1)
-
-
-def wigner6j1_pm(j1, j2, j3):
-    """{j1,   j2,   j3}
-       { 1, j3-1, j2+1}"""
-    s = j1+j2+j3
-    nom = (s-2*j2-1)*(s-2*j2)*(s-2*j3+1)*(s-2*j3+2)
-    denom = (2*j2+1)*(2*j2+2)*(2*j2+3)*(2*j3-1)*2*j3*(2*j3+1)
-    return (-1)**s*sqrt(nom/denom)
-
-
-# def wigner6j1_mp(j1, j2, j3):
-#     """{j1,   j2,   j3}
-#        { 1, j3+1, j2-1}"""
-#     return wigner6j1_pm(j1, j3, j2)
-
-
-wigner6j1_map = {
-    (0,  0,  0): wigner6j0,
-    (1,  0,  0): wigner6j1_nn,
-    (1, -1,  0): wigner6j1_nm,
-    # (1,  0, -1): wigner6j1_mn,
-    # (1,  0,  1): wigner6j1_pn,
-    # (1,  1,  0): wigner6j1_np,
-    (1, -1, -1): wigner6j1_mm,
-    # (1,  1,  1): wigner6j1_pp,
-    (1, -1,  1): wigner6j1_pm,
-    # (1,  1, -1): wigner6j1_mp
-}
-
-
-def w6j_args_match(args):
-    for pat, func in wigner6j1_map.items():
-        if args[2]+pat[1] == args[4] and args[1]+pat[2] == args[5]\
-           and args[3] == pat[0]:
-            return func
-
-
-def w6j_equiv_args(args):
-    """Return all equivalent lists of Wigner-6j arguments.
-
-    `args` has the form: (j1, j2, j3, j4, j5, j6), which correspond to the
-    following Wigner-6j coefficient::
-
-      {j1, j2, j3}
-      {j4, j5, j6}
-    """
-    cols = [(args[0], args[3]), (args[1], args[4]), (args[2], args[5])]
-    cols = it.permutations(cols)
-    new_cols = []
-    for arg_list in cols:
-        new_cols.append(arg_list)
-        new_cols.append((arg_list[0][::-1], arg_list[1][::-1], arg_list[2]))
-        new_cols.append((arg_list[0][::-1], arg_list[1], arg_list[2][::-1]))
-        new_cols.append((arg_list[0], arg_list[1][::-1], arg_list[2][::-1]))
-
-    return [(alist[0][0], alist[1][0], alist[2][0], alist[0][1], alist[1][1], alist[2][1])
-            for alist in new_cols]
-    
-
-def w6j_expr(*args):
-    """Return analytical expression for Wigner-6j coefficient."""
-    args_list = w6j_equiv_args(args)
-    for args_cand in args_list:
-        func = w6j_args_match(args_cand)
-        if func is not None:
-            return func(*args_cand[:3])
-
-
 def gfactor_expr(ji, jj, jk, jl, k):
-    return (2*k+1)*(-1)**(jj+jk+jl-ji)*w6j_expr(k, k, 0, ji, ji, jk)*\
-        w6j_expr(1, 1, k, jk, ji, jj)*w6j_expr(1, 1, k, ji, jk, jl)
+    """Call :func:`rotsim2d.couple.G` with symbolic `sqrt`."""
+    return G(ji, jj, jk, jl, k, sqrt=sqrt)
 
 
 # * Polarization
