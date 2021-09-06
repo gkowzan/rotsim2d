@@ -324,6 +324,7 @@ class Pathway:
         print("diagram:")
         self.print_diagram(abstract=abstract)
         print(f"G-factor label: {self.geo_label}")
+        print("G-factors: {!s}".format(self.gfactors()))
         print(f"Transition chain label: {self.trans_label}")
         if angles is not None:
             print("R-factor value: {:f}".format(self.geometric_factor(angles=angles)))
