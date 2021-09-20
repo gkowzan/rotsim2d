@@ -325,8 +325,11 @@ class Pathway:
         self.print_diagram(abstract=abstract)
         print(f"G-factor label: {self.geo_label}")
         print("G-factors: {!s}".format(self.gfactors()))
+        print("Total side: {!s}".format(self.leaf.total_side()))
+        print("4-fold amplitude: {!s}".format(self.const))
         print(f"Transition chain label: {self.trans_label}")
         if angles is not None:
+            print("Polarizations components: {!s}".format(self.T00s(angles=angles)))
             print("R-factor value: {:f}".format(self.geometric_factor(angles=angles)))
         print(f"Experimental label: {self.experimental_label}")
         print("Colors: {:d}".format(self.leaf.color_tier()))
@@ -365,7 +368,10 @@ class DressedPathway(Pathway):
         Pathway.__init__(self, leaf)
         self.vib_mode = vib_mode
         self.T = T
-        for pair in self.transitions:
+        sides = [li.side for li in leaf.interactions()]
+        for pair, side in zip(self.transitions, sides):
+            if side == Side.BRA:
+                pair = pair[::-1]
             self.const *= vib_mode.mu(pair)
         self.const *= vib_mode.equilibrium_pop(self.leaf.root.ket, T)
 

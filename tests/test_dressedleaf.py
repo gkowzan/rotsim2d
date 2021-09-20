@@ -1,14 +1,17 @@
 # pylint: disable=redefined-outer-name
-import pytest
-from pprint import pprint
-from pathlib import Path
 from functools import partial
-from sqlalchemy import create_engine
-import rotsim2d.pathways as pw
+from pathlib import Path
+from pprint import pprint
+
+import pytest
+import rotsim2d.couple as cp
 import rotsim2d.dressedleaf as dl
+import rotsim2d.pathways as pw
 import rotsim2d.symbolic.functions as sym
 from molspecutils.alchemy.meta import hitran_cache
 from molspecutils.molecule import CH3ClAlchemyMode, DiatomState, SymTopState
+from sqlalchemy import create_engine
+
 
 @pytest.fixture
 def partial_pws():
@@ -64,12 +67,35 @@ def test_nineteen_trans_labels(pws):
     assert len(trans_labels)
 
 
+def pw_rme_sign(p):
+    sides = [li.side for li in p.leaf.interactions()]
+    sign = 1.0
+    for pair, side in zip(p.transitions, sides):
+        if side == pw.Side.BRA:
+            pair = pair[::-1]
+        if pair[0].j > pair[1].j:
+            sign *= -1
+
+    return sign
+
+
+def test_pathway_sign(pws):
+    """Check if pathway has the correct sign."""
+    for p in pws:
+        rfactor = p.geometric_factor()
+        brute_rfactor = cp.brute_geometric_factor(p.js, 0)
+        assert pytest.approx(rfactor) == brute_rfactor
+        rme_sign = pw_rme_sign(p)
+        brute_rme_sign = cp.brute_rme(p.js, 1)
+        assert rme_sign*brute_rme_sign > 0 # same sign
+        assert rfactor*rme_sign > 0
+        assert brute_rfactor*brute_rme_sign > 0
+
 @pytest.fixture(scope='module')
 def ch3cl_mode():
     ch3cl_mode = CH3ClAlchemyMode()
 
     return ch3cl_mode
-
 
 @pytest.fixture
 def dressed_pws(ch3cl_mode):
@@ -78,6 +104,30 @@ def dressed_pws(ch3cl_mode):
     dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
 
     return dpws
+
+def test_dressedpathway_rme_sign(dressed_pws):
+    for p in dressed_pws:
+        rme_sign = pw_rme_sign(p)
+        rme = 1.0
+        sides = [li.side for li in p.leaf.interactions()]
+        for pair, side in zip(p.transitions, sides):
+            if side == pw.Side.BRA:
+                pair = pair[::-1]
+            rme *= p.vib_mode.mu(pair)
+
+        assert rme_sign*rme > 0
+
+def test_dressedpathway_rme_sign(dressed_pws):
+    for p in dressed_pws:
+        rme_sign = pw_rme_sign(p)
+        rme = 1.0
+        sides = [li.side for li in p.leaf.interactions()]
+        for pair, side in zip(p.transitions, sides):
+            if side == pw.Side.BRA:
+                pair = pair[::-1]
+            rme *= p.vib_mode.mu(pair)
+
+        assert rme_sign*rme > 0
 
 def test_dressedpathway_equality(dressed_pws):
     assert dressed_pws[0] == dressed_pws[0]

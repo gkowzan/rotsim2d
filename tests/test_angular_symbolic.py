@@ -36,6 +36,7 @@ def pws():
 
 def test_rfactors(pws):
     for p in pws:
+        print(p.trans_label)
         rfactor = sym.RFactor.from_pathway(p)
         assert rfactor == sym.RFactor(symr.rfactors_dict[p.trans_label],
                                       angles='experimental')

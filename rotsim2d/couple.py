@@ -4,6 +4,43 @@ from numbers import Number
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from sympy.physics.wigner import wigner_3j
+
+
+def brute_geometric_factor(js, p):
+    """Brute force sum over 4 dipole matrix elements without RME part for only
+    one polarization component.
+
+    This is mostly for testing.
+    """
+    res = 0.0
+    for m0, m1, m2, m3 in it.product(
+            range(-js[0], js[0]+1),
+            range(-js[1], js[1]+1),
+            range(-js[2], js[2]+1),
+            range(-js[3], js[3]+1)):
+        res += (-1)**(js[0]-m0)*wigner_3j(js[0], 1, js[1], -m0, p, m1)*\
+            (-1)**(js[1]-m1)*wigner_3j(js[1], 1, js[2], -m1, p, m2)*\
+            (-1)**(js[2]-m2)*wigner_3j(js[2], 1, js[3], -m2, p, m3)*\
+            (-1)**(js[3]-m3)*wigner_3j(js[3], 1, js[0], -m3, p, m0)
+    res /= (2*js[0]+1)**0.5
+
+    return float(res)
+
+
+def brute_rme(js, k):
+    """This should just be four-fold, signed Honl-London factor.
+
+    This is mostly for testing."""
+    res = (-1)**(js[0]-k)*wigner_3j(js[0], 1, js[1], -k, 0, k)*\
+        ((2*js[0]+1)*(2*js[1]+1))**(1/2)*\
+        (-1)**(js[1]-k)*wigner_3j(js[1], 1, js[2], -k, 0, k)*\
+        ((2*js[1]+1)*(2*js[2]+1))**(1/2)*\
+        (-1)**(js[2]-k)*wigner_3j(js[2], 1, js[3], -k, 0, k)*\
+        ((2*js[2]+1)*(2*js[3]+1))**(1/2)*\
+        (-1)**(js[3]-k)*wigner_3j(js[3], 1, js[0], -k, 0, k)*\
+        ((2*js[3]+1)*(2*js[0]+1))**(1/2)
+    return res
 
 
 def wigner6j0(a: int, b: int, c: int, sqrt: Callable=np.sqrt) -> float:
@@ -106,7 +143,8 @@ def w6j_special(*args: int, sqrt: Callable=np.sqrt) -> float:
 
 def G(ji: int, jj: int, jk: int, jl: int, k: int, sqrt: Callable=np.sqrt) -> float:
     """Wigner-6j part of four-fold reduced matrix element."""
-    return (2*k+1)*(-1)**(jj+jk+jl-ji)*\
+    # return (2*k+1)*(-1)**(jj+jk+jl-ji)*\
+    return (2*k+1)*\
         w6j_special(k, k, 0, ji, ji, jk, sqrt=sqrt)*\
         w6j_special(1, 1, k, jk, ji, jj, sqrt=sqrt)*\
         w6j_special(1, 1, k, ji, jk, jl, sqrt=sqrt)

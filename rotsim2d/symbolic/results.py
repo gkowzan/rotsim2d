@@ -15,103 +15,118 @@ from numpy import array
 #: Isotropic version of angular momentum-dependent combinations of three
 #: Wigner-6j factors involved in evaluating four-fold dipole interaction
 #: operator.
-gfactors = {'PPR': (0, 0, sqrt(5)/(5*sqrt(2*J_i + 1)*Abs(2*J_i - 1))),
- 'RRP': (0, 0, sqrt(5)/(5*sqrt(2*J_i + 1)*(2*J_i + 3))),
- 'PRP': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(3)*(J_i + 1)/(6*J_i*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)*(J_i + 1)*(2*J_i + 3)/(30*J_i*(2*J_i - 1)*(2*J_i + 1)**(Rational(3, 2)))),
- 'RPR': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(3)*J_i/(6*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)*J_i*(2*J_i - 1)/(30*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))*(2*J_i + 3))),
- 'RPP': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(3)/(6*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)/(30*(2*J_i + 1)**(Rational(3, 2)))),
- 'PRR': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(3)/(6*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)/(30*(2*J_i + 1)**(Rational(3, 2)))),
- 'PQQ': (0,
-  -sqrt(3)*(J_i - 1)/(6*J_i*(2*J_i - 1)*sqrt(2*J_i + 1)),
-  sqrt(5)*(J_i + 1)/(10*J_i*sqrt(2*J_i + 1)*Abs(2*J_i - 1))),
- 'QPQ': (0,
-  -sqrt(3)*sqrt(J_i - 1)*sqrt(J_i + 1)/(6*J_i*sqrt(2*J_i - 1)*(2*J_i + 1)),
-  -sqrt(5)*sqrt(J_i - 1)*sqrt(J_i + 1)/(10*J_i*sqrt(2*J_i - 1)*(2*J_i + 1))),
- 'QPR': (0,
-  -sqrt(3)*(J_i + 1)/(6*J_i*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)*Abs(J_i - 1)/(10*J_i*(2*J_i + 1)**(Rational(3, 2)))),
- 'QQP': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(3)/(6*J_i*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(5)*(2*J_i + 3)/(30*J_i*(2*J_i + 1)**(Rational(3, 2)))),
- 'QQQ': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(3)/(6*J_i*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)*(2*J_i - 1)*(2*J_i + 3)/(30*J_i*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2)))),
- 'QRP': (0,
-  -sqrt(3)*J_i/(6*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(5)*(J_i + 2)/(10*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2)))),
- 'RPQ': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(3)/(6*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(5)*Abs(2*J_i - 1)/(30*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2)))),
- 'RQP': (0,
-  -sqrt(3)*sqrt(J_i)*sqrt(J_i + 2)/(6*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3)),
-  -sqrt(5)*sqrt(J_i)*sqrt(J_i + 2)/(10*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3))),
- 'RQQ': (0,
-  -sqrt(3)*(J_i + 2)/(6*(J_i + 1)*sqrt(2*J_i + 1)*(2*J_i + 3)),
-  sqrt(5)*J_i/(10*(J_i + 1)*sqrt(2*J_i + 1)*(2*J_i + 3))),
- 'PQR': (0,
-  -sqrt(3)*sqrt((J_i - 1)*(2*J_i - 1))*sqrt(J_i + 1)/(6*J_i*(2*J_i - 1)*(2*J_i + 1)),
-  -sqrt(5)*sqrt(J_i - 1)*sqrt(J_i + 1)/(10*J_i*sqrt(2*J_i - 1)*(2*J_i + 1))),
- 'PRQ': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(3)/(6*J_i*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(5)*(2*J_i + 3)/(30*J_i*(2*J_i + 1)**(Rational(3, 2)))),
- 'QQR': (1/(3*(2*J_i + 1)**(Rational(3, 2))),
-  sqrt(3)/(6*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2))),
-  -sqrt(5)*Abs(2*J_i - 1)/(30*(J_i + 1)*(2*J_i + 1)**(Rational(3, 2)))),
- 'QRQ': (0,
-  -sqrt(3)*sqrt(J_i)*sqrt(J_i + 2)/(6*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3)),
-  -sqrt(5)*sqrt(J_i)*sqrt(J_i + 2)/(10*(J_i + 1)*(2*J_i + 1)*sqrt(2*J_i + 3)))}
+gfactors = {
+    'PPR': (0, 0, sqrt(5) / (5 * sqrt(2 * J_i + 1) * Abs(2 * J_i - 1))),
+    'RRP': (0, 0, sqrt(5) / (5 * sqrt(2 * J_i + 1) * (2 * J_i + 3))),
+    'PRP': (1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            -sqrt(3) * (J_i + 1) / (6 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) * (J_i + 1) * (2 * J_i + 3) /
+            (30 * J_i * (2 * J_i - 1) * (2 * J_i + 1)**Rational(3, 2))),
+    'RPR': (1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            -sqrt(3) * J_i / (6 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) * J_i * (2 * J_i - 1) /
+            (30 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2) * (2 * J_i + 3))),
+    'RPP': (1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(3) / (6 * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) / (30 * (2 * J_i + 1)**Rational(3, 2))),
+    'PRR': (1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(3) / (6 * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) / (30 * (2 * J_i + 1)**Rational(3, 2))),
+    'PQQ':
+    (0, sqrt(3) * (J_i - 1) / (6 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+     -sqrt(5) * (J_i + 1) / (10 * J_i * sqrt(2 * J_i + 1) * Abs(2 * J_i - 1))),
+    'QPQ':
+    (0, -sqrt(3) * sqrt(J_i - 1) * sqrt(J_i + 1) /
+     (6 * J_i * sqrt(2 * J_i - 1) * (2 * J_i + 1)), -sqrt(5) * sqrt(J_i - 1) *
+     sqrt(J_i + 1) / (10 * J_i * sqrt(2 * J_i - 1) * (2 * J_i + 1))),
+    'QPR':
+    (0, sqrt(3) * (J_i + 1) / (6 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+     -sqrt(5) * Abs(J_i - 1) / (10 * J_i * (2 * J_i + 1)**Rational(3, 2))),
+    'QQP':
+    (-1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+     sqrt(3) / (6 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+     sqrt(5) * (2 * J_i + 3) / (30 * J_i * (2 * J_i + 1)**Rational(3, 2))),
+    'QQQ': (1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            -sqrt(3) / (6 * J_i * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) * (2 * J_i - 1) * (2 * J_i + 3) /
+            (30 * J_i * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2))),
+    'QRP':
+    (0, sqrt(3) * J_i / (6 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+     -sqrt(5) * (J_i + 2) / (10 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2))),
+    'RPQ': (-1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            -sqrt(3) / (6 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) * Abs(2 * J_i - 1) / (30 * (J_i + 1) *
+                                          (2 * J_i + 1)**Rational(3, 2))),
+    'RQP': (0, -sqrt(3) * sqrt(J_i) * sqrt(J_i + 2) /
+            (6 * (J_i + 1) * (2 * J_i + 1) * sqrt(2 * J_i + 3)),
+            -sqrt(5) * sqrt(J_i) * sqrt(J_i + 2) /
+            (10 * (J_i + 1) * (2 * J_i + 1) * sqrt(2 * J_i + 3))),
+    'RQQ':
+    (0,
+     sqrt(3) * (J_i + 2) / (6 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+     -sqrt(5) * J_i / (10 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3))),
+    'PQR': (0, -sqrt(3) * sqrt((J_i - 1) * (2 * J_i - 1)) * sqrt(J_i + 1) /
+            (6 * J_i * (2 * J_i - 1) * (2 * J_i + 1)),
+            -sqrt(5) * sqrt(J_i - 1) * sqrt(J_i + 1) /
+            (10 * J_i * sqrt(2 * J_i - 1) * (2 * J_i + 1))),
+    'PRQ': (-1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(3) / (6 * J_i * (2 * J_i + 1)**Rational(3, 2)), sqrt(5) *
+            (2 * J_i + 3) / (30 * J_i * (2 * J_i + 1)**Rational(3, 2))),
+    'QQR': (-1 / (3 * (2 * J_i + 1)**Rational(3, 2)),
+            -sqrt(3) / (6 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+            sqrt(5) * Abs(2 * J_i - 1) / (30 * (J_i + 1) *
+                                          (2 * J_i + 1)**Rational(3, 2))),
+    'QRQ': (0, -sqrt(3) * sqrt(J_i) * sqrt(J_i + 2) /
+            (6 * (J_i + 1) * (2 * J_i + 1) * sqrt(2 * J_i + 3)),
+            -sqrt(5) * sqrt(J_i) * sqrt(J_i + 2) /
+            (10 * (J_i + 1) * (2 * J_i + 1) * sqrt(2 * J_i + 3)))
+}
 
 # ** High-J limit
 # gfactors_highj = {k: tuple(nsimplify(limit(x*(2*J_i+1)**(3/2), J_i, oo)) for x in v)
 #                   for k, v in gfactors.items()}
 #: :meta hide-value:
 #: G-factors multiplied by `(2*J_i+1)**(3/2)` and with :math:`J_i\to\infty`.
-gfactors_highj = {'PPR': (0, 0, sqrt(5)/5),
- 'RRP': (0, 0, sqrt(5)/5),
- 'PRP': (Rational(1, 3), -sqrt(3)/6, sqrt(5)/30),
- 'RPR': (Rational(1, 3), -sqrt(3)/6, sqrt(5)/30),
- 'RPP': (Rational(1, 3), sqrt(3)/6, sqrt(5)/30),
- 'PRR': (Rational(1, 3), sqrt(3)/6, sqrt(5)/30),
- 'PQQ': (0, -sqrt(3)/6, sqrt(5)/10),
- 'QPQ': (0, -sqrt(3)/6, -sqrt(5)/10),
- 'QPR': (0, -sqrt(3)/6, sqrt(5)/10),
- 'QQP': (Rational(1, 3), 0, -sqrt(5)/15),
- 'QQQ': (Rational(1, 3), 0, 2*sqrt(5)/15),
- 'QRP': (0, -sqrt(3)/6, sqrt(5)/10),
- 'RPQ': (Rational(1, 3), 0, -sqrt(5)/15),
- 'RQP': (0, -sqrt(3)/6, -sqrt(5)/10),
- 'RQQ': (0, -sqrt(3)/6, sqrt(5)/10),
- 'PQR': (0, -sqrt(3)/6, -sqrt(5)/10),
- 'PRQ': (Rational(1, 3), 0, -sqrt(5)/15),
- 'QQR': (Rational(1, 3), 0, -sqrt(5)/15),
- 'QRQ': (0, -sqrt(3)/6, -sqrt(5)/10)}
+gfactors_highj = {
+    'PPR': (0, 0, sqrt(5) / 5),
+    'RRP': (0, 0, sqrt(5) / 5),
+    'PRP': (Rational(1, 3), -sqrt(3) / 6, sqrt(5) / 30),
+    'RPR': (Rational(1, 3), -sqrt(3) / 6, sqrt(5) / 30),
+    'RPP': (Rational(1, 3), sqrt(3) / 6, sqrt(5) / 30),
+    'PRR': (Rational(1, 3), sqrt(3) / 6, sqrt(5) / 30),
+    'PQQ': (0, sqrt(3) / 6, -sqrt(5) / 10),
+    'QPQ': (0, -sqrt(3) / 6, -sqrt(5) / 10),
+    'QPR': (0, sqrt(3) / 6, -sqrt(5) / 10),
+    'QQP': (Rational(-1, 3), 0, sqrt(5) / 15),
+    'QQQ': (Rational(1, 3), 0, 2 * sqrt(5) / 15),
+    'QRP': (0, sqrt(3) / 6, -sqrt(5) / 10),
+    'RPQ': (Rational(-1, 3), 0, sqrt(5) / 15),
+    'RQP': (0, -sqrt(3) / 6, -sqrt(5) / 10),
+    'RQQ': (0, sqrt(3) / 6, -sqrt(5) / 10),
+    'PQR': (0, -sqrt(3) / 6, -sqrt(5) / 10),
+    'PRQ': (Rational(-1, 3), 0, sqrt(5) / 15),
+    'QQR': (Rational(-1, 3), 0, sqrt(5) / 15),
+    'QRQ': (0, -sqrt(3) / 6, -sqrt(5) / 10)
+}
 
 gfactors_highj_numeric = {'PPR': array([ 0.       ,  0.       ,  0.4472136]),
- 'PQQ': array([ 0.        , -0.28867513,  0.2236068 ]),
+ 'PQQ': array([ 0.        ,  0.28867513, -0.2236068 ]),
  'PQR': array([ 0.        , -0.28867513, -0.2236068 ]),
  'PRP': array([ 0.33333333, -0.28867513,  0.0745356 ]),
- 'PRQ': array([ 0.33333333,  0.        , -0.1490712 ]),
+ 'PRQ': array([-0.33333333,  0.        ,  0.1490712 ]),
  'PRR': array([ 0.33333333,  0.28867513,  0.0745356 ]),
  'QPQ': array([ 0.        , -0.28867513, -0.2236068 ]),
- 'QPR': array([ 0.        , -0.28867513,  0.2236068 ]),
- 'QQP': array([ 0.33333333,  0.        , -0.1490712 ]),
+ 'QPR': array([ 0.        ,  0.28867513, -0.2236068 ]),
+ 'QQP': array([-0.33333333,  0.        ,  0.1490712 ]),
  'QQQ': array([ 0.33333333,  0.        ,  0.2981424 ]),
- 'QQR': array([ 0.33333333,  0.        , -0.1490712 ]),
- 'QRP': array([ 0.        , -0.28867513,  0.2236068 ]),
+ 'QQR': array([-0.33333333,  0.        ,  0.1490712 ]),
+ 'QRP': array([ 0.        ,  0.28867513, -0.2236068 ]),
  'QRQ': array([ 0.        , -0.28867513, -0.2236068 ]),
  'RPP': array([ 0.33333333,  0.28867513,  0.0745356 ]),
- 'RPQ': array([ 0.33333333,  0.        , -0.1490712 ]),
+ 'RPQ': array([-0.33333333,  0.        ,  0.1490712 ]),
  'RPR': array([ 0.33333333, -0.28867513,  0.0745356 ]),
  'RQP': array([ 0.        , -0.28867513, -0.2236068 ]),
- 'RQQ': array([ 0.        , -0.28867513,  0.2236068 ]),
+ 'RQQ': array([ 0.        ,  0.28867513, -0.2236068 ]),
  'RRP': array([ 0.       ,  0.       ,  0.4472136])}
 
 # * Linear polarization
@@ -148,7 +163,7 @@ rfactors_dict = {
         'c14': 1
     },
     'PQQ': {
-        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 3 * J_i + 3,
         'c13': 3 * J_i - 2,
         'c14': 3 - 2 * J_i
@@ -165,7 +180,7 @@ rfactors_dict = {
         3
     },
     'PQ(P)': {
-        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 3 * J_i + 3,
         'c13': 3 - 2 * J_i,
         'c14': 3 * J_i - 2
@@ -188,7 +203,7 @@ rfactors_dict = {
         'c14': 2 * J_i**2 - 5 * J_i + 3
     },
     'PPQ': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -206,7 +221,7 @@ rfactors_dict = {
         'c14': 12 * J_i**2 - 2
     },
     'PP(Q)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -230,7 +245,7 @@ rfactors_dict = {
         'c14': 1
     },
     'P2Q2Q': {
-        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 3 * J_i + 3,
         'c13': 3 * J_i - 2,
         'c14': 3 - 2 * J_i
@@ -247,7 +262,7 @@ rfactors_dict = {
         3
     },
     'P2Q(P)': {
-        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 3 * J_i + 3,
         'c13': 3 - 2 * J_i,
         'c14': 3 * J_i - 2
@@ -270,7 +285,7 @@ rfactors_dict = {
         'c14': 2 * J_i**2 - 5 * J_i + 3
     },
     'P2R2Q': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -288,7 +303,7 @@ rfactors_dict = {
         'c14': 12 * J_i**2 - 2
     },
     'P2R(Q)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -306,7 +321,7 @@ rfactors_dict = {
         'c14': 1
     },
     'P(P)Q': {
-        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 2 * J_i - 3,
         'c13': -3 * J_i - 3,
         'c14': 2 - 3 * J_i
@@ -324,7 +339,7 @@ rfactors_dict = {
         'c14': 1
     },
     'P(P)2Q': {
-        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 2 * J_i - 3,
         'c13': -3 * J_i - 3,
         'c14': 2 - 3 * J_i
@@ -342,7 +357,7 @@ rfactors_dict = {
         'c14': 6
     },
     'P(P)(Q)': {
-        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 2 * J_i - 3,
         'c13': 2 - 3 * J_i,
         'c14': -3 * J_i - 3
@@ -360,7 +375,7 @@ rfactors_dict = {
         'c14': 6
     },
     'P(P)(2Q)': {
-        'c0': -1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
+        'c0': 1 / (60 * J_i * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
         'c12': 2 * J_i - 3,
         'c13': 2 - 3 * J_i,
         'c14': -3 * J_i - 3
@@ -383,7 +398,7 @@ rfactors_dict = {
         -2
     },
     'P(Q)P': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
@@ -400,7 +415,7 @@ rfactors_dict = {
         -2
     },
     'P(Q)2R': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
@@ -417,7 +432,7 @@ rfactors_dict = {
         3
     },
     'P(Q)(Q)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
@@ -434,7 +449,7 @@ rfactors_dict = {
         3
     },
     'P(Q)(2Q)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
@@ -475,7 +490,7 @@ rfactors_dict = {
         3
     },
     'QRR': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
@@ -492,13 +507,13 @@ rfactors_dict = {
         -2
     },
     'QR(Q)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
     },
     'QQP': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -510,13 +525,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i - 3
     },
     'QQR': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
     },
     'QQ(P)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -528,13 +543,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i + 2
     },
     'QQ(R)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
     },
     'QPP': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -551,7 +566,7 @@ rfactors_dict = {
         3
     },
     'QP(Q)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -579,7 +594,7 @@ rfactors_dict = {
         3
     },
     'Q2P2P': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
@@ -596,13 +611,13 @@ rfactors_dict = {
         -2
     },
     'Q2P(Q)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
     },
     'Q2Q2R': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -614,13 +629,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i - 3
     },
     'Q2Q2P': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
     },
     'Q2Q(P)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -632,13 +647,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i + 2
     },
     'Q2Q(R)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
     },
     'Q2R2R': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -655,7 +670,7 @@ rfactors_dict = {
         3
     },
     'Q2R(Q)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -683,7 +698,7 @@ rfactors_dict = {
         -2
     },
     'Q(P)Q': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
@@ -700,7 +715,7 @@ rfactors_dict = {
         -2
     },
     'Q(P)2Q': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': -2 * J_i - 3,
         'c14': 3 * J_i + 2
@@ -717,7 +732,7 @@ rfactors_dict = {
         3
     },
     'Q(P)(P)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
@@ -734,13 +749,13 @@ rfactors_dict = {
         3
     },
     'Q(P)(2R)': {
-        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i - 3,
         'c13': 3 * J_i + 2,
         'c14': -2 * J_i - 3
     },
     'Q(Q)R': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -752,13 +767,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i + 2
     },
     'Q(Q)P': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
     },
     'Q(Q)2P': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': 3 - 3 * J_i,
         'c14': -3 * J_i - 2
@@ -770,13 +785,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i + 2
     },
     'Q(Q)2R': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
     },
     'Q(Q)(R)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -788,13 +803,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i - 3
     },
     'Q(Q)(P)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
     },
     'Q(Q)(2P)': {
-        'c0': -1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * J_i * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i + 3,
         'c13': -3 * J_i - 2,
         'c14': 3 - 3 * J_i
@@ -806,13 +821,13 @@ rfactors_dict = {
         'c14': 4 * J_i**2 + 4 * J_i - 3
     },
     'Q(Q)(2R)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
     },
     'Q(R)Q': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -829,7 +844,7 @@ rfactors_dict = {
         -2
     },
     'Q(R)2Q': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -846,7 +861,7 @@ rfactors_dict = {
         -2
     },
     'Q(R)(R)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -863,7 +878,7 @@ rfactors_dict = {
         3
     },
     'Q(R)(2P)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -886,7 +901,7 @@ rfactors_dict = {
         'c14': 6
     },
     'RRQ': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
@@ -905,7 +920,7 @@ rfactors_dict = {
         'c14': 1
     },
     'RR(Q)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
@@ -929,7 +944,7 @@ rfactors_dict = {
         3
     },
     'RQQ': {
-        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 3 * J_i,
         'c13': 3 * J_i + 5,
         'c14': -2 * J_i - 5
@@ -946,7 +961,7 @@ rfactors_dict = {
         -2
     },
     'RQ(R)': {
-        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 3 * J_i,
         'c13': -2 * J_i - 5,
         'c14': 3 * J_i + 5
@@ -970,7 +985,7 @@ rfactors_dict = {
         'c14': 6
     },
     'R2P2Q': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 1,
         'c14': -3 * J_i - 6
@@ -989,7 +1004,7 @@ rfactors_dict = {
         'c14': 1
     },
     'R2P(Q)': {
-        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 2 * J_i - 1,
         'c13': -3 * J_i - 6,
         'c14': -3 * J_i - 1
@@ -1013,7 +1028,7 @@ rfactors_dict = {
         3
     },
     'R2Q2Q': {
-        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 3 * J_i,
         'c13': 3 * J_i + 5,
         'c14': -2 * J_i - 5
@@ -1030,7 +1045,7 @@ rfactors_dict = {
         -2
     },
     'R2Q(R)': {
-        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 3 * J_i,
         'c13': -2 * J_i - 5,
         'c14': 3 * J_i + 5
@@ -1072,7 +1087,7 @@ rfactors_dict = {
         'c14': 1
     },
     'R(Q)R': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -1089,7 +1104,7 @@ rfactors_dict = {
         -2
     },
     'R(Q)2P': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 1 - 2 * J_i,
         'c14': 3 * J_i + 1
@@ -1106,7 +1121,7 @@ rfactors_dict = {
         -2
     },
     'R(Q)(Q)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -1123,7 +1138,7 @@ rfactors_dict = {
         3
     },
     'R(Q)(2Q)': {
-        'c0': 1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
+        'c0': -1 / (60 * (J_i + 1) * (2 * J_i + 1)**Rational(3, 2)),
         'c12': 3 * J_i + 6,
         'c13': 3 * J_i + 1,
         'c14': 1 - 2 * J_i
@@ -1147,7 +1162,7 @@ rfactors_dict = {
         'c14': 12 * J_i**2 + 24 * J_i + 10
     },
     'R(R)Q': {
-        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 2 * J_i + 5,
         'c13': -3 * J_i,
         'c14': -3 * J_i - 5
@@ -1166,7 +1181,7 @@ rfactors_dict = {
         'c14': 12 * J_i**2 + 24 * J_i + 10
     },
     'R(R)2Q': {
-        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 2 * J_i + 5,
         'c13': -3 * J_i,
         'c14': -3 * J_i - 5
@@ -1185,7 +1200,7 @@ rfactors_dict = {
         'c14': 2 * J_i**2 - J_i
     },
     'R(R)(Q)': {
-        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 2 * J_i + 5,
         'c13': -3 * J_i - 5,
         'c14': -3 * J_i
@@ -1204,7 +1219,7 @@ rfactors_dict = {
         'c14': 2 * J_i**2 - J_i
     },
     'R(R)(2Q)': {
-        'c0': -1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
+        'c0': 1 / (60 * (J_i + 1) * sqrt(2 * J_i + 1) * (2 * J_i + 3)),
         'c12': 2 * J_i + 5,
         'c13': -3 * J_i - 5,
         'c14': -3 * J_i
@@ -1233,9 +1248,9 @@ rfactors_highj_dict = {
     },
     'PQQ': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'PQR': {
         'c0': 1,
@@ -1245,9 +1260,9 @@ rfactors_highj_dict = {
     },
     'PQ(P)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'PQ(Q)': {
         'c0': 1,
@@ -1263,9 +1278,9 @@ rfactors_highj_dict = {
     },
     'PPQ': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'PPR': {
         'c0': 1,
@@ -1281,9 +1296,9 @@ rfactors_highj_dict = {
     },
     'PP(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'PP(R)': {
         'c0': 1,
@@ -1305,9 +1320,9 @@ rfactors_highj_dict = {
     },
     'P2Q2Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'P2Q2P': {
         'c0': 1,
@@ -1317,9 +1332,9 @@ rfactors_highj_dict = {
     },
     'P2Q(P)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'P2Q(Q)': {
         'c0': 1,
@@ -1335,9 +1350,9 @@ rfactors_highj_dict = {
     },
     'P2R2Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P2R2P': {
         'c0': 1,
@@ -1353,9 +1368,9 @@ rfactors_highj_dict = {
     },
     'P2R(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P2R(R)': {
         'c0': 1,
@@ -1371,9 +1386,9 @@ rfactors_highj_dict = {
     },
     'P(P)Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P(P)P': {
         'c0': 1,
@@ -1389,9 +1404,9 @@ rfactors_highj_dict = {
     },
     'P(P)2Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P(P)2R': {
         'c0': 1,
@@ -1407,9 +1422,9 @@ rfactors_highj_dict = {
     },
     'P(P)(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P(P)(P)': {
         'c0': 1,
@@ -1425,9 +1440,9 @@ rfactors_highj_dict = {
     },
     'P(P)(2Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'P(P)(2R)': {
         'c0': 1,
@@ -1443,9 +1458,9 @@ rfactors_highj_dict = {
     },
     'P(Q)P': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'P(Q)2Q': {
         'c0': 1,
@@ -1455,9 +1470,9 @@ rfactors_highj_dict = {
     },
     'P(Q)2R': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'P(Q)(R)': {
         'c0': 1,
@@ -1467,9 +1482,9 @@ rfactors_highj_dict = {
     },
     'P(Q)(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'P(Q)(2P)': {
         'c0': 1,
@@ -1479,9 +1494,9 @@ rfactors_highj_dict = {
     },
     'P(Q)(2Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'P(R)P': {
         'c0': 1,
@@ -1515,9 +1530,9 @@ rfactors_highj_dict = {
     },
     'QRR': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'QR(P)': {
         'c0': 1,
@@ -1527,15 +1542,15 @@ rfactors_highj_dict = {
     },
     'QR(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'QQP': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'QQQ': {
         'c0': 1,
@@ -1545,15 +1560,15 @@ rfactors_highj_dict = {
     },
     'QQR': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'QQ(P)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'QQ(Q)': {
         'c0': 1,
@@ -1563,15 +1578,15 @@ rfactors_highj_dict = {
     },
     'QQ(R)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'QPP': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'QPQ': {
         'c0': 1,
@@ -1581,9 +1596,9 @@ rfactors_highj_dict = {
     },
     'QP(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'QP(R)': {
         'c0': 1,
@@ -1599,9 +1614,9 @@ rfactors_highj_dict = {
     },
     'Q2P2P': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q2P(P)': {
         'c0': 1,
@@ -1611,15 +1626,15 @@ rfactors_highj_dict = {
     },
     'Q2P(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q2Q2R': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q2Q2Q': {
         'c0': 1,
@@ -1629,15 +1644,15 @@ rfactors_highj_dict = {
     },
     'Q2Q2P': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q2Q(P)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q2Q(Q)': {
         'c0': 1,
@@ -1647,15 +1662,15 @@ rfactors_highj_dict = {
     },
     'Q2Q(R)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q2R2R': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q2R2Q': {
         'c0': 1,
@@ -1665,9 +1680,9 @@ rfactors_highj_dict = {
     },
     'Q2R(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q2R(R)': {
         'c0': 1,
@@ -1683,9 +1698,9 @@ rfactors_highj_dict = {
     },
     'Q(P)Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q(P)2P': {
         'c0': 1,
@@ -1695,9 +1710,9 @@ rfactors_highj_dict = {
     },
     'Q(P)2Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q(P)(Q)': {
         'c0': 1,
@@ -1707,9 +1722,9 @@ rfactors_highj_dict = {
     },
     'Q(P)(P)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q(P)(2Q)': {
         'c0': 1,
@@ -1719,15 +1734,15 @@ rfactors_highj_dict = {
     },
     'Q(P)(2R)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q(Q)R': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)Q': {
         'c0': 1,
@@ -1737,15 +1752,15 @@ rfactors_highj_dict = {
     },
     'Q(Q)P': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)2P': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)2Q': {
         'c0': 1,
@@ -1755,15 +1770,15 @@ rfactors_highj_dict = {
     },
     'Q(Q)2R': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)(R)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)(Q)': {
         'c0': 1,
@@ -1773,15 +1788,15 @@ rfactors_highj_dict = {
     },
     'Q(Q)(P)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)(2P)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(Q)(2Q)': {
         'c0': 1,
@@ -1791,15 +1806,15 @@ rfactors_highj_dict = {
     },
     'Q(Q)(2R)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'Q(R)Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q(R)P': {
         'c0': 1,
@@ -1809,9 +1824,9 @@ rfactors_highj_dict = {
     },
     'Q(R)2Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'Q(R)2R': {
         'c0': 1,
@@ -1821,9 +1836,9 @@ rfactors_highj_dict = {
     },
     'Q(R)(R)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q(R)(Q)': {
         'c0': 1,
@@ -1833,9 +1848,9 @@ rfactors_highj_dict = {
     },
     'Q(R)(2P)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'Q(R)(2Q)': {
         'c0': 1,
@@ -1851,9 +1866,9 @@ rfactors_highj_dict = {
     },
     'RRQ': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'RRR': {
         'c0': 1,
@@ -1869,9 +1884,9 @@ rfactors_highj_dict = {
     },
     'RR(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'RR(R)': {
         'c0': 1,
@@ -1887,9 +1902,9 @@ rfactors_highj_dict = {
     },
     'RQQ': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'RQ(Q)': {
         'c0': 1,
@@ -1899,9 +1914,9 @@ rfactors_highj_dict = {
     },
     'RQ(R)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'RPP': {
         'c0': 1,
@@ -1923,9 +1938,9 @@ rfactors_highj_dict = {
     },
     'R2P2Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R2P2P': {
         'c0': 1,
@@ -1941,9 +1956,9 @@ rfactors_highj_dict = {
     },
     'R2P(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R2P(R)': {
         'c0': 1,
@@ -1959,9 +1974,9 @@ rfactors_highj_dict = {
     },
     'R2Q2Q': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'R2Q(Q)': {
         'c0': 1,
@@ -1971,9 +1986,9 @@ rfactors_highj_dict = {
     },
     'R2Q(R)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'R2R2R': {
         'c0': 1,
@@ -2013,9 +2028,9 @@ rfactors_highj_dict = {
     },
     'R(Q)R': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'R(Q)Q': {
         'c0': 1,
@@ -2025,9 +2040,9 @@ rfactors_highj_dict = {
     },
     'R(Q)2P': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(-1, 30),
-        'c14': Rational(1, 20)
+        'c12': Rational(-1, 20),
+        'c13': Rational(1, 30),
+        'c14': Rational(-1, 20)
     },
     'R(Q)2Q': {
         'c0': 1,
@@ -2037,9 +2052,9 @@ rfactors_highj_dict = {
     },
     'R(Q)(Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'R(Q)(P)': {
         'c0': 1,
@@ -2049,9 +2064,9 @@ rfactors_highj_dict = {
     },
     'R(Q)(2Q)': {
         'c0': 1,
-        'c12': Rational(1, 20),
-        'c13': Rational(1, 20),
-        'c14': Rational(-1, 30)
+        'c12': Rational(-1, 20),
+        'c13': Rational(-1, 20),
+        'c14': Rational(1, 30)
     },
     'R(Q)(2R)': {
         'c0': 1,
@@ -2067,9 +2082,9 @@ rfactors_highj_dict = {
     },
     'R(R)Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R(R)P': {
         'c0': 1,
@@ -2085,9 +2100,9 @@ rfactors_highj_dict = {
     },
     'R(R)2Q': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R(R)2R': {
         'c0': 1,
@@ -2103,9 +2118,9 @@ rfactors_highj_dict = {
     },
     'R(R)(Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R(R)(P)': {
         'c0': 1,
@@ -2121,9 +2136,9 @@ rfactors_highj_dict = {
     },
     'R(R)(2Q)': {
         'c0': 1,
-        'c12': Rational(-1, 30),
-        'c13': Rational(1, 20),
-        'c14': Rational(1, 20)
+        'c12': Rational(1, 30),
+        'c13': Rational(-1, 20),
+        'c14': Rational(-1, 20)
     },
     'R(R)(2R)': {
         'c0': 1,
