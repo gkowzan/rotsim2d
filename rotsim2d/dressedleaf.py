@@ -34,27 +34,34 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
 from __future__ import annotations
 
 import collections.abc as abc
+import json
 from collections import namedtuple
 from math import isclose
-from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
+from pathlib import Path
+from typing import Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
+import h5py
 import molspecutils.molecule as mol
 import numpy as np
 import scipy.constants as C
+from molspecutils.molecule import CH3ClAlchemyMode, COAlchemyMode
 
 import rotsim2d.couple as cp
+import rotsim2d.pathways as pw
 import rotsim2d.utils as u
 from rotsim2d.couple import four_couple
-from rotsim2d.pathways import KetBra, KSign, Side
+from rotsim2d.pathways import KetBra, KSign, Side, gen_pathways
 
 #: Spectroscopic notation for transitions
 dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
-def abstract_line_label(pair: Tuple[mol.RotState]) -> str:
+def abstract_line_label(pair: Tuple[mol.RotState], vib=False) -> str:
     ":meta private:"
     pair = sorted(pair, key=lambda x: x.nu)
     dnu = abs(pair[1].nu-pair[0].nu)
     label = str(dnu) if dnu>1 else ""
     label += dj_to_letter[pair[1].j-pair[0].j]
+    if vib and (pair[1].nu > 1 or pair[0].nu > 1):
+        label = str(max(pair[1].nu, pair[0].nu))+label
 
     return label
 
@@ -172,8 +179,8 @@ class Pathway:
     @property
     def peak_label(self):
         ":meta private:"
-        return abstract_line_label(self.coherences[0])+\
-            abstract_line_label(self.coherences[2])
+        return abstract_line_label(self.coherences[0], True)+\
+            '-' + abstract_line_label(self.coherences[2], True)
 
     @property
     def experimental_label(self):
@@ -285,7 +292,7 @@ class Pathway:
                 r = arr
         return l, r
 
-    def print_diagram(self, abstract=False):
+    def print_diagram(self, abstract=False, print=print):
         """Pretty print double-sided Feynmann diagram.
 
         Parameters
@@ -303,7 +310,7 @@ class Pathway:
             else:
                 print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
-    def _tw_pprint(self, end='\n'):
+    def _tw_pprint(self, end='\n', print=print):
         if self.tw_coherence:
             import rotsim2d.symbolic.functions as sym
             tw_coherence = sym.rcs_expression(
@@ -312,7 +319,7 @@ class Pathway:
             tw_coherence = False
         print(f"Coherence during waiting time: {tw_coherence!r}", end=end)
 
-    def pprint(self, abstract=False, angles=None):
+    def pprint(self, abstract=False, angles=None, print=print):
         """Pretty print this pathway.
 
         Parameters
@@ -322,7 +329,7 @@ class Pathway:
             J values.
         """
         print("diagram:")
-        self.print_diagram(abstract=abstract)
+        self.print_diagram(abstract=abstract, print=print)
         print(f"G-factor label: {self.geo_label}")
         print("G-factors: {!s}".format(self.gfactors()))
         print("Total side: {!s}".format(self.leaf.total_side()))
@@ -333,7 +340,7 @@ class Pathway:
             print("R-factor value: {:f}".format(self.geometric_factor(angles=angles)))
         print(f"Experimental label: {self.experimental_label}")
         print("Colors: {:d}".format(self.leaf.color_tier()))
-        self._tw_pprint()
+        self._tw_pprint(print=print)
 
     def __repr__(self):
         return f"Pathway(leaf={self.leaf!r})"
@@ -399,8 +406,8 @@ class DressedPathway(Pathway):
 
         return ret
 
-    def _tw_pprint(self):
-        Pathway._tw_pprint(self, end='')
+    def _tw_pprint(self, print=print):
+        Pathway._tw_pprint(self, end='', print=print)
         if self.tw_coherence:
             print(", {:.2f} cm-1".format(u.nu2wn(self.nu(1))))
         else:
@@ -425,6 +432,26 @@ class DressedPathway(Pathway):
                      T: float) -> List[DressedPathway]:
         """Make a list of DressedPathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list), [])
+
+    @classmethod
+    def from_params_dict(cls, params: Mapping) -> List[DressedPathway]:
+        """Make a list of DressedPathway's from dict of parameters."""
+        if params['molecule'] == 'CH3Cl':
+            mode = CH3ClAlchemyMode()
+            rotor = 'symmetric'
+        elif params['molecule'] == 'CO':
+            mode = COAlchemyMode()
+            rotor = 'linear'
+        else:
+            raise ValueError("Invalid molecule")
+
+        meths = [getattr(pw, "only_"+params["direction"])]
+        meths.extend([getattr(pw, meth) for meth in params['filters']])
+        kbs = gen_pathways(
+            range(params['jmax']), meths=meths, rotor=rotor,
+            kiter_func=params['kiter'])
+
+        return cls.from_kb_list(kbs, mode, params['T'])
 
     def __repr__(self):
         return f"DressedPathway(leaf={self.leaf!r}, vib_mode={self.vib_mode!r}, T={self.T!r})"
@@ -618,24 +645,27 @@ def split_by_pols_highjs(kbl: Iterable[DressedLeaf]):
     return ret
 
 
-def split_by_peaks(kbl: Iterable[Pathway]):
+def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False):
     ret = {}
     for dl in kbl:
-        ret.setdefault(dl.peak, []).append(dl)
+        if abstract:
+            ret.setdefault(dl.abstract_peak, []).append(dl)
+        else:
+            ret.setdefault(dl.peak, []).append(dl)
     return ret
 
 
-def pprint_dllist(dllist, abstract=False, angles=None):
+def pprint_dllist(dllist, abstract=False, angles=None, print=print):
     for i, dl in enumerate(dllist):
         if i == 0:
             print('-'*10)
             if isinstance(dl, DressedPathway):
                 print('pump = {:.2f} cm-1, probe = {:.2f} cm-1'.format(
                     u.nu2wn(dl.nu(0)), u.nu2wn(dl.nu(2))))
-            dl.pprint(abstract=abstract, angles=angles)
+            dl.pprint(abstract=abstract, angles=angles, print=print)
         else:
             print()
-            dl.pprint(abstract=abstract, angles=angles)
+            dl.pprint(abstract=abstract, angles=angles, print=print)
         if i == len(dllist)-1:
             print('-'*10)
             print()
@@ -682,6 +712,11 @@ class Peak2DList(list):
         """
         return [peak.sig for peak in self]
 
+    @property
+    def peaks(self):
+        """Peak strings."""
+        return [peak.peak for peak in self]
+
     @staticmethod
     def _sort_func(peak):
         return abs(peak.sig)
@@ -701,6 +736,41 @@ class Peak2DList(list):
         else:
             raise IndexError("'{!s}' not found in the list".format(peak))
 
+    def to_file(self, path: Union[str, Path], metadata: Optional[Dict]=None):
+        """Save peak list to HDF5 file."""
+        length = len(self)
+        with h5py.File(path, mode='w') as f:
+            f.create_dataset("pumps", data=self.pumps)
+            f.create_dataset("probes", data=self.probes)
+            f.create_dataset("sigs", data=self.sigs)
+            f.create_dataset(
+                "peaks", data=[json.dumps(peak) for peak in self.peaks])
+            if metadata:
+                f.attrs['metadata'] = json.dumps(metadata)
+
+    @classmethod
+    def from_file(cls, path: Union[str, Path]):
+        """Read peak list from HDF5 file."""
+        with h5py.File(path, mode='r') as f:
+            pl = cls()
+            for pu, pr, sig, peak in zip(
+                    f['pumps'], f['probes'], f['sigs'], f['peaks']):
+                pl.append(Peak2D(pu, pr, sig, tuple(json.loads(peak))))
+
+        return pl
+
+
+def run_peak_list(params: Mapping) -> Peak2DList:
+    """Calculate list of peaks based on toml input data."""
+    if params['spectrum']['type'] != 'peaks':
+        raise ValueError("Wrong spectrum type requested.")
+
+    dpws = DressedPathway.from_params_dict(params['pathways'])
+    pl = peak_list(dpws, tw=params['spectrum']['tw']*1e-12,
+                   angles=params['spectrum']['angles'])
+
+    return pl
+
 
 def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
               return_dls: bool=False) -> Peak2DList:
@@ -708,7 +778,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
 
     Optionally return sorted list of DressedLeaf's corresponding to peaks.
     """
-    ll = split_by_peaks(ll)
+    ll: dict = split_by_peaks(ll)
     pl = Peak2DList()
     dls = []
     for peak, dll in ll.items():

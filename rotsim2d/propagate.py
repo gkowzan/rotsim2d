@@ -6,19 +6,26 @@
   of `pop` attribute in `KetBra`.
 - add pressure and polarization dependence here
 """
+import json
 import logging
-from typing import List, Union, Tuple, Optional, Sequence
+from collections import namedtuple
+from pathlib import Path
+from typing import List, Mapping, Optional, Sequence, Tuple, Union, Dict
+
+import h5py
 import numpy as np
 import scipy.constants as C
+
 try:
     import pyfftw
     pyfftw.config.PLANNER_EFFORT = 'FFTW_ESTIMATE'
     import pyfftw.interfaces.scipy_fftpack as fftp
 except ModuleNotFoundError:
     import scipy.fftpack as fftp
+
+import rotsim2d.dressedleaf as dl
 from rotsim2d import pathways as pw
 from rotsim2d.couple import four_couple
-import rotsim2d.dressedleaf as dl
 
 e2i = C.epsilon_0*C.c/2         #: Electric field to intensity
 xs2cm = 1e2/C.c                 #: Cross section in m^2 Hz to cm^2 cm^{-1}
@@ -47,26 +54,44 @@ def pws_autospan(pws: Sequence[dl.DressedPathway], margin: float=5.0*30e9,
 
 
 def aligned_fs(fsmin: float, fsmax: float, df: float):
-    """Return `df`-spaced grid of values between `fsmin` and `fsmax`.
-
-    Align endpoints if they're not separated by a multiple of `df`.
+    """Return smallest `df`-spaced zero-offset grid of values covering [`fsmin`,
+    `fsmax`] range.
     """
-    def align(f: float):
-        return np.ceil(f/df).astype(np.int64) if f < 0\
-            else np.floor(f/df).astype(np.int64)
-    return np.arange(align(fsmin), align(fsmax)+1)*df
+    def align_max(f: float):
+        return np.ceil(f/df).astype(np.int64)
+    def align_min(f: float):
+        return np.floor(f/df).astype(np.int64)
+
+    fsmin, fsmax = sorted((fsmin, fsmax))
+    if fsmin >= 0 and fsmax > 0:
+        return np.arange(align_min(fsmin), align_max(fsmax)+1)*df
+    elif fsmin < 0 and fsmax > 0:
+        return np.arange(-(align_max(-fsmin)), align_max(fsmax)+1)*df
+    elif fsmin < 0 and fsmax <= 0:
+        return np.arange(-(align_max(-fsmin)), -align_min(-fsmax)+1)*df
 
 
 def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
-    """Return either time or frequency domain response."""
+    r"""Return either time or frequency domain response.
+
+    This uses the Fourier transform defined as:
+
+    ..math::
+
+        \mathcal{F}(f(t)) = \int_{-\infty}^{\infty} \mathrm{d}t\, f(t) e^{i\omega t}
+    """
     if domain == 'f':
-        return 1.0/(gam - 1.0j*(coord-nu))
+        return 1.0/(gam + 1.0j*(coord-nu))
     elif domain == 't':
         return np.exp(-2.0*np.pi*coord*(1.0j*nu+gam))
 
 
-def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarray]],
-                          domains: Sequence[str], freq_shifts: Optional[Sequence[float]]=None, p: float=1.0) -> np.ndarray:
+def dressed_leaf_response(dl: dl.DressedPathway,
+                          coords: Sequence[Optional[np.ndarray]],
+                          domains: Sequence[str],
+                          freq_shifts: Optional[Sequence[float]]=None,
+                          angles: Optional[Sequence[float]]=None,
+                          p: float=1.0) -> np.ndarray:
     """Calculate response for a single DressedLeaf."""
     # validate inputs
     if len(coords) != len(domains):
@@ -90,15 +115,98 @@ def dressed_leaf_response(dl: dl.DressedLeaf, coords: Sequence[Optional[np.ndarr
 
         resps.append(leaf_term(nu, dl.gamma(i)*p, coord, domains[i]))
 
-    resp = resps[0]*dl.intensity()
+    resp = resps[0]*dl.intensity(angles=angles)
     if len(resps) > 1:
         for next_resp in resps[1:]:
             resp = resp*next_resp
     return resp
 
 
+def run_fsaxes(dpws: Sequence[dl.DressedPathway],
+               params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
+    pump_limits, probe_limits = params['pump_limits'], params['probe_limits']
+    if pump_limits == 'auto' or probe_limits == 'auto':
+        pumps, probes = pws_autospan(dpws)
+    if pump_limits == 'auto':
+        pump_limits = pumps[:2]
+    else:
+        pump_limits = [lim*C.c*100.0 for lim in pump_limits]
+    if probe_limits == 'auto':
+        probe_limits = probes[:2]
+    else:
+        probe_limits = [lim*C.c*100.0 for lim in probe_limits]
+
+    df_pump, df_probe = (params['pump_step']*C.c*100.0,
+                         params['probe_step']*C.c*100.0)
+    fs_pu = aligned_fs(pump_limits[0], pump_limits[1], df_pump)
+    fs_pr = aligned_fs(probe_limits[0], probe_limits[1], df_probe)
+
+    return fs_pu, fs_pr
+
+
+def run_propagate(dpws: Sequence[dl.DressedPathway],
+                  params: Mapping) -> Tuple[np.ndarray, ...]:
+    """Calculate 2D spectra."""
+    fs_pu, fs_pr = run_fsaxes(dpws, params)
+    resp = np.zeros((fs_pu.size, fs_pr.size), dtype=np.complex128)
+    for dl1 in dpws:
+        resp[:, :] += dressed_leaf_response(
+            dl1, [fs_pu[:, None], params['tw']*1e-12, fs_pr[None, :]],
+            ['f', 't', 'f'], p=params['pressure'],
+            angles=params['angles'])
+
+    return fs_pu, fs_pr, resp
+
+
+def run_save(path: Union[str, Path],
+             fs_pu: np.ndarray, fs_pr: np.ndarray, spec2d: np.ndarray,
+             metadata: Mapping=None):
+    """Save calculated 2D spectrum."""
+    with h5py.File(path, mode='w') as f:
+        f.create_dataset("pumps", data=fs_pu)
+        f.create_dataset("probes", data=fs_pr)
+        f.create_dataset("spectrum", data=spec2d)
+        if metadata:
+            f.attrs['metadata'] = json.dumps(metadata)
+
+
+Spectrum2D = namedtuple("Spectrum2D", ["pumps", "probes", "spectrum", "params"],
+                        defaults=[None])
+
+def run_load(path: Union[str, Path]):
+    """Load calculated 2D spectrum."""
+    with h5py.File(path, mode='r') as f:
+        return Spectrum2D(
+            f['pumps'][()], f['probes'][()], f['spectrum'][()],
+            json.loads(f.attrs['metadata']))
+
+
+def run_update_metadata(params: Dict) -> Dict:
+    """Update `spectrum` metadata if needed.
+
+    Tries to load frequency axis and pressure from `path` if
+    `params['spectrum']['from_file']` contains a file name.
+    """
+    if "from_file" in params['spectrum'] and\
+       params['spectrum']['from_file']:
+        with h5py.File(params['spectrum']['from_file'], 'r') as f:
+            pumps = f['pumps'][()]
+            probes = f['probes'][()]
+            h5_params = json.loads(f.attrs['metadata'])
+        params['spectrum']['pump_limits'] = [pumps[0]/C.c/100.0, pumps[-1]/C.c/100.0]
+        params['spectrum']['pump_step'] = (pumps[1]-pumps[0])/C.c/100.0
+        if params['pathways']['direction'] == h5_params['pathways']['direction']:
+            params['spectrum']['probe_limits'] = [probes[0]/C.c/100.0, probes[-1]/C.c/100.0]
+        else:
+            params['spectrum']['probe_limits'] = [-probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
+        params['spectrum']['probe_step'] = abs((probes[1]-probes[0])/C.c/100.0)
+        params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
+
+    return params
+
+
 class CrossSectionMixin:
-    def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex:
+    def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex128:
         """Calculate interaction cross section for a single leaf."""
         resp = self.leaf_response(leaf, times)
         if leaf.parent.readout:
@@ -144,7 +252,7 @@ class CrossSectionMixin:
         return sum(self.leaf_response(leaf, times) for leaf in kb.diagonals()
                    if self.filter(leaf))
 
-    def leaf_response(self, leaf: pw.KetBra, freqs: List[Union[np.ndarray, float]]) -> Union[np.ndarray, np.complex]:
+    def leaf_response(self, leaf: pw.KetBra, freqs: List[Union[np.ndarray, float]]) -> Union[np.ndarray, np.complex128]:
         r"""Return single pathway response spectrum."""
         freq_shift = [0.0]*len(freqs) if self.freq_shift is None else self.freq_shift
         resps, const = [], np.complex(1.0)
