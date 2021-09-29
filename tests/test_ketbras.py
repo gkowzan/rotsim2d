@@ -7,7 +7,7 @@ import molspecutils.molecule as mol
 @pytest.fixture
 def kbs_tree():
     return pw.gen_pathways([5], rotor='symmetric',
-                           kiter_func=lambda x: [1], pump_overlap=False)[0]
+                           kiter_func="[1]", pump_overlap=False)[0]
 
 
 def test_leafs_are_ketbras(kbs_tree):

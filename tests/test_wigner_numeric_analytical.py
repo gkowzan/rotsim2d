@@ -24,7 +24,7 @@ def gfactors_xjpf(js: Sequence[int]) -> Tuple[float]:
 def pws():
     """Generate a list of pathways for further testing."""
     kbs = pw.gen_pathways([0, 1, 2], rotor='symmetric',
-                          kiter_func=lambda x: range(x+1), pump_overlap=False)
+                          kiter_func="range(j+1)", pump_overlap=False)
     pws = dl.Pathway.from_kb_list(kbs)
 
     return pws

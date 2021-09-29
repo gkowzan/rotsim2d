@@ -16,7 +16,7 @@ from sqlalchemy import create_engine
 @pytest.fixture
 def partial_pws():
     return partial(pw.gen_pathways, [5], rotor='symmetric',
-                   kiter_func=lambda x: [1], pump_overlap=False)
+                   kiter_func='[1]', pump_overlap=False)
 
 def test_onecolor(partial_pws):
     kbs = partial_pws(meths=[pw.only_dfwm])
@@ -43,7 +43,7 @@ def test_threecolor(partial_pws):
 def pws():
     """Generate a list of pathways for further testing."""
     kbs = pw.gen_pathways([5], rotor='symmetric',
-                          kiter_func=lambda x: [1], pump_overlap=False)
+                          kiter_func='[1]', pump_overlap=False)
     pws = dl.Pathway.from_kb_list(kbs)
 
     return pws
@@ -100,10 +100,29 @@ def ch3cl_mode():
 @pytest.fixture
 def dressed_pws(ch3cl_mode):
     kbs = pw.gen_pathways([5], rotor='symmetric',
-                          kiter_func=lambda x: [1], pump_overlap=False)
+                          kiter_func='[1]', pump_overlap=False)
     dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
 
     return dpws
+
+
+@pytest.fixture
+def dressed_pws_2(ch3cl_mode):
+    kbs = pw.gen_pathways(range(2), rotor='symmetric',
+                          kiter_func='[1]', pump_overlap=False)
+    dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
+
+    return dpws
+
+
+dressed_pws_params = {
+    'molecule': 'CH3Cl',
+    'T': 296.0,
+    'jmax': 2,
+    'kiter': '[1]',
+    'filters': []
+}
+
 
 def test_dressedpathway_rme_sign(dressed_pws):
     for p in dressed_pws:
@@ -151,12 +170,28 @@ def test_coherence_frequencies_are_real(dressed_pws):
 
 def test_missing_level_handling(ch3cl_mode):
     kbs = pw.gen_pathways([20], rotor='symmetric',
-                          kiter_func=lambda x: [20])
+                          kiter_func="[20]")
     dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
+
+def test_dressed_pws_params(dressed_pws_2):
+    pl1 = dl.peak_list(dressed_pws_2)
+    dpws = dl.DressedPathway.from_params_dict(dressed_pws_params)
+    pl2 = dl.peak_list(dpws)
+
+    assert pl1 == pl2
 
 @pytest.fixture
 def peak_list(dressed_pws):
     return dl.peak_list(dressed_pws)
+
+def test_peak_list_save_read_hdf5(peak_list, tmp_path):
+    peak_list.to_file(tmp_path / 'peak_list.hdf5')
+    pl = dl.Peak2DList.from_file(tmp_path / 'peak_list.hdf5')
+    for p1, p2 in zip(peak_list, pl):
+        assert pytest.approx(p1.pump_wl) == p2.pump_wl
+        assert pytest.approx(p1.probe_wl) == p2.probe_wl
+        assert pytest.approx(p1.sig) == p2.sig
+        assert p1.peak == p2.peak
 
 
 def test_peak_list_frequencies_are_real(peak_list):

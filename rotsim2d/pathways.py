@@ -1,16 +1,16 @@
 r"""Generate all Liouville pathways for nth order rovibrational excitation."""
 # * Imports, constants and enums
 import enum
-from copy import deepcopy
 import operator as op
-from functools import reduce, lru_cache
-from typing import List, Union, Tuple, Iterable, Sequence, Optional, Callable
-import numpy as np
+from copy import deepcopy
+from functools import lru_cache, reduce
+from typing import Callable, Iterable, List, Optional, Sequence, Tuple, Union
 
 import anytree as at
+import numpy as np
 from anytree.exporter import UniqueDotExporter
-
-from molspecutils.molecule import DiatomState, SymTopState, RotState
+from asteval import Interpreter
+from molspecutils.molecule import DiatomState, RotState, SymTopState
 
 #: Right-circular polarized light
 right_pol = (5/4*np.pi, -np.pi/2)
@@ -679,7 +679,9 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=N
     return ketbra.root
 
 
-def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: Callable=None) -> List[KetBra]:
+kiter_interpreter = Interpreter()
+
+def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: str=None) -> List[KetBra]:
     roots = []
     for j in jiter:
         if rotor == 'linear':
@@ -688,7 +690,8 @@ def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: Callable=None) -
             if kiter_func is None:
                 kiter = range(0, j+1)
             else:
-                kiter = kiter_func(j)
+                kiter_interpreter.symtable['j'] = j
+                kiter = kiter_interpreter(kiter_func)
             for k in kiter:
                 roots.append(KetBra(SymTopState(0, j, k), SymTopState(0, j, k)))
     return roots
@@ -705,7 +708,7 @@ def gen_excitations(root, light_names, parts, meths=None) -> KetBra:
 
 
 def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
-                 rotor: str='linear', kiter_func: Callable=None,
+                 rotor: str='linear', kiter_func: str=None,
                  pump_overlap: bool=False) -> List[KetBra]:
     roots = gen_roots(jiter, rotor, kiter_func)
     pws = [gen_excitations(root, ['omg1', 'omg2', 'omg3'],

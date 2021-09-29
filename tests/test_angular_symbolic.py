@@ -28,7 +28,7 @@ def test_gfactors_highj():
 def pws():
     """Generate a list of pathways for further testing."""
     kbs = pw.gen_pathways([5], rotor='symmetric',
-                          kiter_func=lambda x: [1], pump_overlap=False)
+                          kiter_func="[1]", pump_overlap=False)
     pws = dl.Pathway.from_kb_list(kbs)
 
     return pws
