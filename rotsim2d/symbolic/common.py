@@ -2,7 +2,7 @@
 :mod:`rotsim2d.symbolic.results`."""
 from sympy import *
 #: Initial angular momentum
-J_i, J_j, J_l = symbols("J_i J_j J_l", integer=True, nonnegative=True)
+J_i, J_j, J_l, Jpp, Kpp = symbols("J_i J_j J_l J'' K''", integer=True, nonnegative=True)
 #: Dummy angles
 phi, phj, phk, phl = symbols(r"\phi_i \phi_j \phi_k \phi_l", real=True)
 thetas = symbols(r"\theta_i \theta_j \theta_k \theta_l", real=True)

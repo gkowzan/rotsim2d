@@ -4,23 +4,26 @@ related to polarization dependence and angular momentum dependence of four-fold
 dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.symbolic.results`."""
 # * Imports
-from collections.abc import Mapping
 import inspect
 import itertools as it
+import re
+from collections.abc import Mapping
+from functools import reduce
+from operator import mul
+
 import numpy as np
-from scipy.optimize import minimize
-from sympy import *
-import sympy.physics.quantum.cg as cg
-from molspecutils.molecule import RotState
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
+import sympy.physics.quantum.cg as cg
+from molspecutils.molecule import RotState
 from rotsim2d.couple import T00, G
 from rotsim2d.symbolic.common import *
-from rotsim2d.symbolic.results import (gfactors, gfactors_highj,
-                                       gfactors_highj_numeric, T00_exprs)
-from typing import (Sequence, Dict, List, Tuple, Optional, NewType, Any, Union,
-                    Callable, Iterable)
-import re
+from rotsim2d.symbolic.results import (T00_exprs, gfactors, gfactors_highj,
+                                       gfactors_highj_numeric)
+from scipy.optimize import minimize
+from sympy import *
+from typing import (Any, Callable, Dict, Iterable, List, NewType, Optional,
+                    Sequence, Tuple, Union)
 
 #: Dummy type for any SymPy expressions, since SymPy is not annotated
 # Expr = NewType('Expr', Any)
@@ -716,7 +719,30 @@ def rot_expression(state: RotState, jref: int) -> Basic:
     return expr
 
 
-def rcs_expression(pair: Tuple[RotState], jref: int) -> Basic:
+def rcs_expression(pair: Tuple[RotState, ...], jref: int) -> Basic:
     """Return rotational beat expression."""
     return factor(rot_expression(pair[1], jref)-
                   rot_expression(pair[0], jref), deep=True)
+
+honl_london_factors = {0: {-1: (Jpp+Kpp)*(Jpp-Kpp)/Jpp,
+                            0: (2*Jpp+1)*Kpp**2/Jpp/(Jpp+1),
+                            1: (Jpp+1+Kpp)*(Jpp+1-Kpp)/(Jpp+1)}}
+
+
+def honl_london(pair: Tuple[RotState, ...], jref: int) -> Basic:
+    """Return Honl-London factor in terms of J_i = jref."""
+    if 'k' in pair[0]._fields:
+        K = Kpp
+    else:
+        K = 0
+
+    dj = pair[0].j-jref
+
+    return honl_london_factors[0][pair[1].j-pair[0].j].\
+        subs(Kpp, K).subs(Jpp, J_i+dj)
+
+
+def honl_london_pw(transitions: Sequence[Tuple[RotState, RotState]],
+                   jref: int) -> Basic:
+    """Four-fold Honl-London factor for a pathway."""
+    return factor(reduce(mul, [honl_london(t, jref) for t in transitions], 1), deep=True)
