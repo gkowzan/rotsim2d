@@ -53,7 +53,7 @@ def pws_autospan(pws: Sequence[dl.DressedPathway], margin: float=5.0*30e9,
              2*margin + conv*(probe_max-probe_min)))
 
 
-def aligned_fs(fsmin: float, fsmax: float, df: float):
+def aligned_fs(fsmin: float, fsmax: float, df: float) -> np.ndarray:
     """Return smallest `df`-spaced zero-offset grid of values covering [`fsmin`,
     `fsmax`] range.
     """
@@ -144,8 +144,44 @@ def run_fsaxes(dpws: Sequence[dl.DressedPathway],
     return fs_pu, fs_pr
 
 
+def run_tsaxes(params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
+    dt_pump, dt_probe = (params['pump_step']*1e-12,
+                         params['probe_step']*1e-12)
+    ts_pu = aligned_fs(params['pump_limits'][0], params['pump_limits'][1],
+                       dt_pump)
+    ts_pr = aligned_fs(params['probe_limits'][0], params['probe_limits'][1],
+                       dt_probe)
+
+    return ts_pu, ts_pr
+
+
 def run_propagate(dpws: Sequence[dl.DressedPathway],
                   params: Mapping) -> Tuple[np.ndarray, ...]:
+    """Calculate 2D spectra or time-domain response."""
+    if params['type'] == 'lineshapes':
+        return run_propagate_lineshapes(dpws, params)
+    elif params['type'] == 'time':
+        return run_propagate_time(dpws, params)
+    else:
+        raise ValueError("Unknown spectrum type '{:s}'".format(params['type']))
+
+
+def run_propagate_time(dpws: Sequence[dl.DressedPathway],
+                       params: Mapping) -> Tuple[np.ndarray, ...]:
+    """Calculate time-domain response."""
+    ts_pu, ts_pr = run_tsaxes(params)
+    resp = np.zeros((ts_pu.size, ts_pr.size), dtype=np.complex128)
+    for dl1 in dpws:
+        resp[:, :] += dressed_leaf_response(
+            dl1, [ts_pu[:, None], params['tw']*1e-12, ts_pr[None, :]],
+            ['t', 't', 't'], p=params['pressure'],
+            angles=params['angles'])
+
+    return ts_pu, ts_pr, resp
+
+
+def run_propagate_lineshapes(dpws: Sequence[dl.DressedPathway],
+                            params: Mapping) -> Tuple[np.ndarray, ...]:
     """Calculate 2D spectra."""
     fs_pu, fs_pr = run_fsaxes(dpws, params)
     resp = np.zeros((fs_pu.size, fs_pr.size), dtype=np.complex128)
@@ -161,7 +197,7 @@ def run_propagate(dpws: Sequence[dl.DressedPathway],
 def run_save(path: Union[str, Path],
              fs_pu: np.ndarray, fs_pr: np.ndarray, spec2d: np.ndarray,
              metadata: Mapping=None):
-    """Save calculated 2D spectrum."""
+    """Save calculated 2D spectrum or time-domain response."""
     with h5py.File(path, mode='w') as f:
         f.create_dataset("pumps", data=fs_pu)
         f.create_dataset("probes", data=fs_pr)
@@ -181,6 +217,47 @@ def run_load(path: Union[str, Path]):
             json.loads(f.attrs['metadata']))
 
 
+def run_update_metadata_lineshapes(params: Dict) -> Dict:
+    """Update `spectrum` metadata if needed.
+
+    Tries to load frequency/time axis and pressure from `path` if
+    `params['spectrum']['from_file']` contains a file name.
+    """
+    with h5py.File(params['spectrum']['from_file'], 'r') as f:
+        pumps = f['pumps'][()]
+        probes = f['probes'][()]
+        h5_params = json.loads(f.attrs['metadata'])
+    params['spectrum']['pump_limits'] = [pumps[0]/C.c/100.0, pumps[-1]/C.c/100.0]
+    params['spectrum']['pump_step'] = (pumps[1]-pumps[0])/C.c/100.0
+    if params['pathways']['direction'] == h5_params['pathways']['direction']:
+        params['spectrum']['probe_limits'] = [probes[0]/C.c/100.0, probes[-1]/C.c/100.0]
+    else:
+        params['spectrum']['probe_limits'] = [-probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
+    params['spectrum']['probe_step'] = abs((probes[1]-probes[0])/C.c/100.0)
+    params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
+
+    return params
+
+
+def run_update_metadata_time(params: Dict) -> Dict:
+    """Update `spectrum` metadata if needed.
+
+    Tries to load time axis and pressure from `path` if
+    `params['spectrum']['from_file']` contains a file name.
+    """
+    with h5py.File(params['spectrum']['from_file'], 'r') as f:
+        pumps = f['pumps'][()]
+        probes = f['probes'][()]
+        h5_params = json.loads(f.attrs['metadata'])
+    params['spectrum']['pump_limits'] = [pumps[0]*1e12, pumps[-1]*1e12]
+    params['spectrum']['pump_step'] = (pumps[1]-pumps[0])*1e12
+    params['spectrum']['probe_limits'] = [probes[0]*1e12, probes[-1]*1e12]
+    params['spectrum']['probe_step'] = (probes[1]-probes[0])*1e12
+    params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
+
+    return params
+
+
 def run_update_metadata(params: Dict) -> Dict:
     """Update `spectrum` metadata if needed.
 
@@ -189,20 +266,14 @@ def run_update_metadata(params: Dict) -> Dict:
     """
     if "from_file" in params['spectrum'] and\
        params['spectrum']['from_file']:
-        with h5py.File(params['spectrum']['from_file'], 'r') as f:
-            pumps = f['pumps'][()]
-            probes = f['probes'][()]
-            h5_params = json.loads(f.attrs['metadata'])
-        params['spectrum']['pump_limits'] = [pumps[0]/C.c/100.0, pumps[-1]/C.c/100.0]
-        params['spectrum']['pump_step'] = (pumps[1]-pumps[0])/C.c/100.0
-        if params['pathways']['direction'] == h5_params['pathways']['direction']:
-            params['spectrum']['probe_limits'] = [probes[0]/C.c/100.0, probes[-1]/C.c/100.0]
+        if params['spectrum']['type'] == 'lineshapes':
+            return run_update_metadata_lineshapes(params)
+        elif params['spectrum']['type'] == 'time':
+            return run_update_metadata_time(params)
         else:
-            params['spectrum']['probe_limits'] = [-probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
-        params['spectrum']['probe_step'] = abs((probes[1]-probes[0])/C.c/100.0)
-        params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
-
-    return params
+            raise ValueError("Unknown spectrum type '{:s}'".format(params['spectrum']['type']))
+    else:
+        return params
 
 
 class CrossSectionMixin:
