@@ -147,9 +147,11 @@ def run_fsaxes(dpws: Sequence[dl.DressedPathway],
 def run_tsaxes(params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
     dt_pump, dt_probe = (params['pump_step']*1e-12,
                          params['probe_step']*1e-12)
-    ts_pu = aligned_fs(params['pump_limits'][0], params['pump_limits'][1],
+    ts_pu = aligned_fs(params['pump_limits'][0]*1e-12,
+                       params['pump_limits'][1]*1e-12,
                        dt_pump)
-    ts_pr = aligned_fs(params['probe_limits'][0], params['probe_limits'][1],
+    ts_pr = aligned_fs(params['probe_limits'][0]*1e-12,
+                       params['probe_limits'][1]*1e-12,
                        dt_probe)
 
     return ts_pu, ts_pr
