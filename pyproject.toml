@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rotsim2d"
-version = "0.5.1"
+version = "0.5.1-alpha.1"
 description = "Simulate 2D rovibrational spectra of gas-phase molecular samples"
 authors = ["Grzegorz Kowzan <grzegorz@kowzan.eu>"]
 readme = "README.md"
