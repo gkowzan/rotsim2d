@@ -81,7 +81,7 @@ def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
         \mathcal{F}(f(t)) = \int_{-\infty}^{\infty} \mathrm{d}t\, f(t) e^{i\omega t}
     """
     if domain == 'f':
-        return 1.0/(gam + 1.0j*(coord-nu))
+        return 1.0/(gam - 1.0j*(coord-nu))
     elif domain == 't':
         return np.exp(-2.0*np.pi*coord*(1.0j*nu+gam))
 
