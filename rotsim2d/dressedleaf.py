@@ -431,6 +431,20 @@ class DressedPathway(Pathway, NDResonance):
         else:
             print()
 
+    def pprint(self, abstract=False, angles=None, print=print):
+        """Pretty print this pathway.
+
+        Parameters
+        ----------
+        abstract: bool
+            Use spectroscopic transition notation (P, Q, R) instead of absolute
+            J values.
+        """
+        Pathway.pprint(self, abstract=abstract, angles=angles, print=print)
+        print("Gammas: {:.3e}, {:.3e}, {:.3e} cm-1".format(
+            self.gamma(0)/C.c/100.0,
+            self.gamma(1)/C.c/100.0,
+            self.gamma(2)/C.c/100.0))
 
     @classmethod
     def from_kb_tree(cls, kb_tree: KetBra, vib_mode: mol.VibrationalMode,
