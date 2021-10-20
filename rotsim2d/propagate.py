@@ -38,7 +38,7 @@ def aid(x):
     return x.__array_interface__['data'][0]
 
 
-def pws_autospan(pws: Sequence[dl.DressedPathway], margin: float=5.0*30e9,
+def pws_autospan(pws: Sequence[dl.NDResonance], margin: float=5.0*30e9,
                  conv: float=1.0) -> Tuple[Tuple[float, ...], ...]:
     """Return min/max pump/probe frequencies from `pws`."""
     pump_freqs, probe_freqs = [pw.nu(0) for pw in pws], [pw.nu(2) for pw in pws]
@@ -86,7 +86,7 @@ def leaf_term(nu: float, gam: float, coord: np.ndarray, domain: str):
         return np.exp(-2.0*np.pi*coord*(1.0j*nu+gam))
 
 
-def dressed_leaf_response(dl: dl.DressedPathway,
+def dressed_leaf_response(dl: dl.NDResonance,
                           coords: Sequence[Optional[np.ndarray]],
                           domains: Sequence[str],
                           freq_shifts: Optional[Sequence[float]]=None,
@@ -100,7 +100,7 @@ def dressed_leaf_response(dl: dl.DressedPathway,
         if d not in ('t', 'f'):
             raise ValueError("domain can either be 't' or 'f'")
 
-    freq_shifts = freq_shifts if freq_shifts else [0.0]*len(coords)
+    freq_shifts = freq_shifts or [0.0]*len(coords)
     resps = []
     for i, coord in enumerate(coords):
         if coord is None:
@@ -122,7 +122,7 @@ def dressed_leaf_response(dl: dl.DressedPathway,
     return resp
 
 
-def run_fsaxes(dpws: Sequence[dl.DressedPathway],
+def run_fsaxes(dpws: Sequence[dl.NDResonance],
                params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
     pump_limits, probe_limits = params['pump_limits'], params['probe_limits']
     if pump_limits == 'auto' or probe_limits == 'auto':
@@ -157,7 +157,7 @@ def run_tsaxes(params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
     return ts_pu, ts_pr
 
 
-def run_propagate(dpws: Sequence[dl.DressedPathway],
+def run_propagate(dpws: Sequence[dl.NDResonance],
                   params: Mapping) -> Tuple[np.ndarray, ...]:
     """Calculate 2D spectra or time-domain response."""
     if params['type'] == 'lineshapes':
@@ -168,7 +168,7 @@ def run_propagate(dpws: Sequence[dl.DressedPathway],
         raise ValueError("Unknown spectrum type '{:s}'".format(params['type']))
 
 
-def run_propagate_time(dpws: Sequence[dl.DressedPathway],
+def run_propagate_time(dpws: Sequence[dl.NDResonance],
                        params: Mapping) -> Tuple[np.ndarray, ...]:
     """Calculate time-domain response."""
     ts_pu, ts_pr = run_tsaxes(params)
@@ -182,7 +182,7 @@ def run_propagate_time(dpws: Sequence[dl.DressedPathway],
     return ts_pu, ts_pr, resp
 
 
-def run_propagate_lineshapes(dpws: Sequence[dl.DressedPathway],
+def run_propagate_lineshapes(dpws: Sequence[dl.NDResonance],
                             params: Mapping) -> Tuple[np.ndarray, ...]:
     """Calculate 2D spectra."""
     fs_pu, fs_pr = run_fsaxes(dpws, params)

@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import collections.abc as abc
 import json
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
@@ -346,7 +347,24 @@ class Pathway:
         return f"Pathway(leaf={self.leaf!r})"
 
 
-class DressedPathway(Pathway):
+class NDResonance(metaclass=ABCMeta):
+    @abstractmethod
+    def nu(self, i: int) -> float:
+        """Frequency of `i` resonance."""
+        pass
+
+    @abstractmethod
+    def gamma(self, i: int) -> float:
+        """Decay rate of `i` resonance."""
+        pass
+
+    @abstractmethod
+    def intensity(self, tw: Optional[float]=None, angles=None) -> float:
+        """Amplitude of the whole resonance."""
+        pass
+
+
+class DressedPathway(Pathway, NDResonance):
     r"""Excitation pathway specialized to a vibrational mode.
 
     Parameters
