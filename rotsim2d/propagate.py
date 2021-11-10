@@ -548,7 +548,7 @@ def polarization(E0: float, resp: float, n: float):
     E0: float
         Time-integrated electric field, N/C*s.
     resp: float
-        [\mu]^2/J*Hz, result of :method:`Propagator.cross_section`.
+        [\mu]^2/J*Hz, result of :meth:`Propagator.cross_section`.
     n: float
         Number density (density), molecules/m^3.
 
