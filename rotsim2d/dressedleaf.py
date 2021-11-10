@@ -10,17 +10,19 @@ mode at a given temperature.  The main quantity, calculable with
 
 .. math::
 
-    A(\widetilde{\theta}, \widetilde{J}) = (-1)^\kappa \left(\frac{i}{2\hbar}\right)^n \frac{N_{\eta_i J_i}}{N} \langle O_{ijkl}\rangle = (-1)^\kappa \left(\frac{i}{2\hbar}\right)^n \frac{N_{\eta_i J_i}}{N} \langle T^{(0)}_0(\eta_iJ_i)^\dagger\rangle R^{(0)}_0(\widetilde{\theta}, \widetilde{J}) \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle,
+    A(\widetilde{\theta}, \widetilde{J}) = (-1)^\kappa \frac{i}{\hbar^3} \langle O_{ijkl}\rangle
+    = (-1)^\kappa \frac{i}{\hbar^3} \frac{N_{\eta_i J_i}}{N} \langle T^{(0)}_0(\eta_iJ_i)^\dagger\rangle R^{(0)}_0(\widetilde{\theta}, \widetilde{J}) \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle,
 
 where :math:`\widetilde{\theta}` and :math:`\widetilde{J}` are the sequences of
 polarization angles and J values for the pathway. :math:`N_{\eta_i J_i}`
-includes all relevant degeneracy factors (nuclear spin, rovibrational symmetry).
+includes all relevant degeneracy factors (nuclear spin, rovibrational symmetry)
+and :math:`\langle T^{(0)}_0(\eta_iJ_i)^\dagger\rangle=(2J_i+1)^{-1/2}`.
 
 The macroscopic polarization is related to the pathway amplitude by:
 
 .. math::
 
-    \vec{\epsilon}_4\cdot P^{(n)} =  N |E_1||E_2||E_3| A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}),
+    \vec{\epsilon}_4\cdot P^{(n)} =  \frac{1}{8} N \mathcal{E}_1 \mathcal{E}_2 \mathcal{E}_3 A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}),
 
 where :math:`N` is the number density and
 :math:`\mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t})` determines the
@@ -142,7 +144,7 @@ class Pathway:
         self.coherences, self.transitions, wbras = leaf._pathway_info()
         self.js = tuple(x[0] for x in wbras)
         self.light_inds = tuple(x[1] for x in wbras)
-        self.const = (1.0j/2/C.hbar)**(len(self.transitions)-1)*\
+        self.const = -(1.0j/C.hbar)**(len(self.transitions)-1)*\
             self.leaf.total_side()
         self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
         self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name,
