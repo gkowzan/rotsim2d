@@ -30,7 +30,7 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
 
 .. math::
 
-    \alpha_{\mathrm{probe}} = N \frac{k^{\mathrm{probe}}_0}{\epsilon_0}|E_1||E_2| A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}).
+    \alpha_{\mathrm{probe}} = \frac{1}{4}N \frac{k^{\mathrm{probe}}_0}{\epsilon_0} \mathcal{E}_1 \mathcal{E}_2 A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}).
 
 """
 from __future__ import annotations

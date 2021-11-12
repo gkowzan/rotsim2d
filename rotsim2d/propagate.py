@@ -278,6 +278,49 @@ def run_update_metadata(params: Dict) -> Dict:
         return params
 
 
+def time_integral(P: float, frep: float, w: float, tp: float) -> float:
+    """Squared time-integral of the electric field at the peak.
+
+    Parameters
+    ----------
+    P
+        Average power in W.
+    frep
+        Repetition rate.
+    w
+        Amplitude beam radius.
+    tp
+        Amplitude Gaussian pulse duration.
+    """
+    peak_fluence = 2*P/np.pi/w**2/frep
+    E02 = 2*np.sqrt(2)/C.c/C.epsilon_0/np.sqrt(np.pi)/tp*peak_fluence
+    ti = np.sqrt(E02)*np.sqrt(np.pi)*tp
+
+    return ti
+
+
+def conc(p: float, T: float, unit='Pa'):
+    """Concentration in 1/m^3 from pressures and temp.
+
+    Parameters
+    ----------
+    p
+        Pressure
+    T
+        Temperature in K
+    unit
+        unit of pressure: 'Pa', 'Torr' or 'atm'
+    """
+    if unit == 'atm':
+        p *= 101325
+    elif unit == 'Torr':
+        p *= 101325/760
+    elif unit != 'Pa':
+        raise ValueError("Unknown unit '{:s}'".format(unit))
+
+    return p/C.k/T
+
+
 class CrossSectionMixin:
     def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex128:
         """Calculate interaction cross section for a single leaf."""
