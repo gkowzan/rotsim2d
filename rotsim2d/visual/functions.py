@@ -90,10 +90,79 @@ def plot2d_im(freqs, spec2d, spec_linear=None, scale='symlog', line=True,
         return {'ax2d': ax2d, 'axcbar': axcbar, 'ax1d': None, 'fig': fig}
 
 
+def plot1d_animation(coords: Tuple[np.ndarray, np.ndarray],
+                     spec2d: np.ndarray,
+                     ylim: Optional[Tuple[float, float]]=None,
+                     subplots_kwargs: Mapping={},
+                     update_title: Callable=None,
+                     update_data_limits: bool=False):
+    """Prepare Figure and callbacks for `FuncAnimation` for 1D spectra.
+
+    The returned objects can be used as::
+
+    >> fanim = FuncAnimation(fig, update, frames, init, blit=True)
+
+    Parameters
+    ----------
+    freqs : tuple of ndarray
+        Array of animation coordinates and array of frequencies.
+    spec2d : ndarray
+        2D array of data to plot, first dimension is the animated coordinate.
+    ylim : tuple of float
+        Y limits, taken from data otherwise.
+    fig_kwargs : dict
+        Keyword arguments for `plt.figure`.
+    update_title : Callable
+        Function called to update the title.
+    update_data_limits : bool
+        Recalculate data limits (`absmax`) for each frame.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    init : function
+        Initialization closure function for FuncAnimation.
+    update : function
+        Update closure function for FuncAnimation.
+    frames : ndarray
+        NumPy array of frame numbers.
+    """
+    fig, ax = plt.subplots(**subplots_kwargs)
+    line, = ax.plot([], [])
+    title = ax.text(0.5, 0.99, "", ha="center", va="top", transform=ax.transAxes)
+    ax.set_xlim(np.min(coords[1]), np.max(coords[1]))
+    if ylim:
+        ymin, ymax = ylim
+    else:
+        ymin, ymax = np.min(spec2d), np.max(spec2d)
+    ax.set_ylim(ymin, ymax)
+    fig.set_constrained_layout_pads(wspace=0.01, hspace=0.01, h_pad=0.01, w_pad=0.01)
+
+    def init():
+        return [line, title]
+
+    def update(i):
+        line.set_data(coords[1], spec2d[i])
+        if update_title is not None:
+            update_title(title, i)
+        if update_data_limits:
+            ymin, ymax = np.min(spec2d[i]), np.max(spec2d[i])
+            ax.set_ylim(ymin, ymax)
+
+        return [line, title]
+
+    return fig, init, update, np.arange(len(coords[0]))
+
+
 def plot2d_animation(freqs: Tuple[np.ndarray, ...], spec3d: np.ndarray,
                      absmax: Optional[float]=None, fig_kwargs: Mapping={},
-                     update_title: Callable=None):
-    """Prepare Figure and callbacks for `matplotlib.animation.FuncAnimation`.
+                     update_title: Callable=None,
+                     update_data_limits: bool=False):
+    """Prepare Figure and callbacks for `FuncAnimation` for 2D spectra.
+
+    The returned objects can be used as::
+
+    >> fanim = FuncAnimation(fig, update, frames, init, blit=True)
 
     Parameters
     ----------
@@ -108,6 +177,8 @@ def plot2d_animation(freqs: Tuple[np.ndarray, ...], spec3d: np.ndarray,
         Keyword arguments for `plt.figure`.
     update_title : Callable
         Function called to update the title.
+    update_data_limits : bool
+        Recalculate data limits (`absmax`) for each frame.
 
     Returns
     -------
@@ -143,6 +214,9 @@ def plot2d_animation(freqs: Tuple[np.ndarray, ...], spec3d: np.ndarray,
         cset.set_data(spec3d[:, i, :])
         if update_title is not None:
             update_title(title, i)
+        if update_data_limits:
+            absmax = np.max(np.abs(spec3d[:, i, :]))
+            cset.set_clim(-absmax, absmax)
         return [cset, title]
 
     return fig, init, update, np.arange(spec3d.shape[1])
