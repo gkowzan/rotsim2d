@@ -122,78 +122,52 @@ def dressed_leaf_response(dl: dl.NDResonance,
     return resp
 
 
-def run_fsaxes(dpws: Sequence[dl.NDResonance],
-               params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
-    pump_limits, probe_limits = params['pump_limits'], params['probe_limits']
-    if pump_limits == 'auto' or probe_limits == 'auto':
+def run_mixed_axes(dpws: Sequence[dl.NDResonance],
+                   params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
+    pump_limits, probe_limits = (
+        params['pump_limits'], params['probe_limits'])
+    if 'f' in params['coords'] and (pump_limits == 'auto' or
+                                    probe_limits == 'auto'):
         pumps, probes = pws_autospan(dpws)
-    if pump_limits == 'auto':
-        pump_limits = pumps[:2]
+
+    if params['coords'][0] == 'f':
+        if pump_limits == 'auto':
+            pump_limits = pumps[:2]
+        else:
+            pump_limits = [lim*C.c*100.0 for lim in pump_limits]
+        d_pump = params['pump_step']*C.c*100.0
     else:
-        pump_limits = [lim*C.c*100.0 for lim in pump_limits]
-    if probe_limits == 'auto':
-        probe_limits = probes[:2]
+        pump_limits = [lim*1e-12 for lim in pump_limits]
+        d_pump = params['pump_step']*1e-12
+
+    if params['coords'][1] == 'f':
+        if probe_limits == 'auto':
+            probe_limits = pumps[:2]
+        else:
+            probe_limits = [lim*C.c*100.0 for lim in probe_limits]
+        d_probe = params['probe_step']*C.c*100.0
     else:
-        probe_limits = [lim*C.c*100.0 for lim in probe_limits]
+        probe_limits = [lim*1e-12 for lim in probe_limits]
+        d_pump = params['probe_step']*1e-12
 
-    df_pump, df_probe = (params['pump_step']*C.c*100.0,
-                         params['probe_step']*C.c*100.0)
-    fs_pu = aligned_fs(pump_limits[0], pump_limits[1], df_pump)
-    fs_pr = aligned_fs(probe_limits[0], probe_limits[1], df_probe)
+    ax_pu = aligned_fs(pump_limits[0], pump_limits[1], d_pump)
+    ax_pr = aligned_fs(probe_limits[0], probe_limits[1], d_probe)
 
-    return fs_pu, fs_pr
-
-
-def run_tsaxes(params: Mapping) -> Tuple[np.ndarray, np.ndarray]:
-    dt_pump, dt_probe = (params['pump_step']*1e-12,
-                         params['probe_step']*1e-12)
-    ts_pu = aligned_fs(params['pump_limits'][0]*1e-12,
-                       params['pump_limits'][1]*1e-12,
-                       dt_pump)
-    ts_pr = aligned_fs(params['probe_limits'][0]*1e-12,
-                       params['probe_limits'][1]*1e-12,
-                       dt_probe)
-
-    return ts_pu, ts_pr
+    return ax_pu, ax_pr
 
 
 def run_propagate(dpws: Sequence[dl.NDResonance],
                   params: Mapping) -> Tuple[np.ndarray, ...]:
-    """Calculate 2D spectra or time-domain response."""
-    if params['type'] == 'lineshapes':
-        return run_propagate_lineshapes(dpws, params)
-    elif params['type'] == 'time':
-        return run_propagate_time(dpws, params)
-    else:
-        raise ValueError("Unknown spectrum type '{:s}'".format(params['type']))
-
-
-def run_propagate_time(dpws: Sequence[dl.NDResonance],
-                       params: Mapping) -> Tuple[np.ndarray, ...]:
-    """Calculate time-domain response."""
-    ts_pu, ts_pr = run_tsaxes(params)
-    resp = np.zeros((ts_pu.size, ts_pr.size), dtype=np.complex128)
+    ax_pu, ax_pr = run_mixed_axes(dpws, params)
+    resp = np.zeros((ax_pu.size, ax_pr.size), dtype=np.complex128)
     for dl1 in dpws:
         resp[:, :] += dressed_leaf_response(
-            dl1, [ts_pu[:, None], params['tw']*1e-12, ts_pr[None, :]],
-            ['t', 't', 't'], p=params['pressure'],
+            dl1, [ax_pu[:, None], params['tw']*1e-12, ax_pr[None, :]],
+            [params['coords'][0], 't', params['coords'][1]],
+            p=params['pressure'],
             angles=params['angles'])
 
-    return ts_pu, ts_pr, resp
-
-
-def run_propagate_lineshapes(dpws: Sequence[dl.NDResonance],
-                            params: Mapping) -> Tuple[np.ndarray, ...]:
-    """Calculate 2D spectra."""
-    fs_pu, fs_pr = run_fsaxes(dpws, params)
-    resp = np.zeros((fs_pu.size, fs_pr.size), dtype=np.complex128)
-    for dl1 in dpws:
-        resp[:, :] += dressed_leaf_response(
-            dl1, [fs_pu[:, None], params['tw']*1e-12, fs_pr[None, :]],
-            ['f', 't', 'f'], p=params['pressure'],
-            angles=params['angles'])
-
-    return fs_pu, fs_pr, resp
+    return ax_pu, ax_pr, resp
 
 
 def run_save(path: Union[str, Path],
@@ -208,7 +182,8 @@ def run_save(path: Union[str, Path],
             f.attrs['metadata'] = json.dumps(metadata)
 
 
-Spectrum2D = namedtuple("Spectrum2D", ["pumps", "probes", "spectrum", "params"],
+Spectrum2D = namedtuple("Spectrum2D",
+                        ["pumps", "probes", "spectrum", "params"],
                         defaults=[None])
 
 def run_load(path: Union[str, Path]):
@@ -219,42 +194,39 @@ def run_load(path: Union[str, Path]):
             json.loads(f.attrs['metadata']))
 
 
-def run_update_metadata_lineshapes(params: Dict) -> Dict:
-    """Update `spectrum` metadata if needed.
-
-    Tries to load frequency/time axis and pressure from `path` if
-    `params['spectrum']['from_file']` contains a file name.
-    """
+def run_update_metadata_mixed(params: Dict) -> Dict:
+    """Update `spectrum` metadata from file if needed."""
     with h5py.File(params['spectrum']['from_file'], 'r') as f:
         pumps = f['pumps'][()]
         probes = f['probes'][()]
         h5_params = json.loads(f.attrs['metadata'])
-    params['spectrum']['pump_limits'] = [pumps[0]/C.c/100.0, pumps[-1]/C.c/100.0]
-    params['spectrum']['pump_step'] = (pumps[1]-pumps[0])/C.c/100.0
-    if params['pathways']['direction'] == h5_params['pathways']['direction']:
-        params['spectrum']['probe_limits'] = [probes[0]/C.c/100.0, probes[-1]/C.c/100.0]
-    else:
-        params['spectrum']['probe_limits'] = [-probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
-    params['spectrum']['probe_step'] = abs((probes[1]-probes[0])/C.c/100.0)
-    params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
 
-    return params
+    # pump
+    if params['spectrum']['coords'][0] == 'f':
+        params['spectrum']['pump_limits'] = [pumps[0]/C.c/100.0,
+                                             pumps[-1]/C.c/100.0]
+        params['spectrum']['pump_step'] = (pumps[1]-pumps[0])/C.c/100.0
+    elif params['spectrum']['coords'][0] == 't':
+        params['spectrum']['pump_limits'] = [pumps[0]*1e12, pumps[-1]*1e12]
+        params['spectrum']['pump_step'] = (pumps[1]-pumps[0])*1e12
 
+    # probe
+    if params['spectrum']['coords'][1] == 'f':
+        if params['pathways']['direction'] == \
+           h5_params['pathways']['direction']:
+            params['spectrum']['probe_limits'] = [
+                probes[0]/C.c/100.0, probes[-1]/C.c/100.0]
+        else:
+            params['spectrum']['probe_limits'] = [
+                -probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
+        params['spectrum']['probe_step'] = \
+            abs((probes[1]-probes[0])/C.c/100.0)
+    elif:
+        params['spectrum']['probe_limits'] = [
+            probes[0]*1e12, probes[-1]*1e12]
+        params['spectrum']['probe_step'] = (probes[1]-probes[0])*1e12
 
-def run_update_metadata_time(params: Dict) -> Dict:
-    """Update `spectrum` metadata if needed.
-
-    Tries to load time axis and pressure from `path` if
-    `params['spectrum']['from_file']` contains a file name.
-    """
-    with h5py.File(params['spectrum']['from_file'], 'r') as f:
-        pumps = f['pumps'][()]
-        probes = f['probes'][()]
-        h5_params = json.loads(f.attrs['metadata'])
-    params['spectrum']['pump_limits'] = [pumps[0]*1e12, pumps[-1]*1e12]
-    params['spectrum']['pump_step'] = (pumps[1]-pumps[0])*1e12
-    params['spectrum']['probe_limits'] = [probes[0]*1e12, probes[-1]*1e12]
-    params['spectrum']['probe_step'] = (probes[1]-probes[0])*1e12
+    # pressure
     params['spectrum']['pressure'] = h5_params['spectrum']['pressure']
 
     return params
@@ -268,12 +240,7 @@ def run_update_metadata(params: Dict) -> Dict:
     """
     if "from_file" in params['spectrum'] and\
        params['spectrum']['from_file']:
-        if params['spectrum']['type'] == 'lineshapes':
-            return run_update_metadata_lineshapes(params)
-        elif params['spectrum']['type'] == 'time':
-            return run_update_metadata_time(params)
-        else:
-            raise ValueError("Unknown spectrum type '{:s}'".format(params['spectrum']['type']))
+        return run_update_metadata_mixed(params)
     else:
         return params
 

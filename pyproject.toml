@@ -41,7 +41,7 @@ isort = "*"
 bump2version = "*"
 
 [tool.poetry.extras]
-interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks", "prompt-toolkit"]
+interactive = ["matplotlib", "ipython", "PyQt5", "jupyter", "knickknacks", "prompt-toolkit", "pygobject"]
 doc = ["Sphinx"]
 pyfftw = ["pyfftw"]
 wigxjpf = ["wigxjpf"]
