@@ -142,7 +142,7 @@ def run_mixed_axes(dpws: Sequence[dl.NDResonance],
 
     if params['coords'][1] == 'f':
         if probe_limits == 'auto':
-            probe_limits = pumps[:2]
+            probe_limits = probes[:2]
         else:
             probe_limits = [lim*C.c*100.0 for lim in probe_limits]
         d_probe = params['probe_step']*C.c*100.0
