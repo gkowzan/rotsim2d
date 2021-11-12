@@ -221,7 +221,7 @@ def run_update_metadata_mixed(params: Dict) -> Dict:
                 -probes[-1]/C.c/100.0, -probes[0]/C.c/100.0]
         params['spectrum']['probe_step'] = \
             abs((probes[1]-probes[0])/C.c/100.0)
-    elif:
+    elif params['spectrum']['coords'][1] == 't':
         params['spectrum']['probe_limits'] = [
             probes[0]*1e12, probes[-1]*1e12]
         params['spectrum']['probe_step'] = (probes[1]-probes[0])*1e12
