@@ -288,6 +288,25 @@ def conc(p: float, T: float, unit='Pa'):
     return p/C.k/T
 
 
+def amp_to_abscoeff(amp2d: np.ndarray, probes: np.ndarray,
+                    E12: float, conc: float) -> np.ndarray:
+    """Convert pathway amplitude to abs. coeff. spectrum.
+
+    Parameters
+    ----------
+    amp2d : np.ndarray
+        2D spectrum as returned by :func:`dressed_leaf_response`.
+    probes : np.ndarray
+        Probe frequencies.
+    E12 : float
+        Product of field integrals of pump pulses.
+    conc : float
+        Concentration in 1/m**3.
+    """
+    return -np.imag(amp2d)*conc*E12*\
+        2*np.pi*probes/C.c/C.epsilon_0/4.0
+
+
 class CrossSectionMixin:
     def leaf_cross_section(self, leaf: pw.KetBra, times: List[float]) -> np.complex128:
         """Calculate interaction cross section for a single leaf."""
