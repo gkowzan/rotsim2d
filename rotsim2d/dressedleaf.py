@@ -41,7 +41,7 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Sequence, Tuple, Union, Dict
 
 import h5py
 import molspecutils.molecule as mol
@@ -406,10 +406,31 @@ class DressedPathway(Pathway, NDResonance):
         if not isinstance(o, DressedPathway):
             return NotImplemented
         return Pathway.__eq__(self, o) and isclose(self.T, o.T) and self.vib_mode == o.vib_mode
-        
+
+    def __hash__(self):
+        return hash((
+            tuple(self.leaf.to_statelist()),
+            self.T,
+            id(self.vib_mode)))
+
     def nu(self, i: int) -> float:
         """Frequency of `i`-th coherence."""
         return self.vib_mode.nu(self.coherences[i])
+
+    def pump_fraction(self, E12: float) -> float:
+        """Fraction of initial population excited by pump pulses.
+
+        Parameters
+        ----------
+        E12 : float
+           Electric field integral for the pump pulses (same for both pulses).
+        """
+        rmu2 = self.vib_mode.mu(self.transitions[0])*\
+            self.vib_mode.mu(self.transitions[1])
+        deg_fac = np.sqrt(2*self.leaf.root.ket.j+1)
+
+        return 3/4/C.hbar**2*deg_fac*rmu2*E12**2*\
+            self.geometric_factor()
 
     def gamma(self, i: int) -> float:
         """Pressure-broadening coefficient of `i`-th coherence."""
@@ -728,7 +749,14 @@ Peak2D = namedtuple("Peak2D", "pump_wl probe_wl sig peak")
 
 class Peak2DList(list):
     """List of 2D peaks with easy access to pump, probe frequencies and peak
-    intensities."""
+    intensities.
+
+    Calling :meth:`copy` or slicing returns a regular list.
+    """
+    def __init__(self, iterable=(), quantity='amplitudes'):
+        super().__init__(iterable)
+        self.quantity = quantity
+
     @property
     def pumps(self):
         """List of pump frequencies."""
@@ -762,6 +790,27 @@ class Peak2DList(list):
         """
         self.sort(key=self._sort_func)
 
+    def normalize_sig_signs(self) -> 'Peak2DList':
+        """Flip signs of amplitudes with negative probe frequencies.
+
+        The Maxwell wave equation flips the sign of the negative frequency
+        material polarization component, such that the positive and negative
+        components add up to a real cosine wave. At the level of TD perturbation
+        theory the signs are oppposite and summing corresponding rephasing and
+        non-rephasing pathway amplitudes (or a pathway with its complex
+        conjugate) gives zero. This means that if you want to estimate some
+        signal amplitude/intensity based on :class:`Peak2DList` amplitudes, you
+        might get a zero unless you normalize the signs.
+        """
+        pnorm = Peak2DList(quantity=self.quantity)
+        for p in self:
+            if p.probe_wl < 0.0:
+                pnorm.append(p._replace(sig=-p.sig))
+            else:
+                pnorm.append(p)
+
+        return pnorm
+
     def get_by_peak(self, peak: Tuple[str, str]) -> Peak2D:
         """Return peak with `peak` attribute equal to `peak` argument."""
         for p in self:
@@ -770,9 +819,29 @@ class Peak2DList(list):
         else:
             raise IndexError("'{!s}' not found in the list".format(peak))
 
+    def to_abs_coeff(self, E12: float, conc: float) -> "Peak2DList":
+        """Convert peaks of 'peak_intensity' type to abs. coefficients.
+
+        Assumes self-heterodyne probe detection.
+
+        Parameters
+        ----------
+        E12 : float
+            Product of field integrals of pump pulses.
+        conc : float
+            Concentration in 1/m**3.
+        """
+        if self.quantity != 'peak_intensity':
+            raise ValueError("This method only works for 'peak_intensity' type peaks.")
+
+        pabs = Peak2DList(quantity=self.quantity)
+        for p in self:
+            pabs.append(p._replace(sig=p.sig/np.pi*conc*E12))
+
+        return pabs
+
     def to_file(self, path: Union[str, Path], metadata: Optional[Dict]=None):
         """Save peak list to HDF5 file."""
-        length = len(self)
         with h5py.File(path, mode='w') as f:
             f.create_dataset("pumps", data=self.pumps)
             f.create_dataset("probes", data=self.probes)
@@ -806,21 +875,36 @@ def run_peak_list(params: Mapping) -> Peak2DList:
     return pl
 
 
-def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
-              return_dls: bool=False) -> Peak2DList:
-    """Create a list of 2D peaks from a list of :class:`DressedPatway`.
+def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
+              angles=None, return_dls: bool=False,
+              quantity: str='amplitude', p: float=1.0) -> \
+              Union[Peak2DList, Tuple[Peak2DList, Sequence[Sequence[DressedPathway]]]]:
+    """Create a list of 2D peaks from a list of :class:`DressedPathway`.
 
-    Optionally return sorted list of DressedLeaf's corresponding to peaks.
+    Optionally return sorted list of :class:`DressedPathway` corresponding to peaks.
+
+    `quantity` can be:
+
+    - 'amplitude', pathway amplitude as returned by
+      :meth:`DressedPathway.intensity`,
+    - 'line_intensity', HITRAN-analogous line intensity,
+    - 'peak_intensity', 'line_intensity' divided by pressure width. Peak
+       absorption value.
     """
     ll: dict = split_by_peaks(ll)
-    pl = Peak2DList()
+    pl = Peak2DList(quantity=quantity)
     dls = []
     for peak, dll in ll.items():
         pu, pr = u.nu2wn(dll[0].nu(0)), u.nu2wn(dll[0].nu(2))
         sig = 0.0
         for dl in dll:
             # with wigxjpf(300, 6):
-            sig += np.imag(dl.intensity(tw=tw, angles=angles))
+            pre_sig = np.imag(dl.intensity(tw=tw, angles=angles))
+            if quantity == 'line_intensity':
+                pre_sig *= np.pi*2*np.pi*dll[0].nu(2)/4/C.epsilon_0/C.c
+            elif quantity == 'peak_intensity':
+                pre_sig *= np.pi*2*np.pi*dll[0].nu(2)/4/C.epsilon_0/C.c/dll[0].gamma(2)/p
+            sig += pre_sig
         pl.append(Peak2D(pu, pr, sig, peak))
         if return_dls:
             dls.append(dll)
@@ -832,9 +916,9 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0, angles=None,
     return pl
 
 
-def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[Pathway]) -> Peak2DList:
+def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[Sequence[Pathway]]) -> Peak2DList:
     """Return peaks from `pl` which are polarization-equivalent to `pw`."""
-    new_pl = Peak2DList()
+    new_pl = Peak2DList(quantity=pl.quantity)
     for peak, dp_list in zip(pl, dll):
         if any(dp.leaf.is_equiv_pathway(pw) for dp in dp_list):
             new_pl.append(peak)
