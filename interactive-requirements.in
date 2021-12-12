@@ -1,0 +1,6 @@
+-c requirements.txt
+-c dev-requirements.txt
+matplotlib
+ipython
+PyQt5
+knickknacks

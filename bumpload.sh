@@ -14,8 +14,8 @@ die() {
 
 if [[ -n "$1" ]]; then
     bumpversion --list --allow-dirty "$1" || die "bumpversion failed"
-    poetry build
-    poetry publish -r local
+    python -m build || die "build failed"
+    twine upload -r local dist/*
 else
     show_help
 fi

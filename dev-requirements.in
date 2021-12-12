@@ -1,0 +1,10 @@
+-c requirements.txt
+pytest
+tox
+yapf
+isort
+bump2version
+mypy
+build
+twine
+pip-tools
