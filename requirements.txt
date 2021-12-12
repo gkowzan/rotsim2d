@@ -16,9 +16,9 @@ greenlet==1.1.2
     # via sqlalchemy
 h5py==3.6.0
     # via rotsim2d (setup.cfg)
-knickknacks==0.2.1
+knickknacks==0.2.2
     # via rotsim2d (setup.cfg)
-molspecutils==0.2.0.post2
+molspecutils==0.2.1
     # via rotsim2d (setup.cfg)
 mpmath==1.2.1
     # via sympy

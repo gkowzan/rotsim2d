@@ -27,8 +27,8 @@ def test_five_ketbras(kbs_tree):
 
 def test_rot_states(kbs_tree):
     for kb in PreOrderIter(kbs_tree, filter_=lambda x: isinstance(x, pw.KetBra)):
-        assert isinstance(kb.ket, mol.RotState)
-        assert isinstance(kb.bra, mol.RotState)
+        assert isinstance(kb.ket, (mol.DiatomState, mol.SymTopState))
+        assert isinstance(kb.bra, (mol.DiatomState, mol.SymTopState))
 
 
 def test_leaves_are_diagonal(kbs_tree):
@@ -42,5 +42,5 @@ def test_statelist_test_structure(kbs_tree):
         assert len(sl) == 5
         for pair in sl:
             assert len(pair) == 2
-            assert isinstance(pair[0], mol.RotState)
-            assert isinstance(pair[1], mol.RotState)
+            assert isinstance(pair[0], (mol.DiatomState, mol.SymTopState))
+            assert isinstance(pair[1], (mol.DiatomState, mol.SymTopState))

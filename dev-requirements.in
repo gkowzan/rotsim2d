@@ -1,6 +1,6 @@
 -c requirements.txt
+-e .[doc,test,pyfftw]
 pytest
-tox
 yapf
 isort
 bump2version

@@ -120,7 +120,7 @@ dressed_pws_params = {
     'T': 296.0,
     'jmax': 2,
     'kiter': '[1]',
-    'filters': []
+    'filters': [],
 }
 
 

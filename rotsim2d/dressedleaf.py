@@ -500,7 +500,9 @@ class DressedPathway(Pathway, NDResonance):
         else:
             raise ValueError("Invalid molecule")
 
-        meths = [getattr(pw, "only_"+params["direction"])]
+        meths = []
+        if "direction" in params:
+            meths.append(getattr(pw, "only_"+params["direction"]))
         meths.extend([getattr(pw, meth) for meth in params['filters']])
         kbs = gen_pathways(
             range(params['jmax']), meths=meths, rotor=rotor,
