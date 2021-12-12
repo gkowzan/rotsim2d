@@ -663,6 +663,21 @@ def calc_relative_exprs(rf_pw: RFactorPathways, angles: Sequence):
 
     rf_pw.add_property('exprs_relative', exprs)
 
+
+def calc_amplitude_exprs(rf_pw: RFactorPathways, angles: Sequence,
+                         norm: bool=True):
+    """Calculate pathway amplitude expressions."""
+    exprs = []
+    for pw1 in rf_pw.pws:
+        rfactor = RFactor.from_pathway(pw1)
+        exprs.append(
+            (amplitude_expr_pw(pw1, norm=norm)*\
+             rfactor.expr.subs(
+                 dict(zip(rfactor.angles, angles)))).\
+            replace(Abs, Id))
+
+    rf_pw.add_property('amplitude_exprs', exprs)
+
     
 def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
                       rfpws_max: Sequence[RFactorPathways],
@@ -729,7 +744,7 @@ honl_london_factors = {0: {-1: (Jpp+Kpp)*(Jpp-Kpp)/Jpp,
                             1: (Jpp+1+Kpp)*(Jpp+1-Kpp)/(Jpp+1)}}
 
 
-def honl_london(pair: Tuple[RotState, ...], jref: int) -> Basic:
+def honl_london(pair: Tuple[RotState, RotState], jref: int) -> Basic:
     """Return Honl-London factor in terms of J_i = jref."""
     if 'k' in pair[0]._fields:
         K = Kpp
@@ -742,7 +757,53 @@ def honl_london(pair: Tuple[RotState, ...], jref: int) -> Basic:
         subs(Kpp, K).subs(Jpp, J_i+dj)
 
 
+def vib_expr(pair: Tuple[RotState, RotState]) -> Basic:
+    """Return mu_ij symbol for `pair`."""
+    nus = sorted((pair[0].nu, pair[1].nu))
+    globs = globals()
+    return globs['mu'+str(nus[0])+str(nus[1])]
+
+
 def honl_london_pw(transitions: Sequence[Tuple[RotState, RotState]],
                    jref: int) -> Basic:
     """Four-fold Honl-London factor for a pathway."""
     return factor(reduce(mul, [honl_london(t, jref) for t in transitions], 1), deep=True)
+
+
+def amplitude_expr_pw(pw1, norm: bool=False) -> Basic:
+    """Pathway amplitude expression.
+
+    Without equilibrium population (Boltzmann) factor and R-factor. Includes
+    isotropy factor. For a quantity roughly equal for each J_i state, multiply
+    by (2*J_i+1)**(1/2).
+
+    Parameters
+    ----------
+    pw1 : Pathway
+    norm : bool
+        Flip the sign for negative probe pathway.
+
+    Returns
+    -------
+    Basic
+        Sympy pathway amplitude expression.
+    """
+    # Need to include the sign of rmu.
+    const = -(I/hbar)**(len(pw1.transitions)-1)*pw1.leaf.total_side()/sqrt(2*J_i+1)
+    vibs = factor(reduce(mul, [vib_expr(t) for t in pw1.transitions], 1), deep=True)
+    rots = sqrt(honl_london_pw(pw1.transitions, pw1.leaf.root.ket.j))
+
+    rot_sign = 1
+    sides = [li.side for li in pw1.leaf.interactions()]
+    for pair, side in zip(pw1.transitions, sides):
+        if side == pw.Side.BRA:
+            pair = pair[::-1]
+        rot_sign *= -1 if pair[0].j < pair[1].j else 1
+
+    if norm:
+        probe = pw1.coherences[2]
+        if (probe[0].nu < probe[1].nu) or\
+           (probe[0].nu == probe[1].nu and probe[0].j < probe[1].j):
+            rot_sign *= -1
+
+    return const*vibs*rots*rot_sign

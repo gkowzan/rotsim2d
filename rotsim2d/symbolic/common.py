@@ -14,3 +14,7 @@ theta_i, theta_j, theta_k, theta_l = thetas
 x0, x1, x2, x3, x4, x1x2, x3x4 = symbols("x0 x1 x2 x3 x4 x1x2 x3x4", real=True)
 #: Rotational constants
 nu0, nu1, nu2, B0, B1, B2 = symbols(r"\nu_0 \nu_1 \nu_2 B_0 B_1 B_2", real=True, nonnegative=True)
+#: Transition amplitudes
+mu01, mu12 = symbols(r"\mu_{01} \mu_{12}", real=True, nonnegative=True)
+#: Other
+hbar = symbols(r"\hslash", real=True, nonnegative=True)
