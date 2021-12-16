@@ -2,5 +2,6 @@
 -c dev-requirements.txt
 matplotlib
 ipython
+jupyter
 PyQt5
 knickknacks
