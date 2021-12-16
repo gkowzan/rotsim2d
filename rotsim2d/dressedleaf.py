@@ -33,15 +33,13 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
     \alpha_{\mathrm{probe}} = \frac{1}{4}N \frac{k^{\mathrm{probe}}_0}{\epsilon_0} \mathcal{E}_1 \mathcal{E}_2 A(\widetilde{\theta}, \widetilde{J}) \mathcal{I}(\widetilde{\omega}\text{ or } \widetilde{t}).
 
 """
-from __future__ import annotations
-
 import collections.abc as abc
 import json
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional, Sequence, Tuple, Union, Dict
+from typing import (Iterable, List, Mapping, Optional, Sequence, Tuple, Union, Dict, Any)
 
 import h5py
 import molspecutils.molecule as mol
@@ -269,12 +267,12 @@ class Pathway:
         return (cp.T00(*(angles + [0])), cp.T00(*(angles + [1])), cp.T00(*(angles + [2])))
 
     @classmethod
-    def from_kb_tree(cls, kb_tree: KetBra) -> List[Pathway]:
+    def from_kb_tree(cls, kb_tree: KetBra) -> List["Pathway"]:
         """Make a list of Pathway's from KetBra tree."""
         return [cls(leaf) for leaf in kb_tree.root.leaves]
 
     @classmethod
-    def from_kb_list(cls, kb_list: Sequence[KetBra]) -> List[Pathway]:
+    def from_kb_list(cls, kb_list: Sequence[KetBra]) -> List["Pathway"]:
         """Make a list of Pathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), [])
 
@@ -471,7 +469,7 @@ class DressedPathway(Pathway, NDResonance):
 
     @classmethod
     def from_kb_tree(cls, kb_tree: KetBra, vib_mode: mol.VibrationalMode,
-                     T: float) -> List[DressedPathway]:
+                     T: float) -> List["DressedPathway"]:
         """Make a list of DressedPathway's from KetBra tree."""
         dp_list = []
         for leaf in kb_tree.root.leaves:
@@ -484,12 +482,12 @@ class DressedPathway(Pathway, NDResonance):
 
     @classmethod
     def from_kb_list(cls, kb_list: Sequence[KetBra], vib_mode: mol.VibrationalMode,
-                     T: float) -> List[DressedPathway]:
+                     T: float) -> List["DressedPathway"]:
         """Make a list of DressedPathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list), [])
 
     @classmethod
-    def from_params_dict(cls, params: Mapping) -> List[DressedPathway]:
+    def from_params_dict(cls, params: Mapping) -> List["DressedPathway"]:
         """Make a list of DressedPathway's from dict of parameters."""
         if params['molecule'] == 'CH3Cl':
             mode = CH3ClAlchemyMode()
