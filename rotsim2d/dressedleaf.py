@@ -486,27 +486,33 @@ class DressedPathway(Pathway, NDResonance):
         """Make a list of DressedPathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree, vib_mode, T) for kb_tree in kb_list), [])
 
+    base_params_dict: Dict[str, Any] = {
+        'isotopologue': 1,
+    }
+
     @classmethod
     def from_params_dict(cls, params: Mapping) -> List["DressedPathway"]:
         """Make a list of DressedPathway's from dict of parameters."""
-        if params['molecule'] == 'CH3Cl':
-            mode = CH3ClAlchemyMode()
+        fparams = cls.base_params_dict.copy()
+        fparams.update(params)
+        if fparams['molecule'] == 'CH3Cl':
+            mode = CH3ClAlchemyMode(iso=fparams['isotopologue'])
             rotor = 'symmetric'
-        elif params['molecule'] == 'CO':
-            mode = COAlchemyMode()
+        elif fparams['molecule'] == 'CO':
+            mode = COAlchemyMode(iso=fparams['isotopologue'])
             rotor = 'linear'
         else:
             raise ValueError("Invalid molecule")
 
         meths = []
-        if "direction" in params:
-            meths.append(getattr(pw, "only_"+params["direction"]))
-        meths.extend([getattr(pw, meth) for meth in params['filters']])
+        if "direction" in fparams:
+            meths.append(getattr(pw, "only_"+fparams["direction"]))
+        meths.extend([getattr(pw, meth) for meth in fparams['filters']])
         kbs = gen_pathways(
-            range(params['jmax']), meths=meths, rotor=rotor,
-            kiter_func=params['kiter'])
+            range(fparams['jmax']), meths=meths, rotor=rotor,
+            kiter_func=fparams['kiter'])
 
-        return cls.from_kb_list(kbs, mode, params['T'])
+        return cls.from_kb_list(kbs, mode, fparams['T'])
 
     def __repr__(self):
         return f"DressedPathway(leaf={self.leaf!r}, vib_mode={self.vib_mode!r}, T={self.T!r})"
