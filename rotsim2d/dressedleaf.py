@@ -706,13 +706,15 @@ def split_by_pols_highjs(kbl: Iterable[DressedLeaf]):
     return ret
 
 
-def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False):
+def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False)\
+    -> Dict[str, List[Pathway]]:
     ret = {}
     for dl in kbl:
         if abstract:
             ret.setdefault(dl.abstract_peak, []).append(dl)
         else:
             ret.setdefault(dl.peak, []).append(dl)
+
     return ret
 
 
@@ -884,7 +886,7 @@ def run_peak_list(params: Mapping) -> Peak2DList:
 def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
               angles=None, return_dls: bool=False,
               quantity: str='amplitude', p: float=1.0) -> \
-              Union[Peak2DList, Tuple[Peak2DList, Sequence[Sequence[DressedPathway]]]]:
+              Union[Peak2DList, Tuple[Peak2DList, List[List[DressedPathway]]]]:
     """Create a list of 2D peaks from a list of :class:`DressedPathway`.
 
     Optionally return sorted list of :class:`DressedPathway` corresponding to peaks.
