@@ -148,7 +148,7 @@ def run_mixed_axes(dpws: Sequence[dl.NDResonance],
         d_probe = params['probe_step']*C.c*100.0
     else:
         probe_limits = [lim*1e-12 for lim in probe_limits]
-        d_pump = params['probe_step']*1e-12
+        d_probe = params['probe_step']*1e-12
 
     ax_pu = aligned_fs(pump_limits[0], pump_limits[1], d_pump)
     ax_pr = aligned_fs(probe_limits[0], probe_limits[1], d_probe)
