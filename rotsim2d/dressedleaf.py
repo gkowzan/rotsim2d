@@ -827,9 +827,9 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
             # with wigxjpf(300, 6):
             pre_sig = np.imag(dl.intensity(tw=tw, angles=angles))
             if quantity == 'line_intensity':
-                pre_sig *= np.pi*2*np.pi*dll[0].nu(2)/4/C.epsilon_0/C.c
+                pre_sig *= np.pi*2*np.pi*dl.nu(2)/4/C.epsilon_0/C.c
             elif quantity == 'peak_intensity':
-                pre_sig *= np.pi*2*np.pi*dll[0].nu(2)/4/C.epsilon_0/C.c/dll[0].gamma(2)/p
+                pre_sig *= np.pi*2*np.pi*dl.nu(2)/4/C.epsilon_0/C.c/dl.gamma(2)/p
             sig += pre_sig
         pl.append(Peak2D(pu, pr, sig, peak))
         if return_dls:
