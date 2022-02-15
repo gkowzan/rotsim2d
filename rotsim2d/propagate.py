@@ -248,6 +248,8 @@ def run_update_metadata(params: Dict) -> Dict:
 def time_integral(P: float, frep: float, w: float, tp: float) -> float:
     """Squared time-integral of the electric field at the peak.
 
+    The pulse is `exp(-t**2/tp**2)`.
+
     Parameters
     ----------
     P

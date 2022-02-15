@@ -39,13 +39,14 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
-from typing import (Iterable, List, Mapping, Optional, Sequence, Tuple, Union, Dict, Any)
+from typing import (Iterable, List, Mapping, Optional, Sequence, Tuple, Union,
+                    Dict, Any, Callable)
 
 import h5py
 import molspecutils.molecule as mol
 import numpy as np
 import scipy.constants as C
-from molspecutils.molecule import CH3ClAlchemyMode, COAlchemyMode
+from molspecutils.molecule import CH3ClAlchemyMode, COAlchemyMode, RotState
 
 import rotsim2d.couple as cp
 import rotsim2d.pathways as pw
@@ -89,47 +90,10 @@ class Pathway:
     r"""Collect information on a pathway based on KetBra tree leaf without
     specializing it to any specific vibrational mode of a molecule.
 
-    Attributes
+    Parameters
     ----------
-    leaf: rotsim2d.pathways.KetBra
-        The leaf used to construct this pathway.
-    coherences: list of tuple
-        Coherences created by light-matter interactions as a list of pairs of
-        :class:`molspecutils.molecule.RotState`.
-    transitions: list of tuple
-        List of pairs of :class:`molspecutils.molecule.RotState` representing
-        transitions between states.
-    js: tuple of int
-        Arguments of G factor.
-    light_inds: tuple of int
-        Ordering of polarization vectors in four-fold dipole operator.
-    const: complex
-        :math:`(-1)^\kappa\left(\frac{i}{2\hbar}\right)^n`, where `n` is the
-        order of interaction (usually 3) and :math:`\kappa` is the sign factor
-        due to multiple interactions on either ket- or bra-side of the density
-        matrix.
-    geo_label: str
-        Short hand notation for `js`, see module-level description.
-    trans_label: str
-        Short hand notation for series of transitions in the pathway.
-    trans_label_deg: str
-        Ambiguous version of `trans_label`.
-    tw_coherence: bool
-        Whether the molecule is in coherent state after second interaction.
-    peak: tuple of str
-        Pair of strings representing coherences created by first and third
-        interaction (2D peak label).
-    peak_label: str
-        Two-letter identifier of the 2D peak.
-    abstract_peak: tuple of str
-        Same as `peak` but using P-, Q-, R-branch notation instead of absolute
-        `J` numbers.
-    experimental_label: str
-        The kind of interaction: ground-state hole-burning, excited-states
-        absorption, etc.
-    colors: int
-        Number of different optical frequencies requried to produce this
-        pathway.
+    leaf : KetBra
+        Leaf of a KetBra excitation tree.
     """
     fields = ['leaf', 'coherences', 'transitions', 'js', 'light_inds', 'const',
               'geo_label', 'trans_label', 'trans_label_deg', 'tw_coherence',
@@ -137,22 +101,40 @@ class Pathway:
               'colors']
 
     def __init__(self, leaf: KetBra):
-        self.leaf = leaf
-        self.isotropy = 1/np.sqrt(2*leaf.root.ket.j+1)
-        self.coherences, self.transitions, wbras = leaf._pathway_info()
-        self.js = tuple(x[0] for x in wbras)
-        self.light_inds = tuple(x[1] for x in wbras)
-        self.const = -(1.0j/C.hbar)**(len(self.transitions)-1)*\
+        self.leaf: KetBra = leaf
+        "The leaf used to construct this pathway."
+        self.isotropy: float = 1/np.sqrt(2*leaf.root.ket.j+1)
+        c, t, wbras = leaf._pathway_info()
+        self.coherences: List[Tuple[RotState, RotState]] = c
+        """Coherences created by light-matter interactions."""
+        self.transitions: List[Tuple[RotState, RotState]] = t
+        """Time-ordered transitions between states for the pathway."""
+        self.js: Tuple[int, ...] = tuple(x[0] for x in wbras)
+        """Arguments for the G-factor."""
+        self.light_inds: Tuple[int, ...] = tuple(x[1] for x in wbras)
+        """Ordering of polarization vectors in four-fold dipole-operator."""
+        self.const: complex = -(1.0j/C.hbar)**(len(self.transitions)-1)*\
             self.leaf.total_side()
-        self.tw_coherence = not KetBra(*self.coherences[1]).is_diagonal()
-        self.peak = ("|{:s}><{:s}|".format(self.coherences[0][0].name,
-                                           self.coherences[0][1].name),
-                     "|{:s}><{:s}|".format(self.coherences[2][0].name,
-                                           self.coherences[2][1].name))
-        self.abstract_peak = (abstract_pair_label(self.coherences[0],
-                                                  self.leaf.root.ket),
-                              abstract_pair_label(self.coherences[2],
-                                                  self.leaf.root.ket))
+        r""":math:`(-1)^\kappa\left(\frac{i}{2\hbar}\right)^n`, where `n` is the
+        order of interaction (usually 3) and :math:`\kappa` is the sign factor
+        due to multiple interactions on either ket- or bra-side of the density
+        matrix."""
+        self.tw_coherence: bool = not KetBra(*self.coherences[1]).is_diagonal()
+        "Whether the molecule is in coherent state after second interaction."
+        self.peak: Tuple[str, str] = (
+            "|{:s}><{:s}|".format(self.coherences[0][0].name,
+                                  self.coherences[0][1].name),
+            "|{:s}><{:s}|".format(self.coherences[2][0].name,
+                                  self.coherences[2][1].name))
+        """Pair of strings representing coherences created by first and third
+        interaction (2D peak label)."""
+        self.abstract_peak: Tuple[str, str] = (
+            abstract_pair_label(self.coherences[0],
+                                self.leaf.root.ket),
+            abstract_pair_label(self.coherences[2],
+                                self.leaf.root.ket))
+        """Same as `peak` but using P-, Q-, R-branch notation instead of absolute
+        `J` numbers."""
 
     def __eq__(self, o):
         if not isinstance(o, Pathway):
@@ -163,29 +145,30 @@ class Pathway:
         return hash(tuple(self.leaf.to_statelist()))
 
     @property
-    def geo_label(self):
-        ":meta private:"
+    def geo_label(self) -> str:
+        """Shorthand notation for :attr:`js`."""
         return geometric_labels[tuple(j-self.js[0] for j in self.js)]
 
     @property
-    def trans_label(self):
-        ":meta private:"
+    def trans_label(self) -> str:
+        "Short hand notation for series of transitions in the pathway."
         return ''.join((self._trans_label(i) for i in (0, 1, 2)))
 
     @property
-    def trans_label_deg(self):
-        ":meta private:"
+    def trans_label_deg(self) -> str:
+        "Ambiguous version of :attr:`trans_label`."
         return ''.join((self._trans_label(i, False) for i in (0, 1, 2)))
 
     @property
-    def peak_label(self):
-        ":meta private:"
+    def peak_label(self) -> str:
+        "Two-letter identifier for the 2D peak."
         return abstract_line_label(self.coherences[0], True)+\
             '-' + abstract_line_label(self.coherences[2], True)
 
     @property
-    def experimental_label(self):
-        ":meta private:"
+    def experimental_label(self) -> str:
+        """The kind of interaction: ground-state hole-burning, excited-states
+        absorption, etc."""
         if self.leaf.is_esa():
             return "Excited-state pump-probe"
         if self.leaf.is_gshb():
@@ -196,11 +179,12 @@ class Pathway:
             return "Double quantum"
 
     @property
-    def colors(self):
-        ":meta private:"
+    def colors(self) -> int:
+        """Number of different optical frequencies requried to produce this
+        pathway."""
         return self.leaf.color_tier()
 
-    def _trans_label(self, i: int, unique: bool=True):
+    def _trans_label(self, i: int, unique: bool=True) -> str:
         labels = {-1: 'P', 0: 'Q', 1: 'R'}
         trans = sorted(self.transitions[i], key=lambda x: x.nu)
         side = self.leaf.sides()[i]
@@ -226,7 +210,7 @@ class Pathway:
     def geometric_factor(self, relative: bool=False,
                          angles: Optional[Union[Sequence, Dict]]=None) -> float:
         r"""Geometric R-factor for pathway intensity for isotropic initial density
-        matrix:
+        matrix.
 
         .. math::
 
@@ -251,7 +235,7 @@ class Pathway:
         return ret
 
     def gfactors(self):
-        r"""Geometric factors for `k=0,1,2`:
+        r"""Geometric factors for `k=0,1,2`.
 
         .. math::
 
@@ -276,14 +260,15 @@ class Pathway:
         """Make a list of Pathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), [])
 
-    def custom_str(self, fields=None):
+    def custom_str(self, fields=None) -> str:
+        """String representation including only attributes in ``fields``."""
         fields = fields if fields is not None else self.fields
         s = ', '.join(["{:s}={!s}".format(f, getattr(self, f)) for f in fields])
 
         return "Pathway({:s})".format(s)
 
     @staticmethod
-    def _ketbra_symbols(kb: KetBra) -> Tuple[str]:
+    def _ketbra_symbols(kb: KetBra) -> Tuple[str, str]:
         l, r = '  ', '  '
         if kb.parent:
             arr = '->' if kb.parent.sign == KSign.POS else '<-'
@@ -293,14 +278,16 @@ class Pathway:
                 r = arr
         return l, r
 
-    def print_diagram(self, abstract=False, print=print):
+    def print_diagram(self, abstract: bool=False, print: Callable=print):
         """Pretty print double-sided Feynmann diagram.
 
         Parameters
         ----------
-        abstract: bool
+        abstract
             Use spectroscopic transition notation (P, Q, R) instead of absolute
             J values.
+        print
+            Use this callable instead of :func:`print` builtin.
         """
         for kb in self.leaf.ketbras()[::-1]:
             l, r = Pathway._ketbra_symbols(kb)
@@ -311,7 +298,7 @@ class Pathway:
             else:
                 print(f"{l}|{kb.ket.name}><{kb.bra.name}|{r}")
 
-    def _tw_pprint(self, end='\n', print=print):
+    def _tw_pprint(self, end: str='\n', print: Callable=print):
         if self.tw_coherence:
             import rotsim2d.symbolic.functions as sym
             tw_coherence = sym.rcs_expression(
@@ -320,14 +307,19 @@ class Pathway:
             tw_coherence = False
         print(f"Coherence during waiting time: {tw_coherence!r}", end=end)
 
-    def pprint(self, abstract=False, angles=None, print=print):
+    def pprint(self, abstract: bool=False, angles: Sequence[float]=None,
+               print: Callable=print):
         """Pretty print this pathway.
 
         Parameters
         ----------
-        abstract: bool
+        abstract
             Use spectroscopic transition notation (P, Q, R) instead of absolute
             J values.
+        angles
+            Evaluate polarization components and R-factor for these polarizations.
+        print
+            Use this callable instead of :func:`print` built-in.
         """
         print("diagram:")
         self.print_diagram(abstract=abstract, print=print)
@@ -376,29 +368,27 @@ class DressedPathway(Pathway, NDResonance):
         interface.
     T
         Temperature in Kelvin.
-
-    Attributes
-    ----------
-    const: complex
-        The `const` factor of :class:`Pathway` multiplied by the fractional
+    """
+    def __init__(self, leaf: KetBra, vib_mode: mol.VibrationalMode, T: float):
+        Pathway.__init__(self, leaf)
+        self.vib_mode: mol.VibrationalMode = vib_mode
+        """Vibrational mode associated with this pathway."""
+        self.T: float = T
+        """Temperature in Kelvin."""
+        sides = [li.side for li in leaf.interactions()]
+        for pair, side in zip(self.transitions, sides):
+            if side == Side.BRA:
+                pair = pair[::-1]
+            self.const *= vib_mode.mu(pair)
+        self.const: complex = self.const*vib_mode.equilibrium_pop(self.leaf.root.ket, T)
+        r"""The `const` factor of :class:`Pathway` multiplied by the fractional
         population of the initial state of the pathway in thermal equilibrium,
         :meth:`molspecutils.molecule.VibrationalMode.equilibrium_pop`, and by the
         four-fold reduced matrix element, :math:`\langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle`:
 
         .. math::
 
-            \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle = \langle \nu_i J_i\|\mu_1\|\nu_1 J_1\rangle \langle \nu_1 J_1\|\mu_2\|\nu_2 J_2\rangle \langle \nu_2 J_2\|\mu_3\|\nu_3 J_3\rangle \langle \nu_3 J_3\|\mu_4\|\nu_i J_i\rangle
-    """
-    def __init__(self, leaf: KetBra, vib_mode: mol.VibrationalMode, T: float):
-        Pathway.__init__(self, leaf)
-        self.vib_mode = vib_mode
-        self.T = T
-        sides = [li.side for li in leaf.interactions()]
-        for pair, side in zip(self.transitions, sides):
-            if side == Side.BRA:
-                pair = pair[::-1]
-            self.const *= vib_mode.mu(pair)
-        self.const *= vib_mode.equilibrium_pop(self.leaf.root.ket, T)
+            \langle \nu_i J_i\|T^{(0)}(\tilde{\mu})\|\nu_i J_i\rangle = \langle \nu_i J_i\|\mu_1\|\nu_1 J_1\rangle \langle \nu_1 J_1\|\mu_2\|\nu_2 J_2\rangle \langle \nu_2 J_2\|\mu_3\|\nu_3 J_3\rangle \langle \nu_3 J_3\|\mu_4\|\nu_i J_i\rangle"""
 
     def __eq__(self, o):
         if not isinstance(o, DressedPathway):
@@ -420,7 +410,7 @@ class DressedPathway(Pathway, NDResonance):
 
         Parameters
         ----------
-        E12 : float
+        E12
            Electric field integral for the pump pulses (same for both pulses).
         """
         rmu2 = self.vib_mode.mu(self.transitions[0])*\
@@ -431,10 +421,10 @@ class DressedPathway(Pathway, NDResonance):
             self.geometric_factor()
 
     def gamma(self, i: int) -> float:
-        """Pressure-broadening coefficient of `i`-th coherence."""
+        """Pressure-broadening coefficient of `i` coherence."""
         return self.vib_mode.gamma(self.coherences[i])
 
-    def intensity(self, tw: Optional[float]=None, angles=None) -> float:
+    def intensity(self, tw: Optional[float]=None, angles=None) -> complex:
         r"""Amplitude of the pathway, given by the product of isotropic coefficient of
         the initial density matrix, :math:`\langle T^{(0)}_0(\eta_i
         J_i)^\dagger\rangle=(2J_i+1)^{-1/2}`, :attr:`const` and :meth:`Pathway.geometric_factor`.
@@ -457,7 +447,7 @@ class DressedPathway(Pathway, NDResonance):
 
         Parameters
         ----------
-        abstract: bool
+        abstract
             Use spectroscopic transition notation (P, Q, R) instead of absolute
             J values.
         """
@@ -616,22 +606,27 @@ class DressedLeaf:
         return self.custom_str()
 
 
-def split_by_js(kbl: Iterable[DressedLeaf]):
-    ret = {}
+def split_by_js(kbl: Iterable[Pathway]) -> Dict[Tuple[int, ...], List[Pathway]]:
+    """Collect pathways with the same `js`."""
+    ret: Dict[Tuple[int, ...], List[Pathway]] = {}
     for dl in kbl:
         ret.setdefault(dl.js, []).append(dl)
+
     return ret
 
 
 def perm_pols(pols: Tuple) -> Tuple:
+    """Rearrangement of polarizations allowed by symmetry."""
     return (pols[2], pols[3], pols[0], pols[1])
 
 
 def perm_js(js: Tuple) -> Tuple:
+    """Rearrangement of J values allowed by symmetry."""
     return (js[0], js[3], js[2], js[1])
 
 
 def undegenerate_js(ljs: Sequence[Tuple]) -> List[Tuple]:
+    """Remove degenerate tuples of Js."""
     nondeg = []
     for jset in ljs:
         if jset not in nondeg and perm_js(jset) not in nondeg:
@@ -718,7 +713,25 @@ def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False)\
     return ret
 
 
-def pprint_dllist(dllist, abstract=False, angles=None, print=print):
+def pprint_dllist(dllist: Sequence[Union[Pathway, DressedPathway]],
+                  abstract: bool=False, angles: Sequence[float]=None,
+                  print: Callable=print):
+    """Pretty print a list of :class:`Pathway` or :class:`DressedPathway`.
+
+    Parameters
+    ----------
+    dllist
+        Sequence of :class:`Pathway` or :class:`DressedPathway`, will print more
+        information for the latter.
+    abstract
+        Use spectroscopic state labels relative to the ground state, instead of
+        actual J values.
+    angles
+        Evaluate polarization tensor components and R-factor for these
+        polarizations.
+    print
+        Use provided callable instead of :func:`print` built-in.
+    """
     for i, dl in enumerate(dllist):
         if i == 0:
             print('-'*10)
@@ -734,7 +747,8 @@ def pprint_dllist(dllist, abstract=False, angles=None, print=print):
             print()
 
 
-def print_dl_dict(dldict, fields=None):
+def print_dl_dict(dldict: Mapping[Any, Sequence[Pathway]],
+                  fields: Sequence[str]=None):
     for k in dldict:
         print(k)
         for dl in dldict[k]:
@@ -891,7 +905,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
 
     Optionally return sorted list of :class:`DressedPathway` corresponding to peaks.
 
-    `quantity` can be:
+    ``quantity`` can be:
 
     - 'amplitude', pathway amplitude as returned by
       :meth:`DressedPathway.intensity`,
@@ -925,7 +939,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
 
 
 def equiv_peaks(pw: Pathway, pl: Peak2DList, dll: Sequence[Sequence[Pathway]]) -> Peak2DList:
-    """Return peaks from `pl` which are polarization-equivalent to `pw`."""
+    """Return peaks from ``pl`` which are polarization-equivalent to ``pw``."""
     new_pl = Peak2DList(quantity=pl.quantity)
     for peak, dp_list in zip(pl, dll):
         if any(dp.leaf.is_equiv_pathway(pw) for dp in dp_list):
@@ -946,7 +960,7 @@ def split_by_equiv_peaks(det_angles: dict, pl: Peak2DList, dll: Sequence[Pathway
 
     Parameters
     ----------
-    det_angles
+    det_angles : dict
         Map between detection angles and a list of pathways.
     pl
         Any peak list.

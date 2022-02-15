@@ -50,26 +50,34 @@ class LightInteraction(at.NodeMixin):
 
     Parameters
     ----------
-    name : str
+    name
         Identifier for the light beam.
-    side : Side
+    side
         Ket or bra excitation.
-    sign : KSign
+    sign
         Wavevector sign of created polarization contribution.
-    readout : bool
+    readout
         Readout or actual light interaction.
+    angle
+        Single float for linear polarization and pair of numbers of elliptical.
     """
     def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False,
                  angle: Union[float, Tuple[float]]=0.0, parent=None, children=None):
         super(LightInteraction, self).__init__()
-        self.separator = "->"
-        self.name = name
-        self.side = side
-        self.sign = sign
+        self.separator: str = "->"
+        #: Identifier for the light beam.
+        self.name: str = name
+        #: Ket or bra excitation.
+        self.side: Side = side
+        #: Wavevector sign of created polarization contribution.
+        self.sign: KSign = sign
+        #: Single float for linear polarization and pair of numbers of elliptical.
+        self.angle: Union[float, Tuple[float]] = None
         if isinstance(angle, tuple):
             self.angle = (angle[0], angle[1]*sign)
         else:
             self.angle = angle
+        #: bool: Readout or actual light interaction.
         self.readout = readout
         self.fullname = "{:s}(side={:d}, sign={:d})".format(self.name, self.side, self.sign)
         self.parent = parent
@@ -77,7 +85,8 @@ class LightInteraction(at.NodeMixin):
             self.children = children
 
     @property
-    def tier(self):
+    def tier(self) -> int:
+        """Number of interactions preceding this one in the tree."""
         return sum((1 for x in self.ancestors if isinstance(x, LightInteraction)))
 
     def __str__(self):
@@ -91,15 +100,24 @@ class LightInteraction(at.NodeMixin):
 class KetBra(at.NodeMixin):
     """Node in a tree of excited states.
 
-    Each KetBra is described by :attr:`ket` and :attr:`bra` which describes the
-    density matrix element.
+    Each KetBra is density matrix component described by :attr:`ket` and :attr:`bra`.
+
+    Parameters
+    ----------
+    ket : RotState
+        ket-side rovibrational state.
+    bra : RotState
+        bra-side rovibrational state.
     """
     def __init__(self, ket: RotState, bra: RotState, parent=None, children=None):
         super(KetBra, self).__init__()
-        self.ket = ket
-        self.bra = bra
+        #: ket-side rovibrational state
+        self.ket: RotState = ket
+        #: bra-side rovibrational state
+        self.bra: RotState = bra
         self.separator = "->"
-        self.name = "|{:s}><{:s}|".format(self.ket.name, self.bra.name)
+        #: ASCII art ketbra
+        self.name: str = "|{:s}><{:s}|".format(self.ket.name, self.bra.name)
         self.parent = parent
         if children:
             self.children = children
@@ -173,7 +191,7 @@ class KetBra(at.NodeMixin):
         return self._pathway_info_cache
 
     def transitions(self):
-        """Return list of transitions as a list of state pair."""
+        """Return list of transitions as a list of state pairs."""
         return self._pathway_info()[1]
 
     def color_tier(self):
@@ -200,6 +218,7 @@ class KetBra(at.NodeMixin):
         return statelist
 
     def copy(self):
+        """Deep copy of the tree."""
         return deepcopy(self)
 
     def savepng(self, path):
@@ -237,9 +256,16 @@ class KetBra(at.NodeMixin):
         return pops
 
     def is_diagonal(self):
+        """Check if current node is a population state."""
         return self.ket == self.bra
 
     def is_rephasing(self):
+        """Check if current pathway is rephasing.
+
+        See also
+        --------
+        is_SI, is_SII, is_SII
+        """
         ints = self.interactions()
 
         return ints[0].sign != ints[2].sign
@@ -247,8 +273,8 @@ class KetBra(at.NodeMixin):
     def is_SI(self, order=None):
         r"""Check if :math:`\vec{k}_s = -\vec{k}_1+\vec{k}_2+\vec{k}_3` (rephasing).
 
-        `order` is a list of :class:`LightInteraction` names specifying which
-        interaction corresponds to which wavevector.  First name is
+        ``order`` is a list of :class:`LightInteraction` names specifying which
+        interaction corresponds to which wavevector. First name is
         :math:`\vec{k}_1`, second one is :math:`\vec{k}_2`, etc.
         """
         if order is None:
@@ -335,6 +361,7 @@ class KetBra(at.NodeMixin):
             and any(x.nu == rnu for x in coh3)
 
     def is_doublequantum(self):
+        """Check if pathway has double-quantum coherence."""
         sl = self.to_statelist()
         return any(x.nu==sl[0][0].nu for x in sl[2])
 
@@ -342,14 +369,30 @@ class KetBra(at.NodeMixin):
         """Check for coherent state after second interaction."""
         return not self.ketbras()[2].is_diagonal()
 
+    def is_rc(self):
+        """Check for rotational coherence after second interaction.
+
+        Notes
+        -----
+        All SIII pathways have interstate coherence (double quantum) after
+        second interaction but not all of them involve difference in J states.
+        For SI and SII this method and :meth:`is_interstate` give the same
+        result.
+        """
+        kb2 = self.ketbras()[2]
+
+        return kb2.ket.j != kb2.bra.j
+
     def is_overtone(self):
+        """Check if current node is an overtone coherence."""
         return abs(self.ket.nu-self.bra.nu)>1
 
     def has_overtone(self):
+        """Check if current pathway has overtone coherence."""
         return len([kb for kb in self.ketbras() if kb.is_overtone()]) > 0
 
-    def is_between(self, pump, probe):
-        """Check if this pathway produces cross-peak between `kb1` and `kb2`.
+    def is_between(self, pump: 'KetBra', probe: 'KetBra'):
+        """Check if this pathway produces cross-peak between ``pump`` and ``probe``.
 
         Called with self being a leaf.
         """
@@ -357,7 +400,8 @@ class KetBra(at.NodeMixin):
         return (pump == pump_kb or pump == pump_kb.conj()) and (probe == self or probe == self.conj())
 
     def is_dfwm(self):
-        """Check if this pathway contains only coherences corresponding to a single dipole transition."""
+        """Check if this pathway contains only coherences corresponding to a
+        single dipole transition."""
         return self.color_tier() == 1
 
     is_onecolor = is_dfwm
@@ -371,10 +415,10 @@ class KetBra(at.NodeMixin):
         return self.color_tier() == 3
 
     def is_equiv_pathway(self, o):
-        """Check if other pathway is R-factor-equivalent.
+        """Check if other pathway differs only by initial J state.
 
-        `o` should either be :class:`KetBra` or a result of :meth:`to_statelist`
-        with `normalize` set to True.
+        ``o`` should either be :class:`KetBra` or a result of :meth:`to_statelist`
+        with ``normalize`` set to True.
 
         This won't work if initial state is vibrationally excited.
         """
@@ -439,17 +483,22 @@ class KetBra(at.NodeMixin):
 
 # * Tree filtering functions
 def make_remove(func: Callable) -> Callable:
-    """Tree filtering function factory.
+    """Remove all pathways for which ``func`` is True.
 
     Parameters
     ----------
     func
-        Callable taking :class:`KetBra` instance and returning True of False.
+        Callable taking :class:`KetBra` instance and returning True or False.
 
     Returns
     -------
-    Function taking a `KetBra` excitation tree and removing all branches for
-    which `func` returns True.
+    Callable
+        Function taking a root of :class:`KetBra` excitation tree and removing
+        all branches for which ``func`` returns True when called on the leaf.
+
+    See also
+    --------
+    make_only
     """
     def remove_func(ketbra):
         maxdepth = max(leaf.depth for leaf in ketbra.leaves)
@@ -462,7 +511,7 @@ def make_remove(func: Callable) -> Callable:
 
 
 def make_only(func: Callable) -> Callable:
-    """Tree filtering function factory.
+    """Retain only pathways for which ``func`` is True.
 
     Parameters
     ----------
@@ -471,8 +520,9 @@ def make_only(func: Callable) -> Callable:
 
     Returns
     -------
-    Function taking a `KetBra` excitation tree and leaving only branches for
-    which `func` returns True.
+    Callable
+        Function taking a root of :class:`KetBra` excitation tree and leaving
+        only branches for which ``func`` returns True when called on the leaf.
     """
     def only_func(ketbra):
         maxdepth = max(leaf.depth for leaf in ketbra.leaves)
@@ -500,6 +550,8 @@ only_threecolor = make_only(lambda kb: kb.is_threecolor())
 remove_threecolor = make_remove(lambda kb: kb.is_threecolor())
 remove_interstates = make_remove(lambda kb: kb.is_interstate())
 only_interstates = make_only(lambda kb: kb.is_interstate())
+remove_rc = make_remove(lambda kb: kb.is_rc())
+only_rc = make_only(lambda kb: kb.is_rc())
 only_ketside = make_only(lambda kb: all(s == Side.KET for s in kb.sides()[:3]))
 remove_ketside = make_remove(lambda kb: all(s == Side.KET for s in kb.sides()[:3]))
 only_Pinitial = make_only(lambda kb: kb.is_Pinitial())
@@ -510,7 +562,22 @@ remove_Qbranch = make_remove(lambda kb: kb.is_Qbranch())
 
 
 def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
-    """Limit tree to pathways bewteen `kb1` and `kb2`."""
+    """Limit tree to pathways between ``pump`` and ``probe``.
+
+    Parameters
+    ----------
+    ketbra
+        Root of excitation tree.
+    pump
+        Coherence after first excitation.
+    probe
+        Coherence after third excitation.
+
+    Returns
+    -------
+    KetBra
+        ``ketbra`` with pathways not between ``pump`` and ``probe`` removed.
+    """
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_between(pump, probe):
@@ -520,6 +587,7 @@ def only_between(ketbra: KetBra, pump: KetBra, probe: KetBra) -> KetBra:
 
 
 def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
+    """Retain only ``pathway`` in excitation tree."""
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_pathway(pathway):
@@ -529,6 +597,7 @@ def only_pathway(ketbra: KetBra, pathway: KetBra) -> KetBra:
 
 
 def only_some_pathway(ketbra: KetBra, pathways: List[KetBra]) -> KetBra:
+    """Retain only pathways in ``pathways``."""
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
     for l in ketbra.leaves:
         if not l.is_some_pathway(pathways):
@@ -538,7 +607,7 @@ def only_some_pathway(ketbra: KetBra, pathways: List[KetBra]) -> KetBra:
 
 
 def prune(ketbra: KetBra, depth: int) -> KetBra:
-    """Remove leaves whose depth is less than `depth`."""
+    """Remove leaves whose depth is less than ``depth``."""
     found = True
     while found:
         found = False
@@ -554,7 +623,11 @@ def prune(ketbra: KetBra, depth: int) -> KetBra:
 
 # * Tree-modifying functions
 def readout(ketbra: KetBra) -> KetBra:
-    """Generate populations from excitations."""
+    """Retain only dipole-allowed pathways.
+
+    Excite each leaf one more time and remove branches which don't end in
+    population state.
+    """
     for kb in ketbra.leaves:
         excite(kb, 'mu', 'ket', True)
     maxdepth = max(leaf.depth for leaf in ketbra.leaves)
@@ -562,8 +635,21 @@ def readout(ketbra: KetBra) -> KetBra:
     return prune(remove_nondiagonal(ketbra), depth=maxdepth)
 
 
-def excited_states_symtop(state: SymTopState, dnu: int) -> List[int]:
-    """Return states reachable from `state` by dipole interaction."""
+def excited_states_symtop(state: SymTopState, dnu: int) -> List[SymTopState]:
+    """Return symtop states reachable from ``state`` by dipole interaction.
+
+    Parameters
+    ----------
+    state
+        Initial rovibrational state.
+    dnu
+        Change in vibrational quantum number.
+
+    Returns
+    -------
+    List[SymTopState]
+        List of reachable states.
+    """
     djs = (-1, 0, 1)
     states = []
 
@@ -579,8 +665,21 @@ def excited_states_symtop(state: SymTopState, dnu: int) -> List[int]:
     return states
 
 
-def excited_states_diatom(state: DiatomState, dnu: int) -> List[int]:
-    """Return states reachable from `state` by dipole interaction."""
+def excited_states_diatom(state: DiatomState, dnu: int) -> List[DiatomState]:
+    """Return diatom states reachable from ``state`` by dipole interaction.
+
+    Parameters
+    ----------
+    state
+        Initial rovibrational state.
+    dnu
+        Change in vibrational quantum number.
+
+    Returns
+    -------
+    List[DiatomState]
+        List of reachable states.
+    """
     djs = (-1, 1)
     states = []
 
@@ -592,7 +691,6 @@ def excited_states_diatom(state: DiatomState, dnu: int) -> List[int]:
     return states
 
 
-#: Poor man's polymorphism
 excited_states = {
     DiatomState: excited_states_diatom,
     SymTopState: excited_states_symtop
@@ -623,19 +721,19 @@ def _excite(ketbra: KetBra, light_name: str, side: Side=Side.KET,
 
 def excite(ketbra: KetBra, light_name: str, part: str='ket',
            readout: bool=False) -> KetBra:
-    """Generate all excitations of `ketbra`.
+    """Generate all excitations of ``ketbra``.
 
-    Modifies `ketbra` in place. Only parallel transitions.
+    Modifies ``ketbra`` in place. Only parallel transitions.
 
     Parameters
     ----------
-    ketbra : KetBra
+    ketbra
         State to excite.
-    light_name : str
+    light_name
         Identifier for the EM field doing the excitation.
-    part : str
+    part
         'ket', 'bra' or 'both', consider ket, bra or double-sided excitations.
-    readout : bool, optional
+    readout
         Readout or actual light interaction.
 
     Returns
@@ -654,16 +752,21 @@ def excite(ketbra: KetBra, light_name: str, part: str='ket',
 
 
 def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=None) -> KetBra:
-    """Generate multiple excitations of `ketbra`.
+    """Generate multiple excitations of ``ketbra``.
 
     Parameters
     ----------
-    ketbra : KetBra
+    ketbra
         State to excite.
-    light_names : list of str
+    light_names
         Names of EM fields, length sets the number of excitations.
-    parts : None or list
-        None for first ket excitation and rest 'both' excitations.
+    parts
+        Which sides of density matrix to excite at each step. If None, first
+        excitation is ket-side and all the rest are from both sides.
+
+    Returns
+    -------
+    KetBra
     """
     if parts is not None and len(parts) != len(light_names):
         raise ValueError("len(parts) != len(light_names)")
@@ -682,6 +785,37 @@ def multi_excite(ketbra: KetBra, light_names: List[str], parts: Optional[List]=N
 kiter_interpreter = Interpreter()
 
 def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: str=None) -> List[KetBra]:
+    """Return a list of :class:`KetBra` in ground vibrational state.
+
+    Parameters
+    ----------
+    jiter
+        An iterable of J values.
+    rotor
+        Either 'linear' for :class:`DiatomState` or 'symmetric' for
+        :class:`SymTopState` molecular states.
+    kiter_func
+        Python expression evaluating to an iterable over K states. The
+        expression is evaluated in an environment with ``j`` bound to current J
+        value.
+
+    Returns
+    -------
+    List[KetBra]
+
+    Examples
+    --------
+    Create KetBras for linear rotor and *J* up to 5:
+
+    >>> import rotsim2d.pathways as pw
+    >>> pw.gen_roots(range(5+1))
+    [Ketbra(DiatomState(nu=0, j=0), DiatomState(nu=0, j=0)), Ketbra(DiatomState(nu=0, j=1), DiatomState(nu=0, j=1)), Ketbra(DiatomState(nu=0, j=2), DiatomState(nu=0, j=2)), Ketbra(DiatomState(nu=0, j=3), DiatomState(nu=0, j=3)), Ketbra(DiatomState(nu=0, j=4), DiatomState(nu=0, j=4)), Ketbra(DiatomState(nu=0, j=5), DiatomState(nu=0, j=5))]
+
+    Create KetBras for symmetric top, *J* up to 2 and *K* up to *J*:
+
+    >>> pw.gen_roots(range(2+1), rotor='symmetric', kiter_func='range(j+1)')
+    [Ketbra(SymTopState(nu=0, j=0, k=0), SymTopState(nu=0, j=0, k=0)), Ketbra(SymTopState(nu=0, j=1, k=0), SymTopState(nu=0, j=1, k=0)), Ketbra(SymTopState(nu=0, j=1, k=1), SymTopState(nu=0, j=1, k=1)), Ketbra(SymTopState(nu=0, j=2, k=0), SymTopState(nu=0, j=2, k=0)), Ketbra(SymTopState(nu=0, j=2, k=1), SymTopState(nu=0, j=2, k=1)), Ketbra(SymTopState(nu=0, j=2, k=2), SymTopState(nu=0, j=2, k=2))]
+    """
     roots = []
     for j in jiter:
         if rotor == 'linear':
@@ -697,7 +831,39 @@ def gen_roots(jiter: Iterable, rotor: str='linear', kiter_func: str=None) -> Lis
     return roots
 
 
-def gen_excitations(root, light_names, parts, meths=None) -> KetBra:
+def gen_excitations(root: KetBra, light_names: List[str],
+                    parts: List[str], meths: Sequence[Callable]=None)\
+                    -> KetBra:
+    """Generate excitation tree, filter it and retain only resonant pathways.
+
+    Parameters
+    ----------
+    root
+        Initial rovibrational state.
+    light_names
+        Names of EM fields, length sets the number of excitations.
+    parts
+        Which sides of density matrix to excite at each step. If None, first
+        excitation is ket-side and all the rest are from both sides.
+    meths
+        Each callable in the list must take a KetBra argument and return a
+        KetBra.
+
+    Return
+    ------
+    KetBra
+        Root of the excitation tree.
+
+    See also
+    --------
+    multi_excite
+
+    Examples
+    --------
+    >>> from molspecutils.molecule import DiatomState
+    >>> root = pw.KetBra(DiatomState(0, 1), DiatomState(0, 1))
+    >>> gen_excitations(root, ['omg1', 'omg2', 'omg3'], ['ket', 'both', 'both'], meths=[pw.only_interstates])
+    """
     root = multi_excite(root, light_names, parts=parts)
     if meths is not None:
         for meth in meths:
@@ -710,6 +876,31 @@ def gen_excitations(root, light_names, parts, meths=None) -> KetBra:
 def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
                  rotor: str='linear', kiter_func: str=None,
                  pump_overlap: bool=False) -> List[KetBra]:
+    """Generate multiple excitation trees, filter them and retain resonant ones.
+
+    Parameters
+    ----------
+    jiter
+        An iterable of J values.
+    meths
+        Each callable in the list must take a KetBra argument and return a
+        KetBra.
+    rotor
+        Either 'linear' for :class:`DiatomState` or 'symmetric' for
+        :class:`SymTopState` molecular states.
+    kiter_func
+        Python expression evaluating to an iterable over K states. The
+        expression is evaluated in an environment with ``j`` bound to current J
+        value.
+    pump_overlap
+        Generate additional pathways with reversed time ordering of first two
+        interactions.
+
+    Returns
+    -------
+    List[KetBra]
+        List of roots of the excitation trees.
+    """
     roots = gen_roots(jiter, rotor, kiter_func)
     pws = [gen_excitations(root, ['omg1', 'omg2', 'omg3'],
                            ['ket', 'both', 'both'], meths)
@@ -729,7 +920,13 @@ def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
 def geometric_factor(leaf: KetBra):
     """Return polarization and angular momentum sequence for a pathway.
 
-    Same as in leaf_response."""
+    Same as in leaf_response.
+
+    Parameters
+    ----------
+    leaf
+        Leaf node of the pathway in the excitation tree.
+    """
     kbs = leaf.ketbras()
     wkets, wbras = [], []
     for i in range(1, len(kbs)):
