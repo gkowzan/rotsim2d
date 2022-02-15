@@ -34,6 +34,7 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
 
 """
 import collections.abc as abc
+import re
 import json
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
@@ -567,18 +568,54 @@ geometric_labels = {
     (0,  0,  1,  1): 'QRQ',     # RQP
 }
 
+_coh_conj_regex = re.compile(r"\|(.+)><(.+)\|")
+def coherence_conj(coh_string: str) -> str:
+    """Conjugate peak string `|ket><bra|`."""
+    match = re.fullmatch(_coh_conj_regex, coh_string)
+    if match:
+        return "|{:s}><{:s}|".format(match.group(2), match.group(1))
+    else:
+        raise ValueError("Malformed peak string '{:s}'".format(coh_string))
 
 
+def peak_conj(peak: Tuple[str, str]) -> Tuple[str, str]:
+    """Conjugate last coherence string in peak identifier.
+
+    See also
+    --------
+    Pathway.peak, Pathway.abstract_peak
+    """
+    return (peak[0], coherence_conj(peak[1]))
 
 
-def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False)\
-    -> Dict[str, List[Pathway]]:
-    ret = {}
+def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False,
+                   collapse_directions: bool=True)\
+    -> Dict[Tuple[str, str], List[Pathway]]:
+    r"""Collect pathways with the same 2D resonance.
+
+    Parameters
+    ----------
+    kbl
+        Iterable of pathways.
+    abstract
+        Splits by subbranches instead of individual peaks. Looks at peaks
+        independent of :math:`J_i`.
+    collapse_directions
+        Assigns positive- and negative-frequency coherences to the same peak.
+
+    Returns
+    -------
+    Dict[Tuple[str, str], List[Pathway]]
+        Dictionary from :attr:`Pathway.peak` or :attr:`Pathway.abstract_peak` to
+        lists of pathways.
+    """
+    ret: Dict[Tuple[str, str], List[Pathway]] = {}
+    attr: str = 'abstract_peak' if abstract else 'peak'
     for dl in kbl:
-        if abstract:
-            ret.setdefault(dl.abstract_peak, []).append(dl)
-        else:
-            ret.setdefault(dl.peak, []).append(dl)
+        peak = getattr(dl, attr)
+        if collapse_directions and dl.leaf.is_SI():
+            peak = peak_conj(peak)
+        ret.setdefault(peak, []).append(dl)
 
     return ret
 
@@ -644,6 +681,7 @@ class Peak2DList(list):
     def __init__(self, iterable=(), quantity='amplitudes'):
         super().__init__(iterable)
         self.quantity = quantity
+        self.normalized = False
 
     @property
     def pumps(self):
