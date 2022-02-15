@@ -821,7 +821,7 @@ def peak_list(ll: List[DressedPathway], tw: Optional[float]=0.0,
     pl = Peak2DList(quantity=quantity)
     dls = []
     for peak, dll in ll.items():
-        pu, pr = u.nu2wn(dll[0].nu(0)), u.nu2wn(dll[0].nu(2))
+        pu, pr = u.nu2wn(dll[0].nu(0)), abs(u.nu2wn(dll[0].nu(2)))
         sig = 0.0
         for dl in dll:
             # with wigxjpf(300, 6):
