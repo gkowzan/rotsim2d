@@ -508,104 +508,6 @@ class DressedPathway(Pathway, NDResonance):
         return f"DressedPathway(leaf={self.leaf!r}, vib_mode={self.vib_mode!r}, T={self.T!r})"
 
 
-class DressedLeaf:
-    """Assign polarizations in proper order, line intensities, coherence frequencies
-    and allow for calculating the intensity of the pathway. Do everything except
-    calculating the associated line shape/response time dependence."""
-    fields = ['peak', 'const', 'cohs', 'js', 'pols', 'tw_coherence', 'tw_peak', 'diagonal', 'geo_label', 'leaf']
-
-    def __init__(self, leaf: KetBra, vib_mode: mol.VibrationalMode, T: float):
-        self.leaf = leaf
-        kb_series = leaf.ketbras()
-        wkets, wbras = [], []
-        self.cohs = []
-        self.const = np.complex(1.0)
-        for i in range(1, len(kb_series)):
-            kb, kbp = kb_series[i], kb_series[i-1]
-
-            # dipole interaction reduced matrix element
-            if kb.parent.side is Side.KET:
-                pair = (kbp.ket, kb.ket)
-                wkets.insert(0, (kb.ket.j,  kb.parent.angle))
-            else:
-                pair = (kbp.bra, kb.bra)
-                wbras.append((kb.parent.parent.bra.j, kb.parent.angle))
-            mu = vib_mode.mu(pair) # do permutation in vib_mode.mu
-
-            if kb.parent.readout:
-                self.const *= mu*vib_mode.equilibrium_pop(leaf.root.ket, T)
-                wbras.extend(wkets)
-                self.js = tuple(x[0] for x in wbras)
-                self.pols = tuple(x[1] for x in wbras)
-                break
-            self.const *= 1.0j/C.hbar*kb.parent.side*mu # this probably should be divided by half
-
-            # collect pairs
-            self.cohs.append((kb.bra, kb.ket))
-
-        self.vib_mode = vib_mode
-        self.tw_coherence = not self.nu(1) == 0.0
-        self.tw_peak = kb_series[2].name
-        self.peak = (kb_series[1].name, kb_series[3].name)
-        self.diagonal = self.peak[0] == self.peak[1]
-        self.geo_label = geometric_label(self)
-        self.isotropy = 1/np.sqrt(2*leaf.root.ket.j+1)
-
-    def nu(self, i):
-        return self.vib_mode.nu(self.cohs[i])
-
-    def gamma(self, i):
-        return self.vib_mode.gamma(self.cohs[i])
-
-    def intensity(self, tw: Optional[float]=None) -> float:
-        """Intensity of the pathway."""
-        ret = self.isotropy*self.const*four_couple(self.js, self.pols)
-        if tw is not None and self.tw_coherence:
-            ret *= np.exp(-2.0*np.pi*tw*(1.0j*self.nu(1)))
-
-        return ret
-
-    def geometric_factor(self, relative: bool=False) -> float:
-        """Geometric factor for pathway intensity.
-
-        Parameters
-        ----------
-        relative : bool
-            Gives value relative to XXXX polarization.
-
-        Returns
-        -------
-        float
-            Purely J- and polarization-dependent part of the response.
-        """
-        ret = four_couple(self.js, self.pols)
-        if relative:
-            ret /= four_couple(self.js, [0.0]*4)
-
-        return ret
-
-    def custom_str(self, fields=None):
-        fields = fields if fields is not None else self.fields
-        s = ', '.join(["{:s}={!s}".format(f, getattr(self, f)) for f in fields])
-
-        return "DressedLeaf({:s})".format(s)
-
-    def print_diagram(self):
-        for ket, bra in self.cohs[::-1]:
-            print(f"|{ket.name}><{bra.name}|")
-
-    def pprint(self):
-        print('diagram:')
-        self.print_diagram()
-        print(f'geometric factor: {self.geo_label}')
-
-    def __str__(self):
-        return self.custom_str()
-
-    def __repr__(self):
-        return self.custom_str()
-
-
 def split_by_js(kbl: Iterable[Pathway]) -> Dict[Tuple[int, ...], List[Pathway]]:
     """Collect pathways with the same `js`."""
     ret: Dict[Tuple[int, ...], List[Pathway]] = {}
@@ -633,22 +535,6 @@ def undegenerate_js(ljs: Sequence[Tuple]) -> List[Tuple]:
             nondeg.append(jset)
 
     return nondeg
-
-
-def split_by_pols(kbl: Iterable[DressedLeaf]):
-    ret = {}
-    for dl in kbl:
-        pols_set = frozenset((dl.pols, perm_pols(dl.pols)))
-        ret.setdefault(pols_set, []).append(dl)
-    return ret
-
-
-def split_by_pols_js(kbl: Iterable[DressedLeaf]):
-    ret = {}
-    for dl in kbl:
-        pols_set = frozenset((dl.pols, perm_pols(dl.pols)))
-        ret.setdefault((dl.js, pols_set), []).append(dl)
-    return ret
 
 
 geometric_labels = {
@@ -681,24 +567,8 @@ geometric_labels = {
     (0,  0,  1,  1): 'QRQ',     # RQP
 }
 
-def geometric_label(dl: DressedLeaf):
-    js = dl.js; ji = js[0]
-    js = tuple(j-ji for j in js)
-    return geometric_labels[js]
 
 
-def split_by_pols_highjs(kbl: Iterable[DressedLeaf]):
-    sopr = {'RRP', 'PPR', 'PRR', 'RPP'}
-    rrpp = {'RPR', 'PRP'}
-    ret = {}
-    for dl in kbl:
-        pols_set = frozenset((dl.pols, perm_pols(dl.pols)))
-        if geometric_label(dl) in sopr:
-            cat = 'sopr'
-        elif geometric_label(dl) in rrpp:
-            cat = 'rrpp'
-        ret.setdefault((cat, pols_set), []).append(dl)
-    return ret
 
 
 def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False)\
@@ -760,10 +630,6 @@ def print_dl_tuple_dict(dldict, fields=None):
         print(k)
         for dl, a in dldict[k]:
             print("   {:s}, {:f}".format(dl.custom_str(fields=fields), a))
-
-
-def dress_pws(pws, vib_mode, T):
-    return sum(([DressedLeaf(l, vib_mode, T) for l in root.leaves] for root in pws), [])
 
 
 # * Peaks without line shapes
