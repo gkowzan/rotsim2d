@@ -441,7 +441,7 @@ def latex_compile(path, doc):
 
 # * LaTeX table of coefficients
 def trans_label2latex(label: str) -> str:
-    """Write `label` with underline instead of parentheses."""
+    """Write ``label`` with overline instead of parentheses."""
     return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\ensuremath{\\overline{\\mbox{\1}}}', label)
 
 
