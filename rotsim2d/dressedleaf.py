@@ -352,7 +352,7 @@ class NDResonance(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def intensity(self, tw: Optional[float]=None, angles=None) -> float:
+    def amplitude(self, tw: Optional[float]=None, angles=None) -> complex:
         """Amplitude of the whole resonance."""
         pass
 
@@ -425,7 +425,8 @@ class DressedPathway(Pathway, NDResonance):
         """Pressure-broadening coefficient of `i` coherence."""
         return self.vib_mode.gamma(self.coherences[i])
 
-    def intensity(self, tw: Optional[float]=None, angles=None) -> complex:
+    def amplitude(self, tw: Optional[float]=None,
+                  angles: Optional[AnglesT]=None) -> complex:
         r"""Amplitude of the pathway, given by the product of isotropic coefficient of
         the initial density matrix, :math:`\langle T^{(0)}_0(\eta_i
         J_i)^\dagger\rangle=(2J_i+1)^{-1/2}`, :attr:`const` and :meth:`Pathway.geometric_factor`.

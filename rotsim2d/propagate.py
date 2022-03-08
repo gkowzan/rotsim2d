@@ -115,7 +115,7 @@ def dressed_leaf_response(dl: dl.NDResonance,
 
         resps.append(leaf_term(nu, dl.gamma(i)*p, coord, domains[i]))
 
-    resp = resps[0]*dl.intensity(angles=angles)
+    resp = resps[0]*dl.amplitude(angles=angles)
     if len(resps) > 1:
         for next_resp in resps[1:]:
             resp = resp*next_resp
