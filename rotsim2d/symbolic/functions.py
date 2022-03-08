@@ -723,21 +723,35 @@ def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
     
 # * Rotational coherence
 # Retrieve rotational coherence expressions from Pathways.
-def rot_expression(state: RotState, jref: int) -> Basic:
-    """Rotational energy expression relative to `jref`."""
+F = Function('F')
+
+def rot_expression(state: RotState, jref: int, higher_order: str=None) -> Basic:
+    """Rotational energy expression relative to ``jref``."""
     dj = state.j-jref
-    expr = (J_i+dj)*(J_i+dj+1)
+
     globs = globals()
-    expr = globs['nu'+str(state.nu)] + \
-        globs['B'+str(state.nu)]*(J_i+dj)*(J_i+dj+1)
+    nu = globs['nu'+str(state.nu)]
+    is_symtop = getattr(state, "k", None)
+    if higher_order == 'exact':
+        if is_symtop:
+            expr = F(nu, J_i+dj, K)
+        else:
+            expr = F(nu, J_i+dj)
+    else:
+        expr = nu + globs['B'+str(state.nu)]*(J_i+dj)*(J_i+dj+1)
+        if is_symtop:
+            expr += globs['BK'+str(state.nu)]*K**2
+        if higher_order == 'DJ':
+            expr += globs['DJ'+str(state.nu)]*((J_i+dj)*(J_i+dj+1))**2
 
     return expr
 
 
-def rcs_expression(pair: Tuple[RotState, ...], jref: int) -> Basic:
+def rcs_expression(pair: Tuple[RotState, RotState],
+                   jref: int, higher_order: str=None) -> Basic:
     """Return rotational beat expression."""
-    return factor(rot_expression(pair[1], jref)-
-                  rot_expression(pair[0], jref), deep=True)
+    return factor(rot_expression(pair[1], jref, higher_order)-
+                  rot_expression(pair[0], jref, higher_order), deep=True)
 
 honl_london_factors = {0: {-1: (Jpp+Kpp)*(Jpp-Kpp)/Jpp,
                             0: (2*Jpp+1)*Kpp**2/Jpp/(Jpp+1),
