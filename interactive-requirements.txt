@@ -10,9 +10,10 @@ argon2-cffi==21.3.0
     # via notebook
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-attrs==21.2.0
+attrs==21.4.0
     # via
     #   -c dev-requirements.txt
+    #   -c requirements.txt
     #   jsonschema
 backcall==0.2.0
     # via ipython
