@@ -40,7 +40,7 @@ def aid(x):
 
 def pws_autospan(pws: Sequence[dl.NDResonance], margin: float=5.0*30e9,
                  conv: float=1.0) -> Tuple[Tuple[float, ...], ...]:
-    """Return min/max pump/probe frequencies from `pws`."""
+    """Return min/max pump/probe frequencies from ``pws``."""
     pump_freqs, probe_freqs = [pw.nu(0) for pw in pws], [pw.nu(2) for pw in pws]
     pump_min, pump_max = min(pump_freqs), max(pump_freqs)
     probe_min, probe_max = min(probe_freqs), max(probe_freqs)
@@ -54,8 +54,8 @@ def pws_autospan(pws: Sequence[dl.NDResonance], margin: float=5.0*30e9,
 
 
 def aligned_fs(fsmin: float, fsmax: float, df: float) -> np.ndarray:
-    """Return smallest `df`-spaced zero-offset grid of values covering [`fsmin`,
-    `fsmax`] range.
+    """Return smallest ``df``-spaced zero-offset grid of values covering [``fsmin``,
+    ``fsmax``] range.
     """
     def align_max(f: float):
         return np.ceil(f/df).astype(np.int64)

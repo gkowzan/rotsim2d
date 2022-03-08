@@ -57,8 +57,11 @@ from rotsim2d.pathways import KetBra, KSign, Side, gen_pathways
 
 #: Spectroscopic notation for transitions
 dj_to_letter = {-2: "O", -1: "P", 0: "Q", 1: "R", 2: "S"}
-def abstract_line_label(pair: Tuple[mol.RotState], vib=False) -> str:
-    ":meta private:"
+
+
+def abstract_line_label(pair: Tuple[mol.RotState, mol.RotState],
+                        vib=False) -> str:
+    "Assign branch label, e.g: P, 2P, Q, to ``pair`` representing a transition."
     pair = sorted(pair, key=lambda x: x.nu)
     dnu = abs(pair[1].nu-pair[0].nu)
     label = str(dnu) if dnu>1 else ""
@@ -69,23 +72,27 @@ def abstract_line_label(pair: Tuple[mol.RotState], vib=False) -> str:
     return label
 
 
-def abstract_format(dnu: int, dj: int):
-    ":meta private:"
+def abstract_format(dnu: int, dj: int) -> str:
+    "Abstract ket (or bra) label, e.g: 1P, 0Q."
     if dnu==0 and dj==0:
         return "0"
     return str(dnu)+dj_to_letter[dj]
 
 
 def abstract_state_label(state: mol.RotState, ref_state: mol.RotState) -> str:
-    ":meta private:"
+    "Abstract label for ``state`` relative to ``ref_state``, e.g: 1P, 0Q."
     return abstract_format(state.nu-ref_state.nu, state.j-ref_state.j)
 
 
-def abstract_pair_label(pair: Tuple[mol.RotState], ref_state: mol.RotState) -> str:
-    ":meta private:"
+def abstract_pair_label(pair: Tuple[mol.RotState, mol.RotState],
+                        ref_state: mol.RotState) -> str:
+    "Abstract label for ``pair`` relative to ``ref_state``, e.g: |1P><0|. "
     return "|{:s}><{:s}|".format(
         abstract_state_label(pair[0], ref_state),
         abstract_state_label(pair[1], ref_state))
+
+AnglesT = Union[Mapping[str, Any], Sequence]
+
 
 class Pathway:
     r"""Collect information on a pathway based on KetBra tree leaf without
@@ -199,7 +206,7 @@ class Pathway:
 
         return label
 
-    def _phi_angles(self, theta_angles: Union[Mapping, Sequence]) -> List[float]:
+    def _phi_angles(self, theta_angles: AnglesT) -> List[float]:
         """Order pulse/detection angles to evaluate R-factor."""
         if isinstance(theta_angles, abc.Sequence):
             theta_angles = dict(zip(('omg1', 'omg2', 'omg3', 'mu'),
@@ -209,7 +216,7 @@ class Pathway:
         return [theta_angles[ints[i].name] for i in self.light_inds]
 
     def geometric_factor(self, relative: bool=False,
-                         angles: Optional[Union[Sequence, Dict]]=None) -> float:
+                         angles: Optional[AnglesT]=None) -> float:
         r"""Geometric R-factor for pathway intensity for isotropic initial density
         matrix.
 
@@ -245,7 +252,7 @@ class Pathway:
         js = list(self.js)
         return (cp.G(*(js + [0])), cp.G(*(js + [1])), cp.G(*(js + [2])))
 
-    def T00s(self, angles):
+    def T00s(self, angles: AnglesT):
         r"""Polarization tensor components :math:`T^{(0)}_0(\epsilon_i^{\ast}, \epsilon_j, \epsilon_k^{\ast}, \epsilon_l; k)` for `k=0,1,2`
         """
         angles = self._phi_angles(angles)
@@ -261,7 +268,7 @@ class Pathway:
         """Make a list of Pathway's from KetBra list."""
         return sum((cls.from_kb_tree(kb_tree) for kb_tree in kb_list), [])
 
-    def custom_str(self, fields=None) -> str:
+    def custom_str(self, fields: Optional[Sequence[str]]=None) -> str:
         """String representation including only attributes in ``fields``."""
         fields = fields if fields is not None else self.fields
         s = ', '.join(["{:s}={!s}".format(f, getattr(self, f)) for f in fields])
@@ -308,7 +315,8 @@ class Pathway:
             tw_coherence = False
         print(f"Coherence during waiting time: {tw_coherence!r}", end=end)
 
-    def pprint(self, abstract: bool=False, angles: Sequence[float]=None,
+    def pprint(self, abstract: bool=False,
+               angles: Optional[AnglesT]=None,
                print: Callable=print):
         """Pretty print this pathway.
 
@@ -341,6 +349,7 @@ class Pathway:
 
 
 class NDResonance(metaclass=ABCMeta):
+    """Interface expected by functions in :module:`rotsim2d.propagate`."""
     @abstractmethod
     def nu(self, i: int) -> float:
         """Frequency of `i` resonance."""
@@ -437,14 +446,16 @@ class DressedPathway(Pathway, NDResonance):
 
         return ret
 
-    def _tw_pprint(self, print=print):
+    def _tw_pprint(self, print: Callable=print):
         Pathway._tw_pprint(self, end='', print=print)
         if self.tw_coherence:
             print(", {:.2f} cm-1".format(u.nu2wn(self.nu(1))))
         else:
             print()
 
-    def pprint(self, abstract=False, angles=None, print=print):
+    def pprint(self, abstract: bool=False,
+               angles: Optional[AnglesT]=None,
+               print: Callable=print):
         """Pretty print this pathway.
 
         Parameters
@@ -509,6 +520,8 @@ class DressedPathway(Pathway, NDResonance):
     def __repr__(self):
         return f"DressedPathway(leaf={self.leaf!r}, vib_mode={self.vib_mode!r}, T={self.T!r})"
 
+
+AbstractPathway = Union[Pathway, DressedPathway]
 
 def split_by_js(kbl: Iterable[Pathway]) -> Dict[Tuple[int, ...], List[Pathway]]:
     """Collect pathways with the same `js`."""
@@ -589,9 +602,9 @@ def peak_conj(peak: Tuple[str, str]) -> Tuple[str, str]:
     return (peak[0], coherence_conj(peak[1]))
 
 
-def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False,
+def split_by_peaks(kbl: Iterable[AbstractPathway], abstract: bool=False,
                    collapse_directions: bool=True)\
-    -> Dict[Tuple[str, str], List[Pathway]]:
+    -> Dict[Tuple[str, str], List[AbstractPathway]]:
     r"""Collect pathways with the same 2D resonance.
 
     Parameters
@@ -606,7 +619,7 @@ def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False,
 
     Returns
     -------
-    Dict[Tuple[str, str], List[Pathway]]
+    Dict[Tuple[str, str], List[AbstractPathway]]
         Dictionary from :attr:`Pathway.peak` or :attr:`Pathway.abstract_peak` to
         lists of pathways.
     """
@@ -621,8 +634,9 @@ def split_by_peaks(kbl: Iterable[Pathway], abstract: bool=False,
     return ret
 
 
-def pprint_dllist(dllist: Sequence[Union[Pathway, DressedPathway]],
-                  abstract: bool=False, angles: Sequence[float]=None,
+def pprint_dllist(dllist: Sequence[AbstractPathway],
+                  abstract: bool=False,
+                  angles: Optional[AnglesT]=None,
                   print: Callable=print):
     """Pretty print a list of :class:`Pathway` or :class:`DressedPathway`.
 
@@ -657,13 +671,16 @@ def pprint_dllist(dllist: Sequence[Union[Pathway, DressedPathway]],
 
 def print_dl_dict(dldict: Mapping[Any, Sequence[Pathway]],
                   fields: Sequence[str]=None):
+    """Pretty print a dict of pathways."""
     for k in dldict:
         print(k)
         for dl in dldict[k]:
             print("   ", dl.custom_str(fields=fields))
 
 
-def print_dl_tuple_dict(dldict, fields=None):
+def print_dl_tuple_dict(dldict: Mapping[Any, Sequence[Tuple[Pathway, float]]],
+                        fields: Optional[Sequence[str]]=None):
+    """Pretty print a dict of (pathway, float) tuples."""
     for k in dldict:
         print(k)
         for dl, a in dldict[k]:
@@ -685,12 +702,12 @@ class Peak2DList(list):
         self.normalized = False
 
     @property
-    def pumps(self):
+    def pumps(self) -> List[float]:
         """List of pump frequencies."""
         return [peak.pump_wl for peak in self]
 
     @property
-    def probes(self):
+    def probes(self) -> List[float]:
         """List of probe frequencies."""
         return [peak.probe_wl for peak in self]
 
@@ -739,7 +756,7 @@ class Peak2DList(list):
         return pnorm
 
     def get_by_peak(self, peak: Tuple[str, str]) -> Peak2D:
-        """Return peak with `peak` attribute equal to `peak` argument."""
+        """Return peak with :attr:`Peak2D.peak` equal to ``peak``."""
         for p in self:
             if p.peak == peak:
                 return p
