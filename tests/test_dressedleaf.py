@@ -160,7 +160,7 @@ def test_gammas_are_positive(dressed_pws):
 
 def test_intensities_are_nonzero(dressed_pws):
     for pw in dressed_pws:
-        assert abs(pw.intensity()) >= 0.0
+        assert abs(pw.amplitude()) >= 0.0
 
 
 def test_coherence_frequencies_are_real(dressed_pws):
