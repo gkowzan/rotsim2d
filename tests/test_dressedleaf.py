@@ -174,15 +174,17 @@ def test_missing_level_handling(ch3cl_mode):
     dpws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)
 
 def test_dressed_pws_params(dressed_pws_2):
-    pl1 = dl.peak_list(dressed_pws_2)
+    pl1 = dl.Peak2DList.from_dp_list(dressed_pws_2)
     dpws = dl.DressedPathway.from_params_dict(dressed_pws_params)
-    pl2 = dl.peak_list(dpws)
+    pl2 = dl.Peak2DList.from_dp_list(dpws)
 
-    assert pl1 == pl2
+    for p1, p2 in zip(pl1, pl2):
+        assert p1 == p2
 
 @pytest.fixture
 def peak_list(dressed_pws):
-    return dl.peak_list(dressed_pws)
+    return dl.Peak2DList.from_dp_list(dressed_pws)
+
 
 def test_peak_list_save_read_hdf5(peak_list, tmp_path):
     peak_list.to_file(tmp_path / 'peak_list.hdf5')
@@ -190,7 +192,9 @@ def test_peak_list_save_read_hdf5(peak_list, tmp_path):
     for p1, p2 in zip(peak_list, pl):
         assert pytest.approx(p1.pump_wl) == p2.pump_wl
         assert pytest.approx(p1.probe_wl) == p2.probe_wl
-        assert pytest.approx(p1.sig) == p2.sig
+        assert pytest.approx(p1.amplitude) == p2.amplitude
+        assert pytest.approx(p1.intensity) == p2.intensity
+        assert pytest.approx(p1.max_intensity) == p2.max_intensity
         assert p1.peak == p2.peak
 
 
@@ -205,6 +209,6 @@ def test_peak_list_contains_dfwm(dressed_pws):
           (DiatomState(nu=0, j=0), DiatomState(nu=0, j=0)),
           (DiatomState(nu=1, j=-1), DiatomState(nu=0, j=0)),
           (DiatomState(nu=0, j=0), DiatomState(nu=0, j=0))]
-    pl, dll = dl.peak_list(dressed_pws, return_dls=True)
+    pl = dl.Peak2DList.from_dp_list(dressed_pws)
 
-    assert len(dl.equiv_peaks(sl, pl, dll)) > 0
+    assert len(dl.equiv_peaks(sl, pl)) > 0
