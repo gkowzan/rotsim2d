@@ -844,7 +844,7 @@ class Peak2DList(list):
         return [peak.probe_wl for peak in self]
 
     @property
-    def peaks(self) -> List[str]:
+    def peaks(self) -> List[Tuple[str, str]]:
         """Peak strings."""
         return [peak.peak for peak in self]
 
@@ -899,7 +899,8 @@ class Peak2DList(list):
                 f.attrs['metadata'] = json.dumps(metadata)
 
 
-def equiv_peaks(pw: Pathway, pl: Peak2DList) -> Peak2DList:
+def equiv_peaks(pw: Union[Pathway, List[Tuple[RotState]]],
+                pl: Peak2DList) -> Peak2DList:
     """Return peaks from ``pl`` based on pathways equivalent to ``pw``."""
     new_pl = Peak2DList()
     for peak in pl:

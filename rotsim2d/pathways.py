@@ -255,11 +255,11 @@ class KetBra(at.NodeMixin):
 
         return pops
 
-    def is_diagonal(self):
+    def is_diagonal(self) -> bool:
         """Check if current node is a population state."""
         return self.ket == self.bra
 
-    def is_rephasing(self):
+    def is_rephasing(self) -> bool:
         """Check if current pathway is rephasing.
 
         See also
@@ -270,7 +270,7 @@ class KetBra(at.NodeMixin):
 
         return ints[0].sign != ints[2].sign
 
-    def is_SI(self, order=None):
+    def is_SI(self, order=None) -> bool:
         r"""Check if :math:`\vec{k}_s = -\vec{k}_1+\vec{k}_2+\vec{k}_3` (rephasing).
 
         ``order`` is a list of :class:`LightInteraction` names specifying which
@@ -281,7 +281,7 @@ class KetBra(at.NodeMixin):
             order = ('omg1', 'omg2', 'omg3')
         return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SI'
 
-    def is_SII(self, order=None):
+    def is_SII(self, order=None) -> bool:
         r"""Check if :math:`\vec{k}_s=\vec{k}_1-\vec{k}_2+\vec{k}_3` (non-rephasing).
 
         See also
@@ -292,7 +292,7 @@ class KetBra(at.NodeMixin):
             order = ('omg1', 'omg2', 'omg3')
         return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SII'
 
-    def is_SIII(self, order=None):
+    def is_SIII(self, order=None) -> bool:
         r"""Check if :math:`\vec{k}_s=\vec{k}_1+\vec{k}_2-\vec{k}_3` (double quantum).
 
         See also
@@ -303,27 +303,27 @@ class KetBra(at.NodeMixin):
             order = ('omg1', 'omg2', 'omg3')
         return ks.get(tuple(self.interaction(name).sign for name in order)) == 'SIII'
 
-    def is_Pinitial(self):
+    def is_Pinitial(self) -> bool:
         r"""Check if initial excitation is P-branch."""
         sl = self.to_statelist()
         return any(x.j==sl[0][0].j-1 for x in sl[1])
 
-    def is_Rinitial(self):
+    def is_Rinitial(self) -> bool:
         r"""Check if initial excitation is R-branch."""
         sl = self.to_statelist()
         return any(x.j==sl[0][0].j+1 for x in sl[1])
 
-    def is_Qinitial(self):
+    def is_Qinitial(self) -> bool:
         r"""Check if initial excitation is Q-branch."""
         sl = self.to_statelist()
         return all(x.j==sl[0][0].j for x in sl[1])
 
-    def is_Qbranch(self):
+    def is_Qbranch(self) -> bool:
         r"""Check if pump or probe axis involves Q-branch coherence."""
         sl = self.to_statelist()
         return sl[1][0].j == sl[1][1].j or sl[3][0].j == sl[3][1].j
 
-    def is_esa(self):
+    def is_esa(self) -> bool:
         """Check if pathway corresponds to excited-state absorption.
 
         Applies to two-color and three-color excitations and pathways not
@@ -334,7 +334,7 @@ class KetBra(at.NodeMixin):
         rnu = sl[0][0].nu
         return any((x.nu == rnu+1 for x in coh3)) and any((x.nu == rnu+2 for x in coh3))
 
-    def is_sep(self):
+    def is_sep(self) -> bool:
         """Check if pathway corresponds to stimulated emission pumping.
 
         Second coherence is either excited population of rotational coherence
@@ -347,7 +347,7 @@ class KetBra(at.NodeMixin):
             and any(x.nu == rnu+1 for x in coh3)\
             and any(x.nu == rnu for x in coh3)
 
-    def is_gshb(self):
+    def is_gshb(self) -> bool:
         """Check if pathway corresponds to ground-state hole-burning.
 
         Second coherence is either ground population of rotational coherence
@@ -360,16 +360,16 @@ class KetBra(at.NodeMixin):
             and any(x.nu == rnu+1 for x in coh3)\
             and any(x.nu == rnu for x in coh3)
 
-    def is_doublequantum(self):
+    def is_doublequantum(self) -> bool:
         """Check if pathway has double-quantum coherence."""
         sl = self.to_statelist()
         return any(x.nu==sl[0][0].nu for x in sl[2])
 
-    def is_interstate(self):
+    def is_interstate(self) -> bool:
         """Check for coherent state after second interaction."""
         return not self.ketbras()[2].is_diagonal()
 
-    def is_rc(self):
+    def is_rc(self) -> bool:
         """Check for rotational coherence after second interaction.
 
         Notes
@@ -383,15 +383,15 @@ class KetBra(at.NodeMixin):
 
         return kb2.ket.j != kb2.bra.j
 
-    def is_overtone(self):
+    def is_overtone(self) -> bool:
         """Check if current node is an overtone coherence."""
         return abs(self.ket.nu-self.bra.nu)>1
 
-    def has_overtone(self):
+    def has_overtone(self) -> bool:
         """Check if current pathway has overtone coherence."""
         return len([kb for kb in self.ketbras() if kb.is_overtone()]) > 0
 
-    def is_between(self, pump: 'KetBra', probe: 'KetBra'):
+    def is_between(self, pump: 'KetBra', probe: 'KetBra') -> bool:
         """Check if this pathway produces cross-peak between ``pump`` and ``probe``.
 
         Called with self being a leaf.
@@ -399,22 +399,22 @@ class KetBra(at.NodeMixin):
         pump_kb, probe_kb = self.ketbras()[1], self.ketbras()[3] 
         return (pump == pump_kb or pump == pump_kb.conj()) and (probe == self or probe == self.conj())
 
-    def is_dfwm(self):
+    def is_dfwm(self) -> bool:
         """Check if this pathway contains only coherences corresponding to a
         single dipole transition."""
         return self.color_tier() == 1
 
     is_onecolor = is_dfwm
 
-    def is_twocolor(self):
+    def is_twocolor(self) -> bool:
         """Check if pathway is two-color."""
         return self.color_tier() == 2
 
-    def is_threecolor(self):
+    def is_threecolor(self) -> bool:
         """Check if pathway is three-color."""
         return self.color_tier() == 3
 
-    def is_equiv_pathway(self, o):
+    def is_equiv_pathway(self, o: Union["KetBra", List[Tuple[RotState]]]) -> bool:
         """Check if other pathway differs only by initial J state.
 
         ``o`` should either be :class:`KetBra` or a result of :meth:`to_statelist`
@@ -431,7 +431,7 @@ class KetBra(at.NodeMixin):
                 return False
         return True
 
-    def is_same_branch(self, o):
+    def is_same_branch(self, o) -> bool:
         """Check if other pathway belongs to the same branch."""
         s = self.to_statelist(diatom=True, normalize=True)
         if isinstance(o, KetBra):
@@ -443,15 +443,15 @@ class KetBra(at.NodeMixin):
 
         return res
 
-    def is_pathway(self, *kbs):
+    def is_pathway(self, *kbs) -> bool:
         """Match self to pathway consisting of `kbs`."""
         return tuple(self.ketbras()) == kbs
 
-    def is_some_pathway(self, kbs):
+    def is_some_pathway(self, kbs) -> bool:
         """Match self to one of pathways in `kbs`."""
         return any(self.is_pathway(*kb) for kb in kbs)
 
-    def ketbras(self):
+    def ketbras(self) -> List["KetBra"]:
         """Ancestor KetBras and self."""
         return [x for x in self.ancestors if isinstance(x, KetBra)] + [self]
 
