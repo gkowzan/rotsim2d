@@ -41,7 +41,7 @@ from math import isclose
 from pathlib import Path
 from typing import (Iterable, List, Mapping, Optional, Sequence, Tuple, Union,
                     Dict, Any, Callable)
-from attrs import define
+from attr import define, field
 
 import h5py
 import molspecutils.molecule as mol
@@ -726,7 +726,7 @@ class Peak2D:
     """Pathway intensity."""
     max_intensity: complex
     """Pathway intensity at the peak of the line, assuming Lorentizan profile."""
-    dp_list: Optional[List[DressedPathway]]=None
+    dp_list: Optional[List[DressedPathway]] = field(eq=False, default=None)
     """List of pathways backing this 2D resonance."""
 
     def max_abs_coeff(self, E12: float, conc: float) -> complex:
@@ -776,7 +776,8 @@ class Peak2D:
             max_intensity += pre_amp*np.pi*2*np.pi*dp.nu(2)/4/C.epsilon_0/C.c\
                 /dp.gamma(2)/p
 
-        return Peak2D(pu, pr, peak, amplitude, intensity, max_intensity, dp_list)
+        return cls(pu, pr, peak, amplitude, intensity, max_intensity, dp_list,
+                   params=dict(p=p, tw=tw, angles=angles))
 
 
 class Peak2DList(list):

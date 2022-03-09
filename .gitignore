@@ -15,3 +15,8 @@ examples/hitran.csv
 *.bbl
 *.tex
 .auctex-auto
+/.tox/
+/dist/
+/licenses.org
+/.projectile
+/.python-version
