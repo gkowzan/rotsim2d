@@ -728,6 +728,8 @@ class Peak2D:
     """Pathway intensity at the peak of the line, assuming Lorentizan profile."""
     dp_list: Optional[List[DressedPathway]] = field(eq=False, default=None)
     """List of pathways backing this 2D resonance."""
+    params: Optional[Dict[str, Any]] = None
+    """`p`, pressure in atm; `tw`, waiting time in s; `angles`, polarization."""
 
     def max_abs_coeff(self, E12: float, conc: float) -> complex:
         """Return max abs. coeff from :attr:`max_intensity`.
