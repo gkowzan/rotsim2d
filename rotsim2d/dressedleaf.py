@@ -810,9 +810,13 @@ class Peak2DList(list):
         """Read peak list from HDF5 file."""
         with h5py.File(path, mode='r') as f:
             pl = cls()
-            for pu, pr, sig, peak in zip(
-                    f['pumps'], f['probes'], f['sigs'], f['peaks']):
-                pl.append(Peak2D(pu, pr, sig, tuple(json.loads(peak))))
+            params = json.loads(f.attrs['params']) # type: ignore
+            for pu, pr, amp, inte, minte, peak in zip(
+                    f['pumps'], f['probes'], f['amplitudes'], # type: ignore
+                    f['intensities'], f['max_intensities'], f['peaks']): # type: ignore
+                pl.append(
+                    Peak2D(pu, pr, tuple(json.loads(peak)), amp, inte, minte,
+                           params=params)) # type: ignore
 
         return pl
 
@@ -885,9 +889,12 @@ class Peak2DList(list):
         with h5py.File(path, mode='w') as f:
             f.create_dataset("pumps", data=self.pumps)
             f.create_dataset("probes", data=self.probes)
-            f.create_dataset("sigs", data=self.sigs)
+            f.create_dataset("amplitudes", data=self.amplitudes)
+            f.create_dataset("intensities", data=self.intensities)
+            f.create_dataset("max_intensities", data=self.max_intensities)
             f.create_dataset(
                 "peaks", data=[json.dumps(peak) for peak in self.peaks])
+            f.attrs['params'] = json.dumps(self[0].params)
             if metadata:
                 f.attrs['metadata'] = json.dumps(metadata)
 
