@@ -713,6 +713,86 @@ def readout(ketbra: KetBra) -> KetBra:
     return prune(remove_nondiagonal(ketbra), depth=maxdepth)
 
 
+def flip_readout(ketbra: KetBra) -> KetBra:
+    """Flip the side of readout.
+
+    This is to ensure that the readout step is emissive.
+
+    Parameters
+    ----------
+    ketbra
+        Leaf of excitation tree.
+    """
+    if ketbra.children:
+        raise ValueError("`ketbra` is not a leaf node")
+    if not ketbra.parent.readout:
+        raise ValueError("`ketbra` parent is not readout")
+
+    li: LightInteraction = ketbra.parent
+    if li.side == Side.KET:
+        li.side = Side.BRA
+        # if side was KET then leaf is a population ketbra of parent bra
+        diag = ketbra.parent.parent.ket
+        ketbra.ket, ketbra.bra = diag, diag
+    else:
+        li.side = Side.KET
+        # if side was BRA then leaf is a population ketbra of parent ket
+        diag = ketbra.parent.parent.bra
+        ketbra.ket, ketbra.bra = diag, diag
+
+    return ketbra
+
+
+def copy_chain(ketbra: KetBra) -> KetBra:
+    """Make a single-child tree ending with ``ketbra`` leaf.
+
+    Returns new leaf."""
+    chain = [el.evolve() for el in [ketbra] + list(ketbra.ancestors)[::-1]]
+    for i in range(len(chain)-1):
+        chain[i].parent = chain[i+1]
+
+    return chain[0]
+
+
+def conjugate_chain(ketbra: KetBra) -> KetBra:
+    """Return excitation chain with all nodes conjugated.
+
+    Returns new leaf.
+
+    See also
+    --------
+    copy_chain
+    """
+    chain = [el.conj() for el in [ketbra] + list(ketbra.ancestors)[::-1]]
+    for i in range(len(chain)-1):
+        chain[i].parent = chain[i+1]
+
+    return chain[0]
+
+
+def zannify_chain(ketbra: KetBra) -> KetBra:
+    """Conjugate SI pathways, ensure that readout is emissive.
+
+    Return chain instead of the whole tree. Match the appearance of the diagram
+    to Hamm, Zanni book conventions."""
+    conj_chain = conjugate_chain(ketbra)
+    if conj_chain.parent.is_absorption():
+        flip_readout(conj_chain)
+
+    return conj_chain
+
+
+def zannify_tree(ketbra: KetBra) -> KetBra:
+    """Ensure that readout in the whole tree is emissive.
+
+    Return the root of the tree."""
+    for l in ketbra.root.leaves:
+        if l.parent.is_absorption():
+            flip_readout(l)
+
+    return ketbra.root
+
+
 def excited_states_symtop(state: SymTopState, dnu: int) -> List[SymTopState]:
     """Return symtop states reachable from ``state`` by dipole interaction.
 
@@ -953,7 +1033,7 @@ def gen_excitations(root: KetBra, light_names: List[str],
 
 def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
                  rotor: str='linear', kiter_func: str=None,
-                 pump_overlap: bool=False) -> List[KetBra]:
+                 pump_overlap: bool=False, initial: str='ket') -> List[KetBra]:
     """Generate multiple excitation trees, filter them and retain resonant ones.
 
     Parameters
@@ -973,6 +1053,8 @@ def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
     pump_overlap
         Generate additional pathways with reversed time ordering of first two
         interactions.
+    initial
+        Start with 'ket' or 'bra' excitation.
 
     Returns
     -------
@@ -981,13 +1063,13 @@ def gen_pathways(jiter: Iterable, meths: Optional[Sequence[Callable]]=None,
     """
     roots = gen_roots(jiter, rotor, kiter_func)
     pws = [gen_excitations(root, ['omg1', 'omg2', 'omg3'],
-                           ['ket', 'both', 'both'], meths)
+                           [initial, 'both', 'both'], meths)
            for root in roots]
     if pump_overlap:
         roots = gen_roots(jiter, rotor, kiter_func)
         pws.extend(
             [gen_excitations(root, ['omg2', 'omg1', 'omg3'],
-                             ['ket', 'both', 'both'],
+                             [initial, 'both', 'both'],
                              meths)
              for root in roots])
     pws = [p for p in pws if len(p.children)]
