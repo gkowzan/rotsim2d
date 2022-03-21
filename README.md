@@ -1,5 +1,7 @@
 Package to simulate 2D rovibrational spectra of gas-phase samples.
 
+See documentation at [https://allisonlab.gitlab.io/mdcs/rotsim2d/](https://allisonlab.gitlab.io/mdcs/rotsim2d/)
+
 ~~See examples in `examples` directory:~~ Examples are out of date.
 
 - `methyl_chloride/classify_pathways.py` prints out a mapping between
