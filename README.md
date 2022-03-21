@@ -26,5 +26,5 @@ Package to simulate 2D rovibrational spectra of gas-phase samples.
 Install the package from our private GitLab repository by executing:
 
 ``` sh
-pip install rotsim2d --extra-index-url https://REDACTED@gitlab.com/api/v4/projects/26140156/packages/pypi
+pip install rotsim2d --extra-index-url https://REDACTED@gitlab.com/api/v4/projects/26140156/packages/pypi/simple
 ```
