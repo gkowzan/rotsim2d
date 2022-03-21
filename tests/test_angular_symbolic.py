@@ -34,6 +34,7 @@ def pws():
     return pws
 
 
+@pytest.mark.skip(reason="long test")
 def test_rfactors(pws):
     for p in pws:
         print(p.trans_label)

@@ -79,6 +79,7 @@ def pw_rme_sign(p):
     return sign
 
 
+@pytest.mark.skip(reason="long test")
 def test_pathway_sign(pws):
     """Check if pathway has the correct sign."""
     for p in pws:
@@ -90,6 +91,7 @@ def test_pathway_sign(pws):
         assert rme_sign*brute_rme_sign > 0 # same sign
         assert rfactor*rme_sign > 0
         assert brute_rfactor*brute_rme_sign > 0
+
 
 @pytest.fixture(scope='module')
 def ch3cl_mode():
