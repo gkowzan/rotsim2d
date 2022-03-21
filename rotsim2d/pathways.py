@@ -59,10 +59,10 @@ class LightInteraction(at.NodeMixin):
     readout
         Readout or actual light interaction.
     angle
-        Single float for linear polarization and pair of numbers of elliptical.
+        Single float for linear polarization and pair of numbers for elliptical.
     """
     def __init__(self, name: str, side: Side, sign: KSign, readout: bool=False,
-                 angle: Union[float, Tuple[float]]=0.0, parent=None, children=None):
+                 angle: Union[float, Tuple[float, float]]=0.0, parent=None, children=None):
         super(LightInteraction, self).__init__()
         self.separator: str = "->"
         #: Identifier for the light beam.
@@ -71,8 +71,8 @@ class LightInteraction(at.NodeMixin):
         self.side: Side = side
         #: Wavevector sign of created polarization contribution.
         self.sign: KSign = sign
-        #: Single float for linear polarization and pair of numbers of elliptical.
-        self.angle: Union[float, Tuple[float]] = None
+        #: Single float for linear polarization and pair of numbers for elliptical.
+        self.angle: Union[float, Tuple[float, float]] = 0.0
         if isinstance(angle, tuple):
             self.angle = (angle[0], angle[1]*sign)
         else:
@@ -121,7 +121,7 @@ class KetBra(at.NodeMixin):
         self.parent = parent
         if children:
             self.children = children
-        self.to_statelist = lru_cache(None)(self.to_statelist)
+        self.to_statelist = lru_cache(None)(self.to_statelist) # type: ignore
         self._pathway_info_cache = None
 
     def get(self, side: Side) -> RotState:
@@ -200,7 +200,8 @@ class KetBra(at.NodeMixin):
             return len(set((tuple(sorted(x)) for x in self.transitions()[:-1])))
         return len(set((tuple(sorted(x)) for x in self.transitions())))
 
-    def to_statelist(self, diatom=False, normalize=False) -> List[Tuple[RotState]]:
+    def to_statelist(self, diatom=False, normalize=False)\
+        -> List[Tuple[RotState, RotState]]:
         """KetBras leading to this one as a list of state pairs.
 
         Drops `k` quantum number if `diatom` is True. Subtracts the initial `j`
@@ -208,14 +209,14 @@ class KetBra(at.NodeMixin):
         """
         statelist = [(kb.ket, kb.bra) for kb in self.ketbras()]
         if diatom:
-            statelist = [(DiatomState.from_symtop(state1), DiatomState.from_symtop(state2))
+            statelist = [(DiatomState.from_symtop(state1), DiatomState.from_symtop(state2)) # type: ignore
                          for state1, state2 in statelist]
         if normalize:
             startj = statelist[0][0].j
             statelist = [(state1._replace(j=state1.j-startj), state2._replace(j=state2.j-startj))
                          for state1, state2 in statelist]
 
-        return statelist
+        return statelist # type: ignore
 
     def copy(self):
         """Deep copy of the tree."""
@@ -227,13 +228,14 @@ class KetBra(at.NodeMixin):
 
         return path
 
-    def conj(self):
-        """Return conjugate of this KetBra."""
+    def conj(self) -> "KetBra":
+        """Return detached conjugate of this KetBra."""
         return KetBra(self.bra, self.ket)
 
     def normalized(self):
         """Return copy of self with ket being the lower nu, j level."""
-        if self.ket.nu > self.bra.nu or (self.ket.nu == self.bra.nu and self.ket.j > self.bra.j):
+        if self.ket.nu > self.bra.nu or\
+           (self.ket.nu == self.bra.nu and self.ket.j > self.bra.j):
             return self.conj()
         return self
 
@@ -414,7 +416,7 @@ class KetBra(at.NodeMixin):
         """Check if pathway is three-color."""
         return self.color_tier() == 3
 
-    def is_equiv_pathway(self, o: Union["KetBra", List[Tuple[RotState]]]) -> bool:
+    def is_equiv_pathway(self, o: Union["KetBra", List[Tuple[RotState, RotState]]]) -> bool:
         """Check if other pathway differs only by initial J state.
 
         ``o`` should either be :class:`KetBra` or a result of :meth:`to_statelist`
@@ -452,11 +454,11 @@ class KetBra(at.NodeMixin):
         return any(self.is_pathway(*kb) for kb in kbs)
 
     def ketbras(self) -> List["KetBra"]:
-        """Ancestor KetBras and self."""
+        """Ancestor KetBras and self, from top to bottom."""
         return [x for x in self.ancestors if isinstance(x, KetBra)] + [self]
 
     def interactions(self) -> List[LightInteraction]:
-        """Interactions which generated this KetBra."""
+        """Interactions which generated this KetBra, from top to bottom."""
         return [x for x in self.ancestors if isinstance(x, LightInteraction)]
 
     def interaction(self, name: str) -> Optional[LightInteraction]:
