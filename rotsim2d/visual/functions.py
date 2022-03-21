@@ -236,11 +236,11 @@ def plot2d_scatter(pl, fig_dict=None, line=True, vminmax=None, fig_kwargs={}, sc
     if vminmax:
         vmin = -np.abs(vminmax)
     else:
-        vmin = -np.max(np.abs(pl.sigs))
+        vmin = -np.max(np.abs(pl.intensities))
 
     skwargs = dict(s=10.0, cmap='seismic')
     skwargs.update(scatter_kwargs)
-    sc = ax.scatter(pl.probes, pl.pumps, c=pl.sigs, vmin=vmin, vmax=-vmin,
+    sc = ax.scatter(pl.probes, pl.pumps, c=pl.intensities, vmin=vmin, vmax=-vmin,
                     **skwargs)
     if not fig_dict:
         fig.colorbar(sc, ax=ax, cax=axcbar)
