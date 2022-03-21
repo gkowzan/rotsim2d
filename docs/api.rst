@@ -1,13 +1,9 @@
-API
-===
+#############		  
+API reference
+#############
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   api/pathways
-   api/dressedleaf
-   api/symbolic.functions
-   api/symbolic.results
-   api/propagate
-   api/visual
-   api/rcs
+   api/pathways.rst
+   api/dressedleaf.rst
