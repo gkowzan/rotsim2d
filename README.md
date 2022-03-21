@@ -1,6 +1,6 @@
 Package to simulate 2D rovibrational spectra of gas-phase samples.
 
-See examples in `examples` directory:
+~~See examples in `examples` directory:~~ Examples are out of date.
 
 - `methyl_chloride/classify_pathways.py` prints out a mapping between
   polarization-dependence expressions and pathways they correspond to. Modify
@@ -17,7 +17,7 @@ See examples in `examples` directory:
   to modify the suppressed pathways and excitation scheme.
 
 # Dependencies
-- numpy, scipy, anytree, sympy
+- numpy, scipy, anytree, sympy, attrs, asteval, h5py
 - [gkpywigxjpf](https://gitlab.com/allisonlab/mdcs/pywigxjpf)
 - [knickknacks](https://gitlab.com/allisonlab/mdcs/shed)
 - [molspecutils](https://gitlab.com/allisonlab/mdcs/spectroscopy)
@@ -26,17 +26,5 @@ See examples in `examples` directory:
 Install the package from our private GitLab repository by executing:
 
 ``` sh
-pip install rotsim2d --extra-index-url https://<token_name>:<token>@gitlab.com/api/v4/projects/26140156/packages/pypi
+pip install rotsim2d --extra-index-url https://REDACTED@gitlab.com/api/v4/projects/26140156/packages/pypi
 ```
-
-where `<token_name>` and `<token>` are obtained by creating a personal token
-with `read_api` scope. See [Creating personal access
-tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#creating-a-personal-access-token)
-for details.
-
-[molspecutils](https://gitlab.com/allisonlab/mdcs/spectroscopy) package needs to
-be initialized by executing `molspecutils_init` script to download spectroscopic
-data and fill the local database.
-
-# Development
-Development environment is managed with `pip-tools`. 
