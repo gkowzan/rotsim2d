@@ -725,7 +725,7 @@ class Peak2D:
     intensity: complex
     """Pathway intensity."""
     max_intensity: complex
-    """Pathway intensity at the peak of the line, assuming Lorentizan profile."""
+    """Pathway intensity at the peak of the line, assuming Lorentzian profile."""
     dp_list: Optional[List[DressedPathway]] = field(eq=False, default=None)
     """List of pathways backing this 2D resonance."""
     params: Optional[Dict[str, Any]] = None
