@@ -442,7 +442,7 @@ def latex_compile(path, doc):
 # * LaTeX table of coefficients
 def trans_label2latex(label: str) -> str:
     """Write ``label`` with overline instead of parentheses."""
-    return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\ensuremath{\\overline{\\mbox{\1}}}', label)
+    return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\ensuremath{{}\\mkern1mu\\overline{\\mkern-1mu\\mbox{\1}}}', label)
 
 
 def classified_table_prep(classified: Dict[sym.RFactor, dl.Pathway],
