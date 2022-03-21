@@ -7,4 +7,5 @@ bump2version
 mypy
 build
 twine
-pip-tools
+pip-tools>=6.5.0
+coverage
