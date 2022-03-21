@@ -10,6 +10,7 @@ import anytree as at
 import numpy as np
 from anytree.exporter import UniqueDotExporter
 from asteval import Interpreter
+from attrs import evolve
 from molspecutils.molecule import DiatomState, RotState, SymTopState
 
 #: Right-circular polarized light
@@ -79,15 +80,69 @@ class LightInteraction(at.NodeMixin):
             self.angle = angle
         #: bool: Readout or actual light interaction.
         self.readout = readout
-        self.fullname = "{:s}(side={:d}, sign={:d})".format(self.name, self.side, self.sign)
         self.parent = parent
         if children:
             self.children = children
 
     @property
+    def fullname(self) -> str:
+        return "{:s}(side={:d}, sign={:d})".format(self.name, self.side, self.sign)
+
+    @property
     def tier(self) -> int:
         """Number of interactions preceding this one in the tree."""
         return sum((1 for x in self.ancestors if isinstance(x, LightInteraction)))
+
+    def is_absorption(self) -> bool:
+        """True if absorption within dipole approximation."""
+        if (self.side == Side.KET and self.sign == KSign.POS) or\
+           (self.side == Side.BRA and self.sign == KSign.NEG):
+            return True
+        else:
+            return False
+
+    def evolve(self, **kwargs) -> "LightInteraction":
+        """Return copy with some attributes replaced.
+
+        By default the copy is detached from the tree.
+        """
+        init_kwargs = dict(
+            name=self.name,
+            side=self.side,
+            sign=self.sign,
+            readout=self.readout,
+            angle=self.angle,
+            parent=None,
+            children=None)
+        init_kwargs.update(kwargs)
+
+        return type(self)(**init_kwargs)
+
+    def conj(self) -> "LightInteraction":
+        """Return detached conjugate of this LightInteraction."""
+        if self.side == Side.KET:
+            side = Side.BRA
+        else:
+            side = Side.KET
+
+        if self.sign == KSign.POS:
+            sign = KSign.NEG
+        else:
+            sign = KSign.POS
+
+        if isinstance(self.angle, tuple):
+            angle = (self.angle[0], -self.angle[1])
+        else:
+            angle = self.angle
+
+        return self.evolve(side=side, sign=sign, angle=angle)
+
+    def __eq__(self, o):
+        if not isinstance(o, LightInteraction):
+            return NotImplemented
+
+        return self.name == o.name and self.side == o.side and self.sign == o.sign\
+            and self.angle == o.angle and self.readout == o.readout
 
     def __str__(self):
         return self.fullname
@@ -109,20 +164,37 @@ class KetBra(at.NodeMixin):
     bra : RotState
         bra-side rovibrational state.
     """
+    separator = "->"
+
     def __init__(self, ket: RotState, bra: RotState, parent=None, children=None):
         super(KetBra, self).__init__()
         #: ket-side rovibrational state
         self.ket: RotState = ket
         #: bra-side rovibrational state
         self.bra: RotState = bra
-        self.separator = "->"
-        #: ASCII art ketbra
-        self.name: str = "|{:s}><{:s}|".format(self.ket.name, self.bra.name)
         self.parent = parent
         if children:
             self.children = children
         self.to_statelist = lru_cache(None)(self.to_statelist) # type: ignore
         self._pathway_info_cache = None
+
+    @property
+    def name(self) -> str:
+        "ASCII art KetBra"
+        return "|{:s}><{:s}|".format(self.ket.name, self.bra.name)
+
+    def evolve(self, **kwargs) -> "KetBra":
+        """Return copy with some attributes replaced.
+
+        By default the copy is detached from the tree."""
+        init_kwargs = dict(
+            ket=self.ket,
+            bra=self.bra,
+            parent=None,
+            children=None)
+        init_kwargs.update(kwargs)
+
+        return type(self)(**init_kwargs)
 
     def get(self, side: Side) -> RotState:
         """Index KetBra by Side enum."""
@@ -213,7 +285,7 @@ class KetBra(at.NodeMixin):
                          for state1, state2 in statelist]
         if normalize:
             startj = statelist[0][0].j
-            statelist = [(state1._replace(j=state1.j-startj), state2._replace(j=state2.j-startj))
+            statelist = [(evolve(state1, j=state1.j-startj), evolve(state2, j=state2.j-startj))
                          for state1, state2 in statelist]
 
         return statelist # type: ignore
