@@ -34,20 +34,21 @@ n-dimensional frequency- or time-domain response. The absorption coefficient for
 
 """
 import collections.abc as abc
-import re
 import json
+import re
 from abc import ABCMeta, abstractmethod
 from math import isclose
 from pathlib import Path
-from typing import (Iterable, List, Mapping, Optional, Sequence, Tuple, Union,
-                    Dict, Any, Callable)
-from attr import define, field
+from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
+                    Sequence, Tuple, Union)
 
 import h5py
 import molspecutils.molecule as mol
 import numpy as np
 import scipy.constants as C
-from molspecutils.molecule import CH3ClAlchemyMode, COAlchemyMode, RotState
+from attr import define, field
+from molspecutils.molecule import (C2H2AlchemyMode, CH3ClAlchemyMode,
+                                   COAlchemyMode, RotState)
 
 import rotsim2d.couple as cp
 import rotsim2d.pathways as pw
@@ -554,6 +555,9 @@ class DressedPathway(Pathway, NDResonance):
             rotor = 'symmetric'
         elif fparams['molecule'] == 'CO':
             mode = COAlchemyMode(iso=fparams['isotopologue'])
+            rotor = 'linear'
+        elif fparams['molecule'] == "C2H2":
+            mode = C2H2AlchemyMode(iso=fparams['isotopologue'])
             rotor = 'linear'
         else:
             raise ValueError("Invalid molecule")
