@@ -45,6 +45,44 @@ ks = {
     (KSign.NEG, KSign.NEG, KSign.POS): 'SIII'
 }
 
+Rs = {
+    ((KSign.NEG, Side.BRA),
+     (KSign.POS, Side.KET),
+     (KSign.POS, Side.BRA)): 'R1',
+    ((KSign.NEG, Side.BRA),
+     (KSign.POS, Side.BRA),
+     (KSign.POS, Side.KET)): 'R2',
+    ((KSign.NEG, Side.BRA),
+     (KSign.POS, Side.KET),
+     (KSign.POS, Side.KET)): 'R3',
+
+    ((KSign.POS, Side.KET),
+     (KSign.NEG, Side.BRA),
+     (KSign.POS, Side.BRA)): 'R4',
+    ((KSign.POS, Side.KET),
+     (KSign.NEG, Side.KET),
+     (KSign.POS, Side.KET)): 'R5',
+    ((KSign.POS, Side.KET),
+     (KSign.NEG, Side.BRA),
+     (KSign.POS, Side.KET)): 'R6',
+
+    ((KSign.POS, Side.KET),
+     (KSign.POS, Side.KET),
+     (KSign.NEG, Side.KET)): 'R7',
+    ((KSign.POS, Side.KET),
+     (KSign.POS, Side.KET),
+     (KSign.NEG, Side.BRA)): 'R8'
+}
+
+def conjugate_sign_side_chain(chain: Tuple[Tuple[KSign, Side]]):
+    return tuple((
+        KSign.NEG if pair[0] == KSign.POS else KSign.POS,
+        Side.KET if pair[1] == Side.BRA else Side.BRA
+    ) for pair in chain)
+
+Rs.update({conjugate_sign_side_chain(chain): label+'*'
+           for chain, label in Rs.items()})
+
 # * LightInteraction
 class LightInteraction(at.NodeMixin):
     """Represents (dipole) interaction between the system and a light beam.
@@ -344,7 +382,16 @@ class KetBra(at.NodeMixin):
 
         return ints[0].sign != ints[2].sign
 
-    def is_SI(self, order=None) -> bool:
+    def R_label(self, order: Optional[Tuple[str,str,str]]=None) -> str:
+        r"""Pathway label :math:`R_i`, i=1,...,8 as defined by Hamm and Zanni."""
+        if order is None:
+            order = ('omg1', 'omg2', 'omg3')
+
+        return Rs.get(tuple((self.interaction(name).sign,
+                             self.interaction(name).side)
+                            for name in order))
+
+    def is_SI(self, order: Optional[Tuple[str,str,str]]=None) -> bool:
         r"""Check if :math:`\vec{k}_s = -\vec{k}_1+\vec{k}_2+\vec{k}_3` (rephasing).
 
         ``order`` is a list of :class:`LightInteraction` names specifying which

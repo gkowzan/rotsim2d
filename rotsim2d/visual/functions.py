@@ -304,7 +304,21 @@ def tikz_abstract_format(dnu: int, dj: int):
     return str(dnu)+dj_to_letter[dj]
 
 
-def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None, abstract=None, hspace="2cm"):
+def trans_label2latex(label: str) -> str:
+    """Write ``label`` with overline instead of parentheses."""
+    return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\ensuremath{{}\\mkern1mu\\overline{\\mkern-1mu\\mbox{\1}}}', label)
+
+
+def R_label2latex(label: str) -> str:
+    lat_label = r'\ensuremath{\mbox{R}_' + label[1]
+    if len(label) == 3:
+        lat_label += r'^\ast'
+
+    return  lat_label + '}'
+
+
+def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None,
+                 R_label=False, abstract=None, hspace="2cm") -> str:
     """Return TikZ double-sided Feynmann diagram.
 
     With `abstract` ketbras are labeled relative to some (nu, j) ground state.
@@ -321,6 +335,8 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None, a
         Add phase-matching direction label.
     trans_label : {'proper', 'degenerate'}, optional
         Add transition label, either unambiguous or degenerate one.
+    R_label: bool, optional
+        Add R_i, i=1,...,8, label.
     abstract : tuple of int, optional
         Tuple of ground state quantum numbers, (nu, j).
     hspace : str
@@ -379,29 +395,27 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None, a
         arrow = r"\draw[{arr:s}] (mat{index:d}-{ri:d}-1.south -| mat{index:d}.{arr_side:s}) -- ++({xshift:s},{yshift:s});".format(arr=arr, ri=nints-i, arr_side=arr_side, xshift=xshift, yshift=yshift, index=index)
         diag_arrows.append(arrow)
 
-    note = ''
     notes = []
     if direction:
-        note = r"\node[below] (mat{index:d}label) at (mat{index:d}.south)".format(index=index)
         if leaf.is_SI():
             notes.append(r"$S_{\mathrm{I}}$")
-            # note += r"{$S_{\mathrm{I}}$};"
         elif leaf.is_SII():
             notes.append(r"$S_{\mathrm{II}}$")
-            # note += r"{$S_{\mathrm{II}}$};"
         elif leaf.is_SIII():
             notes.append(r"$S_{\mathrm{III}}$")
-            # note += r"{$S_{\mathrm{III}}$};"
     if trans_label:
-        if not note:
-            note = r"\node[below] (mat{index:d}label) at (mat{index:d}.south)".format(index=index)
         if trans_label == "proper":
             notes.append(trans_label2latex(dl.Pathway(leaf).trans_label))
         elif trans_label == "degenerate":
             notes.append(dl.Pathway(leaf).trans_label_deg)
-    if note:
+    if R_label:
+        notes.append(R_label2latex(leaf.R_label()))
+    if notes:
         notes = ' {' + ', '.join(notes) + '};'
-        note += notes
+        note = r"\node[below] (mat{index:d}label) at (mat{index:d}.south)".format(index=index) +\
+            notes
+    else:
+        note = ''
 
     if first:
         header = r"""\matrix[mymat] at (0,0) (mat{index:d})""".format(index=index)
@@ -416,14 +430,14 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None, a
     return ret
 
 
-def tikz_diagrams(tree, direction=False, trans_label=None, abstract=None, hspace="2cm"):
+def tikz_diagrams(tree, direction=False, trans_label=None, R_label=False, abstract=None, hspace="2cm"):
     """Return tikz code for series of double-sided Feynmann diagrams."""
     leaves = tree.leaves
-    diagrams = [tikz_diagram(leaves[0], direction=direction, trans_label=trans_label,
+    diagrams = [tikz_diagram(leaves[0], direction=direction, trans_label=trans_label, R_label=R_label,
                              abstract=abstract)]
     for i, l in enumerate(leaves[1:], start=2):
         diagrams.append(tikz_diagram(l, index=i, first=False,
-                                     direction=direction, trans_label=trans_label,
+                                     direction=direction, trans_label=trans_label, R_label=R_label,
                                      abstract=abstract, hspace=hspace))
 
     return "\n".join(diagrams)
@@ -440,11 +454,6 @@ def latex_compile(path, doc):
 
 
 # * LaTeX table of coefficients
-def trans_label2latex(label: str) -> str:
-    """Write ``label`` with overline instead of parentheses."""
-    return re.sub(r'\(([A-Z0-9]{1,2})\)', r'\\ensuremath{{}\\mkern1mu\\overline{\\mkern-1mu\\mbox{\1}}}', label)
-
-
 def classified_table_prep(classified: Dict[sym.RFactor, dl.Pathway],
                           highj: bool=False) -> List[List]:
     """Convert dict of R-factors and pathways to a table of coefficients.

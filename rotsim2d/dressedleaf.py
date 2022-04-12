@@ -384,11 +384,12 @@ class Pathway:
         """
         print("diagram:")
         self.print_diagram(abstract=abstract, print=print)
+        print(f"Pathway label: {self.trans_label}")
+        print("R-class: {!s}".format(self.leaf.R_label()))
         print(f"G-factor label: {self.geo_label}")
         print("G-factors: {!s}".format(self.gfactors()))
         print("Total side: {!s}".format(self.leaf.total_side()))
         print("4-fold amplitude: {!s}".format(self.const))
-        print(f"Transition chain label: {self.trans_label}")
         if angles is not None:
             print("Polarizations components: {!s}".format(self.T00s(angles=angles)))
             print("R-factor value: {:f}".format(self.geometric_factor(angles=angles)))
