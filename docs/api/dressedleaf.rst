@@ -109,6 +109,7 @@ Attributes
    Peak2D.intensity
    Peak2D.max_intensity
    Peak2D.dp_list
+   Peak2D.params
 
 Methods
 -------
@@ -168,6 +169,8 @@ Labels
    abstract_state_label
    abstract_pair_label
    abstract_line_label
+   coherence_conj
+   peak_conj
 
 Pathways
 --------

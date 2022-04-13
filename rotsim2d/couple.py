@@ -110,13 +110,14 @@ def w6j_args_match(args: Sequence[int]) -> Optional[Callable]:
 
 
 def w6j_equiv_args(args: Sequence[int]) -> List[Tuple[int, ...]]:
-    """Return all equivalent lists of Wigner-6j arguments.
+    r"""Return all equivalent lists of Wigner-6j arguments.
 
     `args` has the form: (j1, j2, j3, j4, j5, j6), which correspond to the
-    following Wigner-6j coefficient::
+    following Wigner-6j coefficient:
 
-      {j1, j2, j3}
-      {j4, j5, j6}
+    .. math::
+
+        \begin{Bmatrix} j_1 & j_2 & j_3\\ j_4 & j_5 & j_6 \end{Bmatrix}
     """
     cols = [(args[0], args[3]), (args[1], args[4]), (args[2], args[5])]
     cols = it.permutations(cols)
@@ -132,7 +133,15 @@ def w6j_equiv_args(args: Sequence[int]) -> List[Tuple[int, ...]]:
 
 
 def w6j_special(*args: int, sqrt: Callable=np.sqrt) -> float:
-    """Wigner-6j coefficient from analytical expressions."""
+    r"""Wigner-6j coefficient from analytical expressions.
+
+    `args` has the form: (j1, j2, j3, j4, j5, j6), which correspond to the
+    following Wigner-6j coefficient:
+
+    .. math::
+
+        \begin{Bmatrix} j_1 & j_2 & j_3\\ j_4 & j_5 & j_6 \end{Bmatrix}
+    """
     args_list = w6j_equiv_args(args)
     for args_cand in args_list:
         func = w6j_args_match(args_cand)
@@ -142,7 +151,12 @@ def w6j_special(*args: int, sqrt: Callable=np.sqrt) -> float:
 
 
 def G(ji: int, jj: int, jk: int, jl: int, k: int, sqrt: Callable=np.sqrt) -> float:
-    """Wigner-6j part of four-fold reduced matrix element."""
+    r"""Wigner-6j part of four-fold reduced matrix element.
+
+    .. math::
+
+        G(J_i, J_j, J_k, J_l; k) = (2k+1)\begin{Bmatrix} k & k & 0\\ J_i & J_i & J_k \end{Bmatrix} \begin{Bmatrix} 1 & 1 & k\\ J_k & J_i & J_j \end{Bmatrix} \begin{Bmatrix} 1 & 1 & k\\ J_k & J_i & J_l \end{Bmatrix}
+    """
     # return (2*k+1)*(-1)**(jj+jk+jl-ji)*\
     return (2*k+1)*\
         w6j_special(k, k, 0, ji, ji, jk, sqrt=sqrt)*\
@@ -204,7 +218,13 @@ def T00_circ(phi: float, phj: float, phk: float, phl: float,
 
 
 def four_couple(js: List[int], angles: Union[List[float], List[Tuple[float]]]):
-    """j values in `js` correspond to bras associated with dipole operators"""
+    r"""The R-factor
+
+    .. math::
+
+        R^{(0)}_{0}(\boldsymbol{\epsilon}; \mathbf{J}) = \sum_{k=0}^{2} T^{(0)}_{0}(\boldsymbol{\epsilon}; k, k) G(\mathbf{J}; k)
+
+    j values in `js` correspond to bras associated with dipole operators"""
     if isinstance(angles[0], Number):
         return four_couple_linear(js, angles)
     else:
@@ -212,13 +232,16 @@ def four_couple(js: List[int], angles: Union[List[float], List[Tuple[float]]]):
 
 
 def four_couple_linear(js: List[int], angles: List[float]):
+    """R-factor for linear polarizations."""
     return G(js[0], js[1], js[2], js[3], 0)*T00(angles[0], angles[1], angles[2], angles[3], 0)+\
         G(js[0], js[1], js[2], js[3], 1)*T00(angles[0], angles[1], angles[2], angles[3], 1)+\
         G(js[0], js[1], js[2], js[3], 2)*T00(angles[0], angles[1], angles[2], angles[3], 2)
 
 
 def four_couple_circ(js: List[int], angles: List[Tuple[float]]):
-    """`angles` is a list of four tuples with angles."""
+    """R-factor for elliptical polarizations.
+
+    `angles` is a list of four tuples with angles."""
     return G(js[0], js[1], js[2], js[3], 0)*\
         T00_circ(angles[0][0], angles[1][0], angles[2][0], angles[3][0],
                  angles[0][1], angles[1][1], angles[2][1], angles[3][1], 0)+\

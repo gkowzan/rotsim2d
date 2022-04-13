@@ -100,11 +100,16 @@ class RFactor:
                 raise ValueError("coeffs has to be a Mapping or a Sequence with len=3 or len=4")
         else:
             self.dict = coeffs
+            """Dictionary of R-factor coefficients: 'c0', 'c12', 'c13', 'c14'."""
 
         if angles == 'dummy':
             self.trigs = T00_trigs
+            """Sympy expressions for cosines of 4 angles present in expression
+            for the R-factor."""
             self.angles = (phi, phj, phk, phl)
+            """SymPy symbols for 4 angles."""
             self.angles_type = angles
+            """Kind of angles, either 'dummy' (phis) or 'experimental` (thetas)."""
         elif angles == 'experimental':
             self.trigs = T00_theta_trigs
             self.angles = thetas
@@ -114,6 +119,8 @@ class RFactor:
 
         self._numeric = None
         self._numeric_rel = None
+        self.expr = None
+        "SymPy expressions for R-factor."
         self.dict_to_expr()
 
     def __repr__(self):
@@ -218,7 +225,7 @@ class RFactor:
 
     @property
     def tuple(self):
-        """Return coefficients as a tuple."""
+        """Tuple of coefficients (c0, c12, c13, c14)."""
         return (self.dict['c0'], self.dict['c12'], self.dict['c13'], self.dict['c14'])
 
     @staticmethod
@@ -318,7 +325,7 @@ class RFactor:
         return self._numeric_rel(*args[:self._numeric_rel_nargs])
 
     def det_angle(self, angles: Optional[Sequence]=None) -> Basic:
-        """Return expr. for `tan(theta_l)` which zeroes `rexpr`.
+        """Return expr. for `tan(theta_l)` which zeroes this R-factor.
 
         `angles` contains linear polarization angles of up to three pulses in
         sequence. If `angles` is None, then the first angle is set to 0.
@@ -545,26 +552,18 @@ def detection_angles(angles: Sequence, meths: Optional[Sequence[Callable]]=None,
 # ** RFactorPathways
 class RFactorPathways:
     """Container for :class:`RFactor` and associated
-    :class:`rotsim2d.dressedleaf.Pathway`s.
-
-    Attributes
-    ----------
-    rfactor: RFactor
-        R-factor associated with these pathways.
-    pws: list of :class:`rotsim2d.dressedleaf.Pathway`
-        List of pathways.
-    trans_labels: list of str
-        Combined transition labels for all included pathways.
-    trans_labels_deg: list of str
-        Combined degenerate transition labels for all included pathways.
-    peak_labels: list of str
-        Combined 2D peak labels for all included pathways.
-    """
+    :class:`rotsim2d.dressedleaf.Pathway`s."""
     def __init__(self, rfactor: RFactor, pws: List[dl.Pathway]):
         self.rfactor = rfactor
+        "R-factor associated with these pathways."
         self.pws = pws
+        "List of pathways."
         self.props = {}
+        """Dictionary of pathway properties. Each dict value is a list with length
+        equal to ``len(self.pws)``. Each element of the list is a value of some
+        quantity corresponding to a pathway in :attr:`pws`."""
         self.det_angle = None
+        "Detection angle zeroing this R-factor."
 
     def __repr__(self):
         return str(self)
@@ -577,6 +576,9 @@ class RFactorPathways:
     @classmethod
     def from_pwlist(cls, pwlist: Sequence[dl.Pathway], highj: bool=False,
                     normalize: bool=False) -> List['RFactorPathways']:
+        """Classify pathways in ``pwlist`` with respect to R-factors.
+
+        Return a list of :class:`RFactorPathways`."""
         rfactors = [RFactor.from_pathway(pw, highj, normalize) for pw in pwlist]
         classified_pws = classify_dls(pwlist, rfactors)
 
@@ -588,7 +590,7 @@ class RFactorPathways:
 
     @property
     def trans_labels(self) -> List[str]:
-        ":meta private:"
+        "Combined transition labels for all included pathways."
         labels = [pw.trans_label for pw in self.pws]
         labels.sort(key=lambda x: re.sub(r'[)(0-9)]', '', x))
 
@@ -596,7 +598,7 @@ class RFactorPathways:
 
     @property
     def trans_labels_deg(self) -> List[str]:
-        ":meta private:"
+        "Combined degenerate transition labels for all included pathways."
         labels = list(set([pw.trans_label_deg for pw in self.pws]))
         labels.sort()
 
@@ -604,19 +606,23 @@ class RFactorPathways:
 
     @property
     def peak_labels(self) -> List[str]:
-        ":meta private:"
+        "Combined 2D peak labels for all included pathways."
         labels = list(set([pw.peak_label for pw in self.pws]))
         labels.sort()
 
         return labels
 
-    def add_property(self, name: str, d: Mapping):
+    def add_property(self, name: str, d: List):
+        """Add some property to pathways."""
         assert len(d) == len(self.pws)
         self.props[name] = d
 
 
 def calc_rfactors(rf_pw: RFactorPathways, *args, **kwargs):
-    """Calculate J-dependent R-factors and uniquify them."""
+    """Calculate J-dependent R-factors and uniquify them.
+
+    Pass ``*args`` and ``**kwargs`` to :meth:`RFactor.from_pathway`.
+    """
     rf_pw.add_property(
         'rfactors', [RFactor.from_pathway(pw, *args, **kwargs)
                      for pw in rf_pw.pws])

@@ -11,7 +11,6 @@ from numpy import array
 
 # * G-factors
 # ** General expressions
-#: :meta hide-value:
 #: Isotropic version of angular momentum-dependent combinations of three
 #: Wigner-6j factors involved in evaluating four-fold dipole interaction
 #: operator.
@@ -85,8 +84,7 @@ gfactors = {
 # ** High-J limit
 # gfactors_highj = {k: tuple(nsimplify(limit(x*(2*J_i+1)**(3/2), J_i, oo)) for x in v)
 #                   for k, v in gfactors.items()}
-#: :meta hide-value:
-#: G-factors multiplied by `(2*J_i+1)**(3/2)` and with :math:`J_i\to\infty`.
+#: G-factors multiplied by :math:`(2J_i+1)^{3/2}` and with :math:`J_i\to\infty`.
 gfactors_highj = {
     'PPR': (0, 0, sqrt(5) / 5),
     'RRP': (0, 0, sqrt(5) / 5),
@@ -109,6 +107,7 @@ gfactors_highj = {
     'QRQ': (0, -sqrt(3) / 6, -sqrt(5) / 10)
 }
 
+#: Numerical values of high-J G-factors.
 gfactors_highj_numeric = {'PPR': array([ 0.       ,  0.       ,  0.4472136]),
  'PQQ': array([ 0.        ,  0.28867513, -0.2236068 ]),
  'PQR': array([ 0.        , -0.28867513, -0.2236068 ]),
@@ -149,6 +148,7 @@ T00_theta_exprs = [
 ]
 # * R-factors
 # ** General expressions
+#: R-factors as dictionaries of coefficients
 rfactors_dict = {
     'PRR': {
         'c0': 1 / (60 * (2 * J_i - 1) * sqrt(2 * J_i + 1)),
@@ -1233,6 +1233,7 @@ rfactors_dict = {
 }
 
 # ** High J limit
+#: R-factors in high-J limit as dictionaries of coefficients
 rfactors_highj_dict = {
     'PRR': {
         'c0': 1,

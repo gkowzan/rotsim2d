@@ -35,6 +35,16 @@ Attributes
    LightInteraction.readout
    LightInteraction.tier
 
+Methods
+-------
+
+.. autosummary::
+   :toctree: ../generated/
+
+   LightInteraction.is_absorption
+   LightInteraction.evolve
+   LightInteraction.conj
+
 KetBra
 ======
 
@@ -98,6 +108,7 @@ Miscellaneous
    :toctree: ../generated/
 
    KetBra.copy
+   KetBra.evolve
    KetBra.get
    KetBra.conj
    KetBra.savepng
@@ -147,6 +158,7 @@ The tree-filtering functions below were generated with :func:`make_only` and :fu
    remove_nondiagonal
    remove_overtones
    only_esa
+   remove_esa
    only_sep
    only_gshb
    only_dfwm
@@ -171,6 +183,11 @@ Tree manipulation and generation
 
    prune
    readout
+   flip_readout
+   copy_chain
+   conjugate_chain
+   zannify_chain
+   zannify_tree
    excited_states_symtop
    excited_states_diatom
    excite

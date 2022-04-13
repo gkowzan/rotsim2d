@@ -1,6 +1,6 @@
 """Visualization procedures."""
 # * Imports
-from typing import Optional, Tuple, Dict, Sequence, List, Mapping, Callable
+from typing import Optional, Tuple, Dict, Sequence, List, Mapping, Callable, Union
 from copy import deepcopy
 import re
 from pathlib import Path
@@ -431,7 +431,40 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None,
 
 
 def tikz_diagrams(tree, direction=False, trans_label=None, R_label=False, abstract=None, hspace="2cm"):
-    """Return tikz code for series of double-sided Feynmann diagrams."""
+    """Return tikz code for series of double-sided Feynmann diagrams.
+
+    Parameters
+    ----------
+    tree : rotsim2d.pathways.KetBra
+        Root of KetBra excitation tree. Generate pathway diagrams for all leaves.
+    direction : bool, optional
+        Add phase-matching direction label.
+    trans_label : {'proper', 'degenerate'}, optional
+        Add transition label, either unambiguous or degenerate one.
+    R_label: bool, optional
+        Add R_i, i=1,...,8, label.
+    abstract : tuple of int, optional
+        Tuple of ground state quantum numbers, (nu, j).
+    hspace : str
+        Horizontal space between pathways in LaTeX dimensions.
+
+    Returns
+    -------
+    str
+        Tikz code to for diagrams. Needs to be placed in a LaTeX document to
+        compile.
+
+    Examples
+    --------
+    Create KetBras, filter and render diagrams:
+
+    >>> import rotsim2d.pathways as pw
+    >>> import rotsim2d.visual as vis
+    >>> kbs = pw.gen_pathways([5], meths=[pw.only_SI], rotor='linear')
+    >>> vis.latex_compile('diagrams.tex',
+                          vis.latex_document(
+                              vis.tikz_diagrams(kbs, abstract=(0, 5))))
+    """
     leaves = tree.leaves
     diagrams = [tikz_diagram(leaves[0], direction=direction, trans_label=trans_label, R_label=R_label,
                              abstract=abstract)]
@@ -443,7 +476,12 @@ def tikz_diagrams(tree, direction=False, trans_label=None, R_label=False, abstra
     return "\n".join(diagrams)
 
 
-def latex_compile(path, doc):
+def latex_document(fragment: str) -> str:
+    """Wrap provided fragment in a LaTeX document."""
+    return LATEX_PRE + fragment + LATEX_POST
+
+
+def latex_compile(path: Union[str, Path], doc: str):
     """Save `doc` to `path` and compile it."""
     doc_path = Path(path)
     doc_dir = doc_path.parent
