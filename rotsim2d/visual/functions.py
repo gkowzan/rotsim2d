@@ -361,7 +361,6 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None,
     ints = leaf.interactions()
     nints = len(ints)
     for i, li in enumerate(ints):
-        print(li)
         if li.side == -1:
             # label_side = "right"
             arr_side = "east"
@@ -430,7 +429,8 @@ def tikz_diagram(leaf, index=1, first=True, direction=False, trans_label=None,
     return ret
 
 
-def tikz_diagrams(tree, direction=False, trans_label=None, R_label=False, abstract=None, hspace="2cm"):
+def tikz_diagrams(tree, direction=False, trans_label=None, R_label=False,
+                  abstract=None, hspace="2cm"):
     """Return tikz code for series of double-sided Feynmann diagrams.
 
     Parameters

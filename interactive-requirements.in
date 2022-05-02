@@ -1,7 +1,5 @@
 -c requirements.txt
 -c dev-requirements.txt
-matplotlib
-ipython
 jupyter
 PyQt5
-knickknacks
+knickknacks>=0.2.3

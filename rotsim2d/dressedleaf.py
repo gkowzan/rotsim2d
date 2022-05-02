@@ -87,7 +87,7 @@ def abstract_state_label(state: mol.RotState, ref_state: mol.RotState) -> str:
 
 def abstract_pair_label(pair: Tuple[mol.RotState, mol.RotState],
                         ref_state: mol.RotState) -> str:
-    "Abstract label for ``pair`` relative to ``ref_state``, e.g: |1P><0|. "
+    r"Abstract label for ``pair`` relative to ``ref_state``, e.g: \|1P><0\|."
     return "|{:s}><{:s}|".format(
         abstract_state_label(pair[0], ref_state),
         abstract_state_label(pair[1], ref_state))
@@ -159,6 +159,7 @@ class Pathway:
               'geo_label', 'trans_label', 'trans_label_deg', 'tw_coherence',
               'peak', 'peak_label', 'abstract_peak', 'experimental_label',
               'colors']
+    "List of Pathway attributes."
 
     def __init__(self, leaf: KetBra):
         self.leaf: KetBra = leaf

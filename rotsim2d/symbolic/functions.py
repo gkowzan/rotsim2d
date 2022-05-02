@@ -552,7 +552,7 @@ def detection_angles(angles: Sequence, meths: Optional[Sequence[Callable]]=None,
 # ** RFactorPathways
 class RFactorPathways:
     """Container for :class:`RFactor` and associated
-    :class:`rotsim2d.dressedleaf.Pathway`s."""
+    :class:`rotsim2d.dressedleaf.Pathway`."""
     def __init__(self, rfactor: RFactor, pws: List[dl.Pathway]):
         self.rfactor = rfactor
         "R-factor associated with these pathways."

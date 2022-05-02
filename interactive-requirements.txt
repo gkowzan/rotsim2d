@@ -10,13 +10,19 @@ argon2-cffi==21.3.0
     # via notebook
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
+asttokens==2.0.5
+    # via
+    #   -c dev-requirements.txt
+    #   stack-data
 attrs==21.4.0
     # via
     #   -c dev-requirements.txt
     #   -c requirements.txt
     #   jsonschema
 backcall==0.2.0
-    # via ipython
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 bleach==4.1.0
     # via
     #   -c dev-requirements.txt
@@ -25,32 +31,38 @@ cffi==1.15.0
     # via
     #   -c dev-requirements.txt
     #   argon2-cffi-bindings
-cycler==0.11.0
-    # via matplotlib
-debugpy==1.5.1
-    # via ipykernel
-decorator==5.1.0
-    # via ipython
+debugpy==1.6.0
+    # via
+    #   -c dev-requirements.txt
+    #   ipykernel
+decorator==5.1.1
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 defusedxml==0.7.1
     # via nbconvert
-entrypoints==0.3
+entrypoints==0.4
     # via
+    #   -c dev-requirements.txt
     #   jupyter-client
     #   nbconvert
-fonttools==4.28.3
-    # via matplotlib
+executing==0.8.3
+    # via
+    #   -c dev-requirements.txt
+    #   stack-data
 importlib-resources==5.4.0
     # via jsonschema
-ipykernel==6.6.0
+ipykernel==6.13.0
     # via
+    #   -c dev-requirements.txt
     #   ipywidgets
     #   jupyter
     #   jupyter-console
     #   notebook
     #   qtconsole
-ipython==7.30.1
+ipython==8.2.0
     # via
-    #   -r interactive-requirements.in
+    #   -c dev-requirements.txt
     #   ipykernel
     #   ipywidgets
     #   jupyter-console
@@ -63,7 +75,9 @@ ipython-genutils==0.2.0
 ipywidgets==7.6.5
     # via jupyter
 jedi==0.18.1
-    # via ipython
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 jinja2==3.0.3
     # via
     #   -c dev-requirements.txt
@@ -73,8 +87,9 @@ jsonschema==4.2.1
     # via nbformat
 jupyter==1.0.0
     # via -r interactive-requirements.in
-jupyter-client==7.1.0
+jupyter-client==7.2.2
     # via
+    #   -c dev-requirements.txt
     #   ipykernel
     #   jupyter-console
     #   nbclient
@@ -82,8 +97,9 @@ jupyter-client==7.1.0
     #   qtconsole
 jupyter-console==6.4.0
     # via jupyter
-jupyter-core==4.9.1
+jupyter-core==4.9.2
     # via
+    #   -c dev-requirements.txt
     #   jupyter-client
     #   nbconvert
     #   nbformat
@@ -93,21 +109,15 @@ jupyterlab-pygments==0.1.2
     # via nbconvert
 jupyterlab-widgets==1.0.2
     # via ipywidgets
-kiwisolver==1.3.2
-    # via matplotlib
-knickknacks==0.2.2
-    # via
-    #   -c dev-requirements.txt
-    #   -c requirements.txt
-    #   -r interactive-requirements.in
+knickknacks==0.2.3
+    # via -r interactive-requirements.in
 markupsafe==2.0.1
     # via
     #   -c dev-requirements.txt
     #   jinja2
-matplotlib==3.5.1
-    # via -r interactive-requirements.in
 matplotlib-inline==0.1.3
     # via
+    #   -c dev-requirements.txt
     #   ipykernel
     #   ipython
 mistune==0.8.4
@@ -124,8 +134,10 @@ nbformat==5.1.3
     #   nbclient
     #   nbconvert
     #   notebook
-nest-asyncio==1.5.4
+nest-asyncio==1.5.5
     # via
+    #   -c dev-requirements.txt
+    #   ipykernel
     #   jupyter-client
     #   nbclient
     #   notebook
@@ -133,36 +145,46 @@ notebook==6.4.6
     # via
     #   jupyter
     #   widgetsnbextension
-numpy==1.21.4
-    # via
-    #   -c dev-requirements.txt
-    #   -c requirements.txt
-    #   matplotlib
 packaging==21.3
     # via
     #   -c dev-requirements.txt
+    #   -c requirements.txt
     #   bleach
-    #   matplotlib
+    #   ipykernel
 pandocfilters==1.5.0
     # via nbconvert
 parso==0.8.3
-    # via jedi
+    # via
+    #   -c dev-requirements.txt
+    #   jedi
 pexpect==4.8.0
-    # via ipython
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 pickleshare==0.7.5
-    # via ipython
-pillow==8.4.0
-    # via matplotlib
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 prometheus-client==0.12.0
     # via notebook
-prompt-toolkit==3.0.24
+prompt-toolkit==3.0.29
     # via
+    #   -c dev-requirements.txt
     #   ipython
     #   jupyter-console
+psutil==5.9.0
+    # via
+    #   -c dev-requirements.txt
+    #   ipykernel
 ptyprocess==0.7.0
     # via
+    #   -c dev-requirements.txt
     #   pexpect
     #   terminado
+pure-eval==0.2.2
+    # via
+    #   -c dev-requirements.txt
+    #   stack-data
 pycparser==2.21
     # via
     #   -c dev-requirements.txt
@@ -175,10 +197,10 @@ pygments==2.10.0
     #   jupyterlab-pygments
     #   nbconvert
     #   qtconsole
-pyparsing==3.0.6
+pyparsing==3.0.8
     # via
     #   -c dev-requirements.txt
-    #   matplotlib
+    #   -c requirements.txt
     #   packaging
 pyqt5==5.15.6
     # via -r interactive-requirements.in
@@ -190,10 +212,12 @@ pyrsistent==0.18.0
     # via jsonschema
 python-dateutil==2.8.2
     # via
+    #   -c dev-requirements.txt
+    #   -c requirements.txt
     #   jupyter-client
-    #   matplotlib
 pyzmq==22.3.0
     # via
+    #   -c dev-requirements.txt
     #   jupyter-client
     #   notebook
     #   qtconsole
@@ -207,20 +231,27 @@ six==1.16.0
     # via
     #   -c dev-requirements.txt
     #   -c requirements.txt
+    #   asttokens
     #   bleach
     #   python-dateutil
+stack-data==0.2.0
+    # via
+    #   -c dev-requirements.txt
+    #   ipython
 terminado==0.12.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
 tornado==6.1
     # via
+    #   -c dev-requirements.txt
     #   ipykernel
     #   jupyter-client
     #   notebook
     #   terminado
 traitlets==5.1.1
     # via
+    #   -c dev-requirements.txt
     #   ipykernel
     #   ipython
     #   ipywidgets
@@ -233,7 +264,9 @@ traitlets==5.1.1
     #   notebook
     #   qtconsole
 wcwidth==0.2.5
-    # via prompt-toolkit
+    # via
+    #   -c dev-requirements.txt
+    #   prompt-toolkit
 webencodings==0.5.1
     # via
     #   -c dev-requirements.txt

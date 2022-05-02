@@ -1,5 +1,5 @@
-Introduction
-============
+Overview
+========
 
 `rotsim2d` is a library to model two-dimensional infrared (2DIR) rovibrational
 spectra. It uses Mukamelian [1]_ density-matrix perturbation theory treatment of

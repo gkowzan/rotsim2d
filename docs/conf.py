@@ -36,6 +36,9 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
+    'IPython.sphinxext.ipython_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'sphinx_copybutton'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,6 +52,11 @@ exclude_patterns = []
 
 add_module_names = False
 python_use_unqualified_type_names = True
+
+# sphinx-copybutton configurations
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+copybutton_copy_empty_lines = False
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -69,6 +77,18 @@ html_static_path = ['_static']
 #     ]
 # }
 # html_show_sourcelink = True
+html_theme_options = dict(
+    repository_url="https://gitlab.com/allisonlab/mdcs/rotsim2d",
+    repository_branch="master",
+    path_to_docs="docs",
+    use_edit_page_button=True,
+    use_repository_button=True,
+    use_issues_button=True,
+    home_page_in_toc=False
+)
+
+html_logo = "_static/rotsim2d_logo.png"
+html_favicon = "_static/rotsim2d_logo.ico"
 
 # -- Intersphinx
 tls_cacerts = '/etc/ssl/certs/'
@@ -78,7 +98,8 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-    'molspecutils': ('/home/grz/python/packages/molspecutils/docs/_build/html/', None)
+    'molspecutils': ('/home/grz/python/packages/molspecutils/docs/_build/html/', None),
+    'anytree': ('https://anytree.readthedocs.io/en/latest/', None)
 }
 
 # -- pygments

@@ -35,6 +35,7 @@ Attributes
    Pathway.tw_coherence
    Pathway.peak
    Pathway.abstract_peak
+   Pathway.fields
 
 Methods
 -------

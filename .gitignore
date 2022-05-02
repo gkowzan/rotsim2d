@@ -21,3 +21,4 @@ examples/hitran.csv
 /.projectile
 /.python-version
 /.coverage
+/docs/generated/

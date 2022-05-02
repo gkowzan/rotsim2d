@@ -7,6 +7,7 @@ API reference
 
    api/pathways.rst
    api/dressedleaf.rst
+   api/propagate.rst
    api/visual.rst
    api/symbolic.functions.rst
    api/symbolic.results.rst

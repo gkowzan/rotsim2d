@@ -131,6 +131,8 @@ Miscellaneous
 Top-level functions
 ===================
 
+.. _tree-filtering-functions:
+
 Tree-filtering functions
 ------------------------
 
@@ -143,7 +145,8 @@ Tree-filtering functions
    make_remove
    make_only
 
-The tree-filtering functions below were generated with :func:`make_only` and :func:`make_remove`. For example::
+The tree-filtering functions below were generated with :func:`make_only` and
+:func:`make_remove`. Their names should be self-explanatory. For example::
 
   only_SI = make_only(lambda kb: kb.is_SI())
 
