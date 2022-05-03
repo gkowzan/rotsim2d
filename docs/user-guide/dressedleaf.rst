@@ -77,12 +77,8 @@ and :class:`molspecutils.molecule.CH3ClAlchemyMode`. Let's use the latter:
                          rotor='symmetric', kiter_func='range(j if j<10 else 10)')
    dressed_pws = dl.DressedPathway.from_kb_list(kbs, ch3cl_mode, 296.0)                    
    peaks = dl.Peak2DList.from_dp_list(dressed_pws, tw=1.0e-12, angles=[0.0]*4)
-   fig_dict = vis.plot2d_scatter(peaks)                                                    
-   fig_dict['fig'].savefig('images/ch3cl_2d_plot.png')
-
-.. image:: /images/ch3cl_2d_plot.png
-   :width: 80%
-   :align: center
+   @savefig ch3cl_2d_plot.png width=80% align=center
+   vis.plot2d_scatter(peaks)
 
 As before, we can filter the excitation tree with functions from
 :mod:`rotsim2d.pathways`. We can also investigate the polarization dependence

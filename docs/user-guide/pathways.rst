@@ -55,7 +55,7 @@ representation with :meth:`KetBra.savepng`. This uses
 
 .. ipython:: python
 
-   kb2.savepng('images/kb2.png')
+   kb2.savepng('docs/images/kb2.png')
 
 .. image:: /images/kb2.png
    :target: ../_images/kb2.png
@@ -86,7 +86,7 @@ pathways) we can use:
 
    kb2_SII = pw.only_SII(kb2.copy())
    kb2_SII = pw.readout(kb2_SII)
-   kb2_SII.savepng('images/kb2_SII.png')
+   kb2_SII.savepng('docs/images/kb2_SII.png')
 
 .. image:: /images/kb2_SII.png
    :target: ../_images/kb2_SII.png
@@ -98,7 +98,7 @@ without double-quantum coherences), we can use:
 
    kb2_SI = pw.only_SI(kb2.copy())
    kb2_SI = pw.readout(kb2_SI)
-   kb2_SI.savepng('images/kb2_SI.png')
+   kb2_SI.savepng('docs/images/kb2_SI.png')
 
 .. image:: /images/kb2_SI.png
    :target: ../_images/kb2_SI.png
