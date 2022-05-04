@@ -22,3 +22,4 @@ examples/hitran.csv
 /.python-version
 /.coverage
 /docs/generated/
+/*requirements.txt
