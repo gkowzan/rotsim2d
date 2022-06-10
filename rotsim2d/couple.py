@@ -9,7 +9,8 @@ from sympy.physics.wigner import wigner_3j
 
 def brute_geometric_factor(js, p):
     """Brute force sum over 4 dipole matrix elements without RME part for only
-    one polarization component.
+    one polarization component. This is equal to R-factor for all aligned
+    polarizations.
 
     This is mostly for testing.
     """
