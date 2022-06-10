@@ -4,6 +4,7 @@ related to polarization dependence and angular momentum dependence of four-fold
 dipole interaction operator. The derived expressions are in
 :mod:`rotsim2d.symbolic.results`."""
 # * Imports
+import attrs
 import inspect
 import itertools as it
 import re
@@ -766,7 +767,7 @@ honl_london_factors = {0: {-1: (Jpp+Kpp)*(Jpp-Kpp)/Jpp,
 
 def honl_london(pair: Tuple[RotState, RotState], jref: int) -> Basic:
     """Return Honl-London factor in terms of J_i = jref."""
-    if 'k' in pair[0]._fields:
+    if 'k' in attrs.fields_dict(type(pair[0])):
         K = Kpp
     else:
         K = 0
