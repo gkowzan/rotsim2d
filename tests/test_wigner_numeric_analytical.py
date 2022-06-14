@@ -1,7 +1,8 @@
 from typing import Sequence, Tuple
 
-import gkpywigxjpf.gkpywigxjpf as wig
 import pytest
+gkpywigxjpf = pytest.importorskip("gkpywigxjpf")
+wig = gkpywigxjpf.gkpywigxjpf
 import rotsim2d.dressedleaf as dl
 import rotsim2d.pathways as pw
 import rotsim2d.symbolic.functions as sym

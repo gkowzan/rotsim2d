@@ -15,4 +15,4 @@ def kb2():
 def test_latex_tikz(kb2, tmp_path):
     latex_code = vis.tikz_diagrams(kb2)
     latex_path = str(Path(tmp_path) / 'kb2_tikz.tex')
-    vis.latex_compile(latex_path, vis.LATEX_PRE+latex_code+vis.LATEX_POST)
+    vis.latex_compile(latex_path, vis.latex_document(latex_code))
