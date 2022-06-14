@@ -3,3 +3,5 @@
 jupyter
 PyQt5
 knickknacks>=0.2.3
+scikit-learn
+pandas
