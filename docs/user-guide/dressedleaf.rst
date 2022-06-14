@@ -25,9 +25,8 @@ mode. It can be instantiated with a leaf node of
    pw1 = dl.Pathway(kb1.leaves[0])
    pw1.pprint()
 
-Transition chain label classifies the transitions induced by each light
-interaction by a sequence of three letters: P, Q or R. This is the same notation
-as the one used in [1]_.
+Pathway label classifies the transitions induced by each light interaction by a
+sequence of three letters: P, Q or R. The transition label and the G-factor label are defined in [#f1]_. R-class (R1..R8) is the label used in Hamm and Zanni book [#f2]_. The experimental label is explained in the linked :download:`diagram <nonrephasing_FWM_symtop_only_P.pdf>`, which classifies all symmetric top SII pathways that start with P-branch excitation.
 
 A list of all pathways in a given excitation tree can be obtained by using the
 class method :meth:`Pathway.from_kb_tree`:
@@ -86,4 +85,5 @@ and waiting time dependence by changing `angles` and `tw` arguments of
 :func:`Peak2DList.from_dp_list`. :func:`~rotsim2d.visual.plot2d_scatter` is a
 convenience functions for plotting a list of 2D peaks.
 	   
-.. [1] D. Murdock, L. A. Burns, P. H. Vaccaro. J. Phys. Chem. A 113, 13184-13198 (2009). doi:10.1021/jp903970d.
+.. [#f1] |THEORY|
+.. [#f2] |HAMM|

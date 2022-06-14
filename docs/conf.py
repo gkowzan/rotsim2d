@@ -18,9 +18,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'rotsim2d'
-copyright = '2020, Grzegorz Kowzan'
+copyright = '2020-2022, Grzegorz Kowzan'
 author = 'Grzegorz Kowzan'
 
+with open('citations.txt', 'rt') as f:
+    rst_prolog = f.read()
 
 # -- General configuration ---------------------------------------------------
 
@@ -78,7 +80,7 @@ html_static_path = ['_static']
 # }
 # html_show_sourcelink = True
 html_theme_options = dict(
-    repository_url="https://gitlab.com/allisonlab/mdcs/rotsim2d",
+    repository_url="https://github.com/gkowzan/rotsim2d",
     repository_branch="master",
     path_to_docs="docs",
     use_edit_page_button=True,
@@ -98,7 +100,7 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-    'molspecutils': ('/home/grz/python/packages/molspecutils/docs/_build/html/', None),
+    'molspecutils': ('https://molspecutils.readthedocs.io/en/latest/', None),
     'anytree': ('https://anytree.readthedocs.io/en/latest/', None)
 }
 
