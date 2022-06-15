@@ -1,1 +1,3 @@
-sphinx-build -b html docs docs/_build/html
+cd docs
+sphinx-build -b html . _build/html
+cd ..
