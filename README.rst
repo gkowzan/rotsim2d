@@ -1,4 +1,14 @@
-.. _rotsim2d:
+.. |LETTER| replace:: G.\ Kowzan, T. K. Allison, Controlling rotationally-resolved two-dimensional infrared spectra with polarization, arXiv:XYZ, (2022)
+
+.. |THEORY| replace:: G.\ Kowzan, T. K. Allison, Theory of rotationally-resolved two-dimensional infrared spectroscopy, arXiv:XXXX, (2022)
+
+.. |HAPI| replace:: R.V. Kochanov, I.E. Gordon, L.S. Rothman, P. Wcisło, C. Hill, J.S. Wilzewski, HITRAN Application Programming Interface (HAPI): A comprehensive approach to working with spectroscopic data, J. Quant. Spectrosc. Radiat. Transfer 177, 15-30 (2016).
+
+.. |HITRAN| replace:: I.E. Gordon et al., The HITRAN2016 molecular spectroscopic database, J. Quant. Spectrosc. Radiat. Transfer 203, 3-69 (2017).
+
+.. |MUKAMEL| replace:: S.\ Mukamel, "Principles of nonlinear spectroscopy". Oxford University Press, New York, 1995.
+
+.. |HAMM| replace:: P.\ Hamm, M. Zanni,"Concepts and methods of 2D infrared spectroscopy". Cambridge University Press, 2011.
 
 ###################################################
 rotsim2d: rotationally-resolved 2D infrared spectra
@@ -16,17 +26,24 @@ One can also simulate mixed time-frequency experimental signals which do include
 
 **rotsim2d_apps** includes simple GUI applications that can be used to investigate branch structure of RR2DIR spectra, polarization dependence and evolution of rotational coherences during the waiting time between the second and third interaction.
 
-.. image:: /images/cartoon_rcs_docs.png
+.. image:: docs/images/cartoon_rcs_docs.png
    :width: 50%
    :align: center
 
-.. toctree::
-   :maxdepth: 2
-   :hidden:
+Install
+=======
+The package is available on PyPI and can be most easily installed with `pip`::
 
-   getting-started/index
-   user-guide/index
-   api
+  pip install rotsim2d
+
+This will install the library.
+To install GUI applications install the following package::
+
+  pip install rotsim2d_apps
+
+Documentation
+=============
+Documentation is available at `<https://rotsim2d.readthedocs.io/>`_.
 
 Citations
 =========
