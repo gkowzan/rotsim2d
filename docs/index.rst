@@ -40,3 +40,13 @@ License
 =======
 
 rotsim2d is available under the open source `MIT license <https://opensource.org/licenses/MIT>`_.
+
+Funding
+=======
+.. list-table::
+   :widths: auto
+   :header-rows: 0
+
+   * - .. image:: /images/flag_yellow_low.jpg
+          :width: 200px
+     - This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Sklodowska-Curie grant agreement No 101028278.
