@@ -14,6 +14,9 @@
 rotsim2d: rotationally-resolved 2D infrared spectra
 ###################################################
 
+.. image:: https://zenodo.org/badge/503824832.svg
+   :target: https://zenodo.org/badge/latestdoi/503824832
+
 **rotsim2d** is a library to model two-dimensional infrared (2DIR) rovibrational spectra.
 It uses density-matrix perturbation theory treatment of third-order interaction.
 It assumes explicit time-ordering of interactions, *i.e.* it is suitable for time-domain spectroscopy with time-separated optical pulses.
