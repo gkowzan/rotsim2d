@@ -1,6 +1,6 @@
-.. |LETTER| replace:: G.\ Kowzan, T. K. Allison, Controlling rotationally-resolved two-dimensional infrared spectra with polarization, arXiv:XYZ, (2022)
+.. |LETTER| replace:: G.\ Kowzan, T. K. Allison, Controlling rotationally-resolved two-dimensional infrared spectra with polarization, arXiv:2206.10492 [physics.optics], (2022).
 
-.. |THEORY| replace:: G.\ Kowzan, T. K. Allison, Theory of rotationally-resolved two-dimensional infrared spectroscopy, arXiv:XXXX, (2022)
+.. |THEORY| replace:: G.\ Kowzan, T. K. Allison, Theory of rotationally-resolved two-dimensional infrared spectroscopy, arXiv:2206.10488 [physics.optics], (2022).
 
 .. |HAPI| replace:: R.V. Kochanov, I.E. Gordon, L.S. Rothman, P. Wcisło, C. Hill, J.S. Wilzewski, HITRAN Application Programming Interface (HAPI): A comprehensive approach to working with spectroscopic data, J. Quant. Spectrosc. Radiat. Transfer 177, 15-30 (2016).
 
