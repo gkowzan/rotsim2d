@@ -732,14 +732,15 @@ def optimize_contrast(rfpws_min: Sequence[RFactorPathways],
 # Retrieve rotational coherence expressions from Pathways.
 F = Function('F')
 
-def rot_expression(state: RotState, jref: int, higher_order: str=None) -> Basic:
+def rot_expression(state: RotState, jref: int,
+                   higher_order: Optional[str]=None) -> Basic:
     """Rotational energy expression relative to ``jref``."""
     dj = state.j-jref
 
     globs = globals()
     nu = globs['nu'+str(state.nu)]
     is_symtop = getattr(state, "k", None)
-    if higher_order == 'exact':
+    if higher_order:
         if is_symtop:
             expr = F(nu, J_i+dj, K)
         else:
