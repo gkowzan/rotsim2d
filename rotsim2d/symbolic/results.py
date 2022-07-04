@@ -2150,12 +2150,28 @@ rfactors_highj_dict = {
 }
 
 # * R-factor classes
-#: Cosine coefficients in R-factors associated with pathways being in a coherent state during the waiting time
-magic_classes = [(Rational(1, 10), Rational(1, 60), Rational(1, 60)),
-                 (Rational(1, 20), Rational(1, 20), Rational(1, -30)),
-                 (Rational(1, 20), Rational(-1, 30), Rational(1, 20))]
-#: Cosine coefficients in R-factors associated with pathways being in a population state during the waiting time
-muggle_classes = [(Rational(1, 15), Rational(1, 15), Rational(1, 15)),
-                  (Rational(1, 60), Rational(1, 10), Rational(1, 60)),
-                  (Rational(1, 60), Rational(1, 60), Rational(1, 10)),
-                  (Rational(1, 30), Rational(-1, 20), Rational(-1, 20))]
+#: Map between high-J R-factor coefficient tuples and :math:`\Theta_\alpha` classes
+theta_labels = {
+    (Rational(1, 10), Rational(1, 60), Rational(1, 60)): '1',
+    (Rational(1, 20), Rational(1, 20), Rational(1, -30)): '2',
+    (Rational(1, 20), Rational(-1, 30), Rational(1, 20)): '3',
+    (Rational(1, 15), Rational(1, 15), Rational(1, 15)): '4',
+    (Rational(1, 60), Rational(1, 10), Rational(1, 60)): '5',
+    (Rational(1, 60), Rational(1, 60), Rational(1, 10)): '6',
+    (Rational(1, 30), Rational(-1, 20), Rational(-1, 20)): '7'
+}
+
+# * Polarization conditions
+#: Dictionary of polarization conditions and angle substitutions
+magic_angle = atan(sqrt(2))
+pac_angle = asin(2*sqrt(7)/7)
+angle_subs = {
+    'MA': dict(zip(thetas, (0, 0, magic_angle, magic_angle))),
+    'AMA': dict(zip(thetas, (0, magic_angle, 0, magic_angle))),
+    'Vac2': dict(zip(thetas, (pi/2, pi/4, pi/2, atan(Rational(1,2))))),
+    'MMA': dict(zip(thetas, (0, magic_angle, magic_angle, 0))),
+    'PAC': dict(zip(thetas, (0, 0, pac_angle, -pac_angle))),
+    'MPAC': dict(zip(thetas, (0, pac_angle, -pac_angle, 0))),
+    'APAC': dict(zip(thetas, (0, pac_angle, 0, -pac_angle))),
+    'Vac1': dict(zip(thetas, (pi/2, pi/4, pi/2, -atan(Rational(3,4))))),
+}
