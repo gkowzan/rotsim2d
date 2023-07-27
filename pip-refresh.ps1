@@ -1,5 +1,7 @@
 if (($args.count -eq 1) -and ($args[0] -eq "force")) {
-    Remove-Item requirements.txt dev-requirements.txt interactive-requirements.txt
+    Remove-Item requirements.txt
+    Remove-Item dev-requirements.txt
+    Remove-Item interactive-requirements.txt
 }
 
 python -m piptools compile --extra-index-url=http://127.0.0.1:4040 setup.cfg
